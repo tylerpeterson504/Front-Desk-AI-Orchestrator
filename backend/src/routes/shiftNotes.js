@@ -25,6 +25,9 @@ router.post('/', authenticateToken, async (req, res) => {
     if (property_id == null) {
       return res.status(400).json({ error: 'property_id is required' });
     }
+    if (typeof property_id !== 'number' && typeof property_id !== 'string') {
+      return res.status(400).json({ error: 'property_id must be a positive integer' });
+    }
     const propertyId = Number(property_id);
     if (!Number.isInteger(propertyId) || propertyId <= 0) {
       return res.status(400).json({ error: 'property_id must be a positive integer' });
