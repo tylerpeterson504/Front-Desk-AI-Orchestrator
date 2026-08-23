@@ -25,6 +25,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: frontdesk_backend
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -33,7 +35,6 @@ services:
       DB_NAME: frontdesk_ai
       DB_USER: frontdesk_user
       DB_PASSWORD: frontdesk_pass
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_change_in_production}
       BCRYPT_ROUNDS: 10
       RUN_SEEDS: "true"
     ports:
