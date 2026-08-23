@@ -173,10 +173,15 @@ docker-compose ps
 ```
 
 ### Port already in use
-Change the host port in `docker-compose.yml`:
+Change the host port in `docker-compose.yml` **and** update the dashboard `REACT_APP_API_URL` to match:
 ```yaml
+# backend service
 ports:
   - "3002:3001"  # change 3002 to any free port
+
+# dashboard service
+environment:
+  - REACT_APP_API_URL=http://localhost:3002
 ```
 
 ### Full reset
