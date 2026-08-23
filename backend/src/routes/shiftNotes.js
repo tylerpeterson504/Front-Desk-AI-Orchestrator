@@ -25,6 +25,10 @@ router.post('/', authenticateToken, async (req, res) => {
     if (property_id == null) {
       return res.status(400).json({ error: 'property_id is required' });
     }
+    const propertyId = Number(property_id);
+    if (!Number.isInteger(propertyId) || propertyId <= 0) {
+      return res.status(400).json({ error: 'property_id must be a positive integer' });
+    }
 
     if (content == null) {
       return res.status(400).json({ error: 'content is required' });
@@ -43,7 +47,7 @@ router.post('/', authenticateToken, async (req, res) => {
       `INSERT INTO shift_notes (user_id, property_id, content) 
        VALUES ($1, $2, $3) 
        RETURNING *`,
-      [req.user.id, property_id, normalizedContent]
+      [req.user.id, propertyId, normalizedContent]
     );
     
     res.status(201).json(shiftNote);
