@@ -22,8 +22,9 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { property_id, content } = req.body;
+    const normalizedContent = typeof content === 'string' ? content.trim() : '';
 
-    if (!property_id || !content || !content.trim()) {
+    if (property_id == null || !normalizedContent) {
       return res.status(400).json({ error: 'property_id and content are required' });
     }
     
@@ -31,7 +32,7 @@ router.post('/', authenticateToken, async (req, res) => {
       `INSERT INTO shift_notes (user_id, property_id, content) 
        VALUES ($1, $2, $3) 
        RETURNING *`,
-      [req.user.id, property_id, content]
+      [req.user.id, property_id, normalizedContent]
     );
     
     res.status(201).json(shiftNote);
@@ -44,7 +45,8 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { content } = req.body;
-    if (!content || !content.trim()) {
+    const normalizedContent = typeof content === 'string' ? content.trim() : '';
+    if (!normalizedContent) {
       return res.status(400).json({ error: 'content is required' });
     }
     
@@ -53,7 +55,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
        SET content = $1, updated_at = NOW()
        WHERE id = $2 AND user_id = $3
        RETURNING *`,
-      [content, req.params.id, req.user.id]
+      [normalizedContent, req.params.id, req.user.id]
     );
 
     if (!shiftNote) {
