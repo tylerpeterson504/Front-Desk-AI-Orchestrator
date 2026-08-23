@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:12
+    container_name: frontdesk_db
+    environment:
+      POSTGRES_DB: frontdesk_ai
+      POSTGRES_USER: frontdesk_user
+      POSTGRES_PASSWORD: frontdesk_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frontdesk_user -d frontdesk_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - frontdesk_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: frontdesk_backend
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: frontdesk_ai
+      DB_USER: frontdesk_user
+      DB_PASSWORD: frontdesk_pass
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_change_in_production}
+      BCRYPT_ROUNDS: 10
+      RUN_SEEDS: "true"
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - frontdesk_network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: frontdesk_dashboard
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+      PORT: 3000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./dashboard/src:/app/src
+    networks:
+      - frontdesk_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  frontdesk_network:
+    driver: bridge
