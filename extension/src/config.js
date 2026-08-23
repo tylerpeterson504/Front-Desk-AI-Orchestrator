@@ -26,7 +26,7 @@ const PROPERTIES = {
 function getPropertyConfig() {
   const hostname = window.location.hostname;
   
-  for (const [domain, config] of Object.entries(PROPERTIES)) {
+  for (const config of Object.values(PROPERTIES)) {
     if (hostname.includes(config.urlPattern)) {
       return config;
     }
