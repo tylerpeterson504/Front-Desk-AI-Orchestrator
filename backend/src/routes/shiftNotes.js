@@ -41,7 +41,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { content } = req.body;
     
-    const shiftNote = await db.one(
+    const shiftNote = await db.oneOrNone(
       `UPDATE shift_notes 
        SET content = $1, updated_at = NOW()
        WHERE id = $2 AND user_id = $3
@@ -49,6 +49,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [content, req.params.id, req.user.id]
     );
     
+    if (!shiftNote) {
+      return res.status(404).json({ error: 'Shift note not found' });
+    }
     res.json(shiftNote);
   } catch (error) {
     res.status(500).json({ error: error.message });

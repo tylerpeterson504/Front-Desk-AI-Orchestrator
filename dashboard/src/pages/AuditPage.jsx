@@ -50,7 +50,7 @@ export const AuditPage = () => {
                     </div>
                     {log.details && (
                       <div className="bg-gray-50 p-3 rounded mt-2 text-sm text-gray-600 max-h-24 overflow-auto">
-                        <pre>{JSON.stringify(JSON.parse(log.details), null, 2)}</pre>
+                        <pre>{JSON.stringify(typeof log.details === 'string' ? JSON.parse(log.details) : log.details, null, 2)}</pre>
                       </div>
                     )}
                   </div>

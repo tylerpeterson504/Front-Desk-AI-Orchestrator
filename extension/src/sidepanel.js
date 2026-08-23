@@ -258,7 +258,7 @@ document.getElementById('btn-generate').addEventListener('click', () => {
   const combined = selectedTemplates.map((t) => t.content).join('\n\n');
   const toneNote =
     currentTone === 'friendly'
-      ? combined.replace(/\bplease\b/gi, 'please').replace(/\bkindly\b/gi, 'warmly')
+      ? combined.replace(/\bsincerely\b/gi, 'warmly').replace(/\bkindly\b/gi, 'warmly')
       : combined;
 
   const guestName = guestInfo?.guestName;

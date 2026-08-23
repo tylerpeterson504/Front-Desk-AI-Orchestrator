@@ -56,10 +56,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes
-CREATE INDEX idx_properties_user_id ON properties(user_id);
-CREATE INDEX idx_templates_user_id ON templates(user_id);
-CREATE INDEX idx_shift_notes_user_id ON shift_notes(user_id);
-CREATE INDEX idx_shift_notes_property_id ON shift_notes(property_id);
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_property_id ON audit_logs(property_id);
+// Create indexes
+CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
+CREATE INDEX IF NOT EXISTS idx_templates_user_id ON templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_shift_notes_user_id ON shift_notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_shift_notes_property_id ON shift_notes(property_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_property_id ON audit_logs(property_id);
