@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Starting Front Desk AI Orchestrator..."
-docker-compose up -d
+docker-compose up -d || exit $?
 echo ""
 echo "Services started!"
 echo "  Dashboard: http://localhost:3000"
