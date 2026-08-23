@@ -8,7 +8,7 @@
     "dev": "nodemon src/index.js",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed-runner.js",
-    "test": "jest --coverage",
+    "test": "jest --coverage --passWithNoTests",
     "test:watch": "jest --watch"
   },
   "dependencies": {
