@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { auditAPI } from '../services/api';
-import { Calendar, User, FileText } from 'lucide-react';
+import { Calendar, FileText } from 'lucide-react';
 
 export const AuditPage = () => {
   const [logs, setLogs] = React.useState([]);
@@ -50,7 +50,7 @@ export const AuditPage = () => {
                     </div>
                     {log.details && (
                       <div className="bg-gray-50 p-3 rounded mt-2 text-sm text-gray-600 max-h-24 overflow-auto">
-                        <pre>{JSON.stringify(JSON.parse(log.details), null, 2)}</pre>
+                        <pre>{JSON.stringify(log.details, null, 2)}</pre>
                       </div>
                     )}
                   </div>
