@@ -1,6 +1,7 @@
 @echo off
 echo Starting Front Desk AI Orchestrator...
 docker-compose up -d
+if errorlevel 1 exit /b %errorlevel%
 echo.
 echo Services started!
 echo   Dashboard: http://localhost:3000
