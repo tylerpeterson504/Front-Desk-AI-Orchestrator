@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-// Create indexes
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_properties_user_id ON properties(user_id);
 CREATE INDEX IF NOT EXISTS idx_templates_user_id ON templates(user_id);
 CREATE INDEX IF NOT EXISTS idx_shift_notes_user_id ON shift_notes(user_id);
