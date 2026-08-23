@@ -27,8 +27,12 @@ router.post('/', authenticateToken, async (req, res) => {
     }
     const normalizedContent = content.trim();
 
-    if (property_id == null || !normalizedContent) {
-      return res.status(400).json({ error: 'property_id and content are required' });
+    if (property_id == null) {
+      return res.status(400).json({ error: 'property_id is required' });
+    }
+
+    if (!normalizedContent) {
+      return res.status(400).json({ error: 'content is required' });
     }
     
     const shiftNote = await db.one(
