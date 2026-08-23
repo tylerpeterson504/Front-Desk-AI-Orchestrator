@@ -22,6 +22,10 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { property_id, content } = req.body;
+
+    if (!property_id || !content || !content.trim()) {
+      return res.status(400).json({ error: 'property_id and content are required' });
+    }
     
     const shiftNote = await db.one(
       `INSERT INTO shift_notes (user_id, property_id, content) 
@@ -40,14 +44,21 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'content is required' });
+    }
     
-    const shiftNote = await db.one(
+    const shiftNote = await db.oneOrNone(
       `UPDATE shift_notes 
        SET content = $1, updated_at = NOW()
        WHERE id = $2 AND user_id = $3
        RETURNING *`,
       [content, req.params.id, req.user.id]
     );
+
+    if (!shiftNote) {
+      return res.status(404).json({ error: 'Shift note not found' });
+    }
     
     res.json(shiftNote);
   } catch (error) {
@@ -58,10 +69,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete shift note
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    await db.none(
+    const result = await db.result(
       'DELETE FROM shift_notes WHERE id = $1 AND user_id = $2',
       [req.params.id, req.user.id]
     );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Shift note not found' });
+    }
+
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
