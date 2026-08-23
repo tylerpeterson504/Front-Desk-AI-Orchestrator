@@ -96,6 +96,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Shift note not found' });
     }
     
+    if (!shiftNote) {
+      return res.status(404).json({ error: 'Shift note not found' });
+    }
     res.json(shiftNote);
   } catch (error) {
     res.status(500).json({ error: error.message });

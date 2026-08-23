@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Front Desk AI</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div id="auth-prompt" class="auth-prompt hidden">
+    <h2>🏨 Desk AI</h2>
+    <p>Sign in to access the Front Desk AI Copilot</p>
+    <input type="email" id="auth-email" class="form-input" placeholder="Email" autocomplete="email" />
+    <input type="password" id="auth-password" class="form-input" placeholder="Password" autocomplete="current-password" />
+    <div id="auth-error" class="hidden" style="color:#ef4444;font-size:12px;margin-bottom:8px;"></div>
+    <button id="btn-login" class="btn btn-primary">Sign In</button>
+  </div>
+
+  <div id="main-panel" class="sidepanel-container hidden">
+    <!-- Header -->
+    <div class="header">
+      <h1>🏨 Desk AI</h1>
+      <button id="btn-logout" class="btn-icon" title="Logout">⎋</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-dot" id="dot-property"></span>
+        <span id="label-property">No property</span>
+      </div>
+      <div class="status-item">
+        <span class="status-dot" id="dot-guest"></span>
+        <span id="label-guest">No guest</span>
+      </div>
+    </div>
+
+    <!-- Guest Info -->
+    <div class="section" id="section-guest">
+      <h3>👤 Guest Info</h3>
+      <div class="info-block" id="guest-info-block">Waiting for guest data…</div>
+    </div>
+
+    <!-- Chat Context -->
+    <div class="section" id="section-chat">
+      <h3>💬 Chat Context</h3>
+      <div class="info-block" id="chat-context-block">No active chat</div>
+    </div>
+
+    <!-- Shift Notes -->
+    <div class="section">
+      <h3>📋 Shift Notes</h3>
+      <div class="shift-notes info-block" id="shift-notes-block">Loading…</div>
+    </div>
+
+    <!-- Templates -->
+    <div class="section">
+      <h3>📄 Templates</h3>
+      <input type="text" id="template-search" class="form-input" placeholder="Search templates…" />
+      <div class="template-list" id="template-list"></div>
+    </div>
+
+    <!-- Selected Templates -->
+    <div class="section" id="section-selected" style="display:none;">
+      <h3>✅ Selected</h3>
+      <div class="selected-list" id="selected-list"></div>
+    </div>
+
+    <!-- Tone Toggle -->
+    <div class="section">
+      <h3>🎨 Tone</h3>
+      <div class="tone-toggle">
+        <button class="tone-btn active" data-tone="professional">Professional</button>
+        <button class="tone-btn" data-tone="friendly">Friendly</button>
+      </div>
+    </div>
+
+    <!-- Generate & Response -->
+    <div class="section">
+      <button id="btn-generate" class="btn btn-primary">Generate Response</button>
+      <div class="response-box empty mt-2" id="response-box">Response will appear here…</div>
+      <button id="btn-copy" class="btn btn-secondary hidden">Copy</button>
+      <button id="btn-inject" class="btn btn-secondary hidden">Inject to Chat</button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <a href="http://localhost:3000" target="_blank">Open Dashboard</a>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

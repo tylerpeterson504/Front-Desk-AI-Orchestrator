@@ -4,44 +4,41 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// General rate limiter: 200 requests per 15 minutes per IP
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+// General rate limit for all API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later' }
 });
 
-// Strict limiter for auth endpoints: 20 requests per 15 minutes per IP
+// Rate limit auth endpoints to mitigate brute-force attacks
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many authentication attempts, please try again later.' }
+  message: { error: 'Too many requests, please try again later' }
 });
-
-app.use(generalLimiter);
 
 // Routes
 app.use('/api/auth', authLimiter, require('./routes/auth'));
-app.use('/api/properties', require('./routes/properties'));
-app.use('/api/templates', require('./routes/templates'));
-app.use('/api/shift-notes', require('./routes/shiftNotes'));
-app.use('/api/audit', require('./routes/audit'));
+app.use('/api/properties', apiLimiter, require('./routes/properties'));
+app.use('/api/templates', apiLimiter, require('./routes/templates'));
+app.use('/api/shift-notes', apiLimiter, require('./routes/shiftNotes'));
+app.use('/api/audit-logs', apiLimiter, require('./routes/auditLogs'));
 
+// Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
-  });
-}
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
 
 module.exports = app;
