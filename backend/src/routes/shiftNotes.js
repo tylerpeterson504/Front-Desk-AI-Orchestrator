@@ -40,7 +40,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const normalizedContent = content.trim();
     if (!normalizedContent) {
-      return res.status(400).json({ error: 'content is required' });
+      return res.status(400).json({ error: 'content must not be empty' });
     }
     
     const shiftNote = await db.one(
@@ -70,7 +70,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const normalizedContent = content.trim();
     if (!normalizedContent) {
-      return res.status(400).json({ error: 'content is required' });
+      return res.status(400).json({ error: 'content must not be empty' });
     }
     
     const shiftNote = await db.oneOrNone(
