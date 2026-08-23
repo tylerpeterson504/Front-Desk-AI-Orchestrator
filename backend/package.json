@@ -9,9 +9,6 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seed-runner.js",
     "test": "jest --coverage",
-    "test:auth": "jest tests/auth.test.js --coverage",
-    "test:properties": "jest tests/properties.test.js --coverage",
-    "test:templates": "jest tests/templates.test.js --coverage",
     "test:watch": "jest --watch"
   },
   "dependencies": {

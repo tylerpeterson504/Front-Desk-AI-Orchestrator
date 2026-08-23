@@ -22,7 +22,15 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { property_id, content } = req.body;
-    
+
+    const property = await db.oneOrNone(
+      'SELECT id FROM properties WHERE id = $1 AND user_id = $2',
+      [property_id, req.user.id]
+    );
+    if (!property) {
+      return res.status(403).json({ error: 'Property not found or access denied' });
+    }
+
     const shiftNote = await db.one(
       `INSERT INTO shift_notes (user_id, property_id, content) 
        VALUES ($1, $2, $3) 

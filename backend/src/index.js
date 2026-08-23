@@ -34,11 +34,14 @@ app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/properties', require('./routes/properties'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/shift-notes', require('./routes/shiftNotes'));
+app.use('/api/audit', require('./routes/audit'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
