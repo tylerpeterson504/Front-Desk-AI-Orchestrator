@@ -22,15 +22,19 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { property_id, content } = req.body;
-    if (typeof content !== 'string') {
-      return res.status(400).json({ error: 'content must be a string' });
-    }
-    const normalizedContent = content.trim();
-
     if (property_id == null) {
       return res.status(400).json({ error: 'property_id is required' });
     }
 
+    if (content == null) {
+      return res.status(400).json({ error: 'content is required' });
+    }
+
+    if (typeof content !== 'string') {
+      return res.status(400).json({ error: 'content must be a string' });
+    }
+
+    const normalizedContent = content.trim();
     if (!normalizedContent) {
       return res.status(400).json({ error: 'content is required' });
     }
@@ -52,9 +56,14 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { content } = req.body;
+    if (content == null) {
+      return res.status(400).json({ error: 'content is required' });
+    }
+
     if (typeof content !== 'string') {
       return res.status(400).json({ error: 'content must be a string' });
     }
+
     const normalizedContent = content.trim();
     if (!normalizedContent) {
       return res.status(400).json({ error: 'content is required' });
