@@ -40,12 +40,15 @@ Then open your browser to **http://localhost:3000**
 
 ## Step-by-Step Setup
 
-### 1. Copy environment files
+### 1. Copy the backend environment file
 
 ```bash
 cp backend/.env.example backend/.env
-cp dashboard/.env.example dashboard/.env
 ```
+
+Edit `backend/.env` to set a strong `JWT_SECRET`. The database connection values are supplied by Docker Compose and do not need to change for local development.
+
+> **Note:** `dashboard/.env` is only used when running the dashboard outside Docker (e.g. `npm start` directly). The Docker dashboard container reads its configuration from the `environment` block in `docker-compose.yml`.
 
 ### 2. Start all services
 
