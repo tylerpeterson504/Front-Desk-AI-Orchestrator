@@ -45,7 +45,15 @@ router.post('/', authenticateToken, async (req, res) => {
     if (!normalizedContent) {
       return res.status(400).json({ error: 'content must not be empty' });
     }
-    
+
+    const property = await db.oneOrNone(
+      'SELECT id FROM properties WHERE id = $1 AND user_id = $2',
+      [propertyId, req.user.id]
+    );
+    if (!property) {
+      return res.status(403).json({ error: 'Property not found or access denied' });
+    }
+
     const shiftNote = await db.one(
       `INSERT INTO shift_notes (user_id, property_id, content) 
        VALUES ($1, $2, $3) 
