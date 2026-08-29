@@ -10,8 +10,8 @@
   ],
   "host_permissions": [
     "http://localhost:3001/*",
-    "https://*.stayntouch.com/*",
-    "https://*.akia.io/*"
+    "https://app.us1.stayntouch.com/*",
+    "https://sys.akia.ai/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -29,12 +29,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.stayntouch.com/*"],
+      "matches": ["https://app.us1.stayntouch.com/*"],
       "js": ["src/config.js", "src/content-stayntouch.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://*.akia.io/*"],
+      "matches": ["https://sys.akia.ai/*"],
       "js": ["src/config.js", "src/content-akia.js"],
       "run_at": "document_idle"
     }

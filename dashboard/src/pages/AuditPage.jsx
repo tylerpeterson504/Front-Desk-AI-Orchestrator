@@ -5,7 +5,7 @@ import { Alert } from '../components/Alert';
 import { auditAPI } from '../services/api';
 import { Calendar, FileText } from 'lucide-react';
 
-export const AuditPage = () => {
+export const AuditPage = ({ embedded = false }) => {
   const [logs, setLogs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -43,9 +43,9 @@ export const AuditPage = () => {
   if (loading && logs.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 bg-gray-50 overflow-auto">
+    <div className={embedded ? '' : 'flex h-screen'}>
+      {!embedded && <Sidebar />}
+      <div className={embedded ? '' : 'flex-1 bg-gray-50 overflow-auto'}>
         <div className="p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">Audit Logs</h1>
 

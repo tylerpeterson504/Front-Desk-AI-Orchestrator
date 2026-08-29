@@ -6,7 +6,7 @@ const { authenticateToken } = require('../config/auth');
 // Get audit logs for the authenticated user
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
     const offset = parseInt(req.query.offset) || 0;
 
     const logs = await db.any(

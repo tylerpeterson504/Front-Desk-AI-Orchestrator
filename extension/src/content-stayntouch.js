@@ -14,6 +14,7 @@
   }
 
   function getText(selector) {
+    if (!document.body) return null;
     const el = document.querySelector(selector);
     return el ? el.textContent.trim() : null;
   }
@@ -30,8 +31,10 @@
   sendGuestInfo();
 
   // Re-send when the DOM changes (SPA navigation)
-  const observer = new MutationObserver(() => sendGuestInfo());
-  observer.observe(document.body, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => {
+    if (typeof document !== 'undefined' && document.body) sendGuestInfo();
+  });
+  if (typeof document !== 'undefined' && document.body) observer.observe(document.body, { childList: true, subtree: true });
 
   // Listen for requests from the side panel
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

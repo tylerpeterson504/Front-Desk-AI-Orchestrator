@@ -1,24 +1,31 @@
 // Property Configuration for Extension
 // Maps URL patterns to property configurations
 
+// Central API base URL (single source of truth for all extension scripts).
+// Default is local dev. For a production install, set `apiBaseUrl` in
+// chrome.storage.local (sidepanel picks it up at startup) — no code edit needed.
+const DEFAULT_API_BASE_URL = 'http://localhost:3001';
+
+function getApiBaseUrl() {
+  return DEFAULT_API_BASE_URL;
+}
+
 const PROPERTIES = {
-  'stpierre.stayntouch.com': {
+  'app.us1.stayntouch.com': {
     id: 1,
     name: 'St.Pierre Hotel',
-    urlPattern: 'stpierre',
+    urlPattern: 'app.us1.stayntouch.com',
     toneGuidelines: 'Professional, formal, courteous',
     checkoutTime: '11:00 AM',
-    wifiSSID: 'StPierre-Guest',
-    apiEndpoint: 'http://localhost:3001'
+    wifiSSID: 'StPierre-Guest'
   },
-  'andrewjackson.stayntouch.com': {
+  'sys.akia.ai': {
     id: 2,
     name: 'Andrew Jackson Hotel',
-    urlPattern: 'andrewjackson',
+    urlPattern: 'sys.akia.ai',
     toneGuidelines: 'Friendly, welcoming, professional',
     checkoutTime: '11:00 AM',
-    wifiSSID: 'AndrewJackson-Guest',
-    apiEndpoint: 'http://localhost:3001'
+    wifiSSID: 'AndrewJackson-Guest'
   }
 };
 
@@ -42,5 +49,5 @@ function getAllProperties() {
 
 // Export for use in content scripts
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { PROPERTIES, getPropertyConfig, getAllProperties };
+  module.exports = { PROPERTIES, getPropertyConfig, getAllProperties, getApiBaseUrl };
 }

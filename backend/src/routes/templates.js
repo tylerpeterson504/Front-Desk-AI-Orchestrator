@@ -16,9 +16,11 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     if (search) {
-      const idx = params.length + 1;
-      query += ` AND (name ILIKE $${idx} OR $${idx} = ANY(tags))`;
+      const nameIdx = params.length + 1;
+      const tagIdx = params.length + 2;
+      query += ` AND (name ILIKE $${nameIdx} OR $${tagIdx} = ANY(tags))`;
       params.push(`%${search}%`);
+      params.push(search);
     }
 
     query += ' ORDER BY name';
@@ -50,6 +52,16 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     const { name, category, content, tags } = req.body;
 
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'content is required' });
+    }
+    if (tags != null && !Array.isArray(tags)) {
+      return res.status(400).json({ error: 'tags must be an array' });
+    }
+
     const template = await db.one(
       `INSERT INTO templates (user_id, name, category, content, tags)
        VALUES ($1, $2, $3, $4, $5)
@@ -66,6 +78,16 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { name, category, content, tags } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'content is required' });
+    }
+    if (tags != null && !Array.isArray(tags)) {
+      return res.status(400).json({ error: 'tags must be an array' });
+    }
 
     const template = await db.oneOrNone(
       `UPDATE templates

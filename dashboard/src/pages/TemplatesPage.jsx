@@ -5,11 +5,12 @@ import { Alert } from '../components/Alert';
 import { templatesAPI } from '../services/api';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
-export const TemplatesPage = () => {
+export const TemplatesPage = ({ embedded = false }) => {
   const [templates, setTemplates] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [editingId, setEditingId] = React.useState(null);
   const [showForm, setShowForm] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: '',
@@ -36,23 +37,39 @@ export const TemplatesPage = () => {
     }
   };
 
+  const handleEdit = (template) => {
+    setFormData({
+      name: template.name || '',
+      category: template.category || 'greeting',
+      content: template.content || '',
+      tags: (template.tags || []).join(', ')
+    });
+    setEditingId(template.id);
+    setShowForm(true);
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', category: 'greeting', content: '', tags: '' });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await templatesAPI.create({
+      const payload = {
         ...formData,
-        tags: formData.tags.split(',').map(t => t.trim())
-      });
-      setFormData({
-        name: '',
-        category: 'greeting',
-        content: '',
-        tags: ''
-      });
-      setShowForm(false);
+        tags: formData.tags.split(',').map((t) => t.trim()).filter(Boolean)
+      };
+      if (editingId) {
+        await templatesAPI.update(editingId, payload);
+      } else {
+        await templatesAPI.create(payload);
+      }
+      resetForm();
       await loadTemplates();
     } catch (err) {
-      setError('Failed to create template');
+      setError(err.message || 'Failed to save template');
     }
   };
 
@@ -75,18 +92,18 @@ export const TemplatesPage = () => {
   if (loading && templates.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 bg-gray-50 overflow-auto">
+    <div className={embedded ? '' : 'flex h-screen'}>
+      {!embedded && <Sidebar />}
+      <div className={embedded ? '' : 'flex-1 bg-gray-50 overflow-auto'}>
         <div className="p-8">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800">Templates</h1>
             <button
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => (showForm ? resetForm() : setShowForm(true))}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               <Plus size={20} />
-              <span>Add Template</span>
+              <span>{showForm ? 'Cancel' : 'Add Template'}</span>
             </button>
           </div>
 
@@ -106,7 +123,9 @@ export const TemplatesPage = () => {
 
           {showForm && (
             <div className="bg-white p-6 rounded-lg shadow mb-6">
-              <h2 className="text-lg font-semibold mb-4">Add New Template</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                {editingId ? 'Edit Template' : 'Add New Template'}
+              </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <input
                   type="text"
@@ -147,11 +166,11 @@ export const TemplatesPage = () => {
                     type="submit"
                     className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                   >
-                    Create Template
+                    {editingId ? 'Save Changes' : 'Create Template'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={resetForm}
                     className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
                   >
                     Cancel
@@ -184,7 +203,11 @@ export const TemplatesPage = () => {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                    <button
+                      onClick={() => handleEdit(template)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                      title="Edit"
+                    >
                       <Edit2 size={18} />
                     </button>
                     <button
@@ -198,6 +221,11 @@ export const TemplatesPage = () => {
               </div>
             ))}
           </div>
+          {filtered.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No templates found.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

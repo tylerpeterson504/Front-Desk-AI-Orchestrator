@@ -5,8 +5,11 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()) : true
+}));
+app.use(express.json({ limit: '256kb' }));
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
@@ -32,13 +35,19 @@ app.use('/api/properties', apiLimiter, require('./routes/properties'));
 app.use('/api/templates', apiLimiter, require('./routes/templates'));
 app.use('/api/shift-notes', apiLimiter, require('./routes/shiftNotes'));
 app.use('/api/audit-logs', apiLimiter, require('./routes/auditLogs'));
+app.use('/api/copilot', apiLimiter, require('./routes/copilot'));
+app.use('/api/databricks', apiLimiter, require('./routes/databricks'));
+app.use('/api/github', apiLimiter, require('./routes/github'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+  });
+}
 
 module.exports = app;

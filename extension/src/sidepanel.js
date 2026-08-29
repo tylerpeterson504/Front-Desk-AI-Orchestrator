@@ -1,6 +1,9 @@
 // Front Desk AI Side Panel Logic
 
-const API_BASE = 'http://localhost:3001/api';
+// API base URL comes from the shared extension config (single source of truth).
+// An optional `apiBaseUrl` in chrome.storage.local overrides it per install,
+// so production deployments do not require code edits.
+let API_BASE = (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let authToken = null;
@@ -37,12 +40,16 @@ function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function setText(id, text) { document.getElementById(id).textContent = text; }
 function setDot(id, active) {
-  document.getElementById(id).classList.toggle('active', active);
+  // Boolean() matters: toggle(x, undefined) flips instead of forcing off.
+  document.getElementById(id).classList.toggle('active', Boolean(active));
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
-  const stored = await chrome.storage.local.get(['token']);
+  const stored = await chrome.storage.local.get(['token', 'apiBaseUrl']);
+  if (stored.apiBaseUrl) {
+    API_BASE = String(stored.apiBaseUrl).replace(/\/+$/, '') + '/api';
+  }
   if (stored.token) {
     authToken = stored.token;
     showMainPanel();
@@ -249,30 +256,70 @@ document.querySelectorAll('.tone-btn').forEach((btn) => {
 });
 
 // ─── Generate response ────────────────────────────────────────────────────────
-document.getElementById('btn-generate').addEventListener('click', () => {
-  if (!selectedTemplates.length) {
-    alert('Select at least one template first');
-    return;
-  }
-
+function localFallbackDraft() {
+  // Template stitching fallback (also used when the server has no AI key).
   const combined = selectedTemplates.map((t) => t.content).join('\n\n');
   const toneNote =
     currentTone === 'friendly'
       ? combined.replace(/\bsincerely\b/gi, 'warmly').replace(/\bkindly\b/gi, 'warmly')
       : combined;
+  return guestInfo?.guestName ? `Dear ${guestInfo.guestName},\n\n${toneNote}` : toneNote;
+}
 
-  const guestName = guestInfo?.guestName;
-  const response = guestName ? `Dear ${guestName},\n\n${toneNote}` : toneNote;
+// Resolve the backend property id for the tab's host. config.js maps hosts to
+// property configs; the server only accepts ids owned by the caller.
+function resolvePropertyId() {
+  try {
+    const config = typeof getPropertyConfig === 'function' ? getPropertyConfig() : null;
+    return config?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
+function showDraft(text) {
   const box = document.getElementById('response-box');
-  box.textContent = response;
+  box.textContent = text;
   box.classList.remove('empty');
-
   show('btn-copy');
   // Only show inject button if we're on an Akia page
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
     if (tab?.url?.includes('akia')) show('btn-inject');
   });
+}
+
+document.getElementById('btn-generate').addEventListener('click', async () => {
+  if (!selectedTemplates.length) {
+    alert('Select at least one template first');
+    return;
+  }
+
+  const btn = document.getElementById('btn-generate');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  setText('response-box', 'Drafting…');
+  document.getElementById('response-box').classList.remove('empty');
+
+  try {
+    const data = await apiRequest('POST', '/copilot/draft', {
+      property_id: resolvePropertyId() || undefined,
+      tone: currentTone,
+      template_ids: selectedTemplates.map((t) => t.id),
+      guest_info: guestInfo || undefined,
+      chat_context: chatContext || undefined
+    });
+    if (data?.draft && String(data.draft).trim()) {
+      showDraft(data.draft);
+    } else {
+      // Server responded but produced no draft (LLM unconfigured) — local path.
+      showDraft(localFallbackDraft());
+    }
+  } catch (err) {
+    // Server AI unavailable (no key / offline): use the local template path.
+    showDraft(localFallbackDraft());
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ─── Copy ─────────────────────────────────────────────────────────────────────

@@ -62,8 +62,10 @@
   sendChatContext();
 
   // Re-send on DOM changes (new messages arriving)
-  const observer = new MutationObserver(() => sendChatContext());
-  observer.observe(document.body, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => {
+    if (typeof document !== 'undefined' && document.body) sendChatContext();
+  });
+  if (typeof document !== 'undefined' && document.body) observer.observe(document.body, { childList: true, subtree: true });
 
   // Listen for requests from the side panel
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
