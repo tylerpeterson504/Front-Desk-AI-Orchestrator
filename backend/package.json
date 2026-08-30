@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seed-runner.js",
+    "db-setup": "node db/db-setup.js",
     "test": "jest --runInBand",
     "test:auth": "jest tests/auth.test.js",
     "test:properties": "jest tests/properties.test.js",

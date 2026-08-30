@@ -1,4 +1,7 @@
 require('dotenv').config();
+// Freebuff Cloud writes Keys-tab values to the workspace-root .env.local.
+// Load it without overriding anything already set by backend/.env or the shell.
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env.local') });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');

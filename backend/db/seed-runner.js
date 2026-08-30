@@ -1,5 +1,8 @@
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const path = require('path');
+// Load backend/.env first, then the workspace-root .env.local (where Freebuff
+// Cloud writes Keys-tab values). Later calls do not override already-set vars.
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env.local') });
 const fs = require('fs');
 const { db } = require('../src/config/database');
 
