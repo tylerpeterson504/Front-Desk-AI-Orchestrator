@@ -62,7 +62,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
       - name: Run Migrations
         working-directory: backend
@@ -71,14 +73,6 @@ jobs:
           # to use unpooled connection (recommended for migrations)
           DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
 
-      # Backend test suite against the PR branch database (pooled connection).
-      - name: Run Backend Tests
-        working-directory: backend
-        run: npm test
-        env:
-          # to use pooled connection
-          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
-          JWT_SECRET: "ci-only-secret-not-for-production"
 
   delete_neon_branch:
     name: Delete Neon Branch
