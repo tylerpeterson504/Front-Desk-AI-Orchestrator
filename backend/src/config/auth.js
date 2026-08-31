@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
+const { httpError } = require('../lib/httpError');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || (!isProduction ? 'dev-secret-change-in-production' : null);
+const TOKEN_TTL = process.env.JWT_TTL || '12h';
 
 function authenticateToken(req, res, next) {
   if (!JWT_SECRET) {
@@ -23,6 +25,18 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// Route guard for role-restricted endpoints. Must run after authenticateToken.
+function requireRole(...roles) {
+  const allowed = new Set(roles);
+  return (req, res, next) => {
+    if (!req.user) return next(httpError(401, 'Access token required'));
+    if (!allowed.has(req.user.role)) {
+      return next(httpError(403, 'Insufficient permissions'));
+    }
+    return next();
+  };
+}
+
 function generateToken(user) {
   if (!JWT_SECRET) {
     const error = new Error('Authentication is not configured');
@@ -32,8 +46,8 @@ function generateToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: TOKEN_TTL }
   );
 }
 
-module.exports = { authenticateToken, generateToken };
+module.exports = { authenticateToken, requireRole, generateToken };

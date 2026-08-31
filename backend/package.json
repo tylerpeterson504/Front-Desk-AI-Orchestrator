@@ -9,6 +9,8 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seed-runner.js",
     "db-setup": "node db/db-setup.js",
+    "encrypt-wifi": "node db/encrypt-wifi.js",
+    "set-role": "node db/set-role.js",
     "test": "jest --runInBand",
     "test:auth": "jest tests/auth.test.js",
     "test:properties": "jest tests/properties.test.js",
@@ -16,11 +18,12 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg-promise": "^11.9.1"
   },
