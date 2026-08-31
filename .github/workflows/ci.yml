@@ -9,6 +9,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default: nothing here writes to the repo, so every job
+# gets a read-only token instead of inheriting the repository default.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test ${{ matrix.package }}
