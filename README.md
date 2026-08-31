@@ -105,7 +105,7 @@ stack and pg code are logged server-side as one JSON line against that same
 ## Testing
 
 ```bash
-cd backend   && npm install && npm test   # 70 tests (routes, auth, roles, registration gating, crypto, error hygiene, prompt fencing)
+cd backend   && npm install && npm test   # 75 tests (routes, auth, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
 cd extension && npm install && npm test   # 38 tests (sidepanel, content scripts, config)
 ```
 

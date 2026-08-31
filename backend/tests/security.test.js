@@ -92,6 +92,7 @@ describe('registration: role escalation', () => {
 
     expect(db.one).not.toHaveBeenCalled();
   });
+
 });
 
 describe('registration: gating', () => {

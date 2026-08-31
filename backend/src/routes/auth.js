@@ -6,11 +6,11 @@ const { generateToken, authenticateToken, requireRole } = require('../config/aut
 const { assertRegistrationAllowed } = require('../config/registration');
 const { httpError, asyncHandler } = require('../lib/httpError');
 const logger = require('../lib/logger');
+const { isValidEmail } = require('../lib/validateEmail');
 
 const DEFAULT_ROLE = 'agent';
 const ASSIGNABLE_ROLES = new Set(['agent', 'manager', 'admin']);
 const MIN_PASSWORD_LENGTH = 12;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function bcryptRounds() {
   const parsed = Number.parseInt(process.env.BCRYPT_ROUNDS || '', 10);
@@ -32,7 +32,7 @@ router.post('/register', asyncHandler(async (req, res) => {
   if (!email || !password || !name) {
     throw httpError(400, 'Email, password, and name are required');
   }
-  if (typeof email !== 'string' || !EMAIL_PATTERN.test(email.trim())) {
+  if (typeof email !== 'string' || !isValidEmail(email.trim())) {
     throw httpError(400, 'A valid email address is required');
   }
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
