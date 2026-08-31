@@ -72,7 +72,7 @@
   }
 
   var GUEST_SELECTORS = {
-    guestName: ['[data-test="guest-name"]', '.guest-name', '.reservation-guest-name', '[data-testid*="guest" i]', '[data-testid*="name" i]'],
+    guestName: ['[data-test="guest-name"]', '.guest-name', '.reservation-guest-name', '[data-testid*="guest-name" i]', '[data-testid*="guestname" i]'],
     roomNumber: ['[data-test="room-number"]', '.room-number', '.reservation-room', '[data-testid*="room" i]'],
     checkIn: ['[data-test="check-in"]', '.check-in-date', '.arrival-date', '[data-testid*="arrival" i]', '[data-testid*="check-in" i]'],
     checkOut: ['[data-test="check-out"]', '.check-out-date', '.departure-date', '[data-testid*="departure" i]', '[data-testid*="check-out" i]'],
@@ -98,8 +98,33 @@
     if (DEBUG) {
       log('root:', root === document.body ? 'body' : root.tagName, 'children:', root.children.length);
       log('extracted:', JSON.parse(JSON.stringify(data)));
+      logDiscovery(root);
     }
     return data;
+  }
+
+  // Debug discovery: probe broad selector families and log counts + samples so
+  // the real Stayntouch selectors can be pinned down from a logged-in tab.
+  function logDiscovery(root) {
+    if (!DEBUG) return;
+    var probes = {
+      'guest-name-like': ['[data-test*="guest" i]', '[data-testid*="guest" i]', '[class*="guest" i]', '[class*="guest-name" i]', 'h1', 'h2', 'h3', 'dt', 'label'],
+      'room-like': ['[data-test*="room" i]', '[data-testid*="room" i]', '[class*="room" i]'],
+      'date-like': ['[data-testid*="date" i]', '[class*="date" i]', '[class*="arrival" i]', '[class*="departure" i]'],
+      'confirmation-like': ['[data-testid*="conf" i]', '[class*="confirm" i]'],
+      'status-like': ['[data-testid*="status" i]', '[class*="status" i]']
+    };
+    Object.keys(probes).forEach(function (label) {
+      var total = 0, samples = [];
+      probes[label].forEach(function (sel) {
+        var n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
+        if (n) {
+          total += n;
+          if (samples.length < 4) { var el = null; try { el = root.querySelector(sel); } catch (_) {} if (el) samples.push(sel + ' => ' + (el.textContent || '').trim().slice(0, 40)); }
+        }
+      });
+      log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
+    });
   }
 
   function hasData(info) { return Object.keys(info).some(function (k) { return !!info[k]; }); }

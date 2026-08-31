@@ -277,19 +277,43 @@ describe('content-akia.js extraction and injection', () => {
     expect(respond).not.toHaveBeenCalled();
   });
 
-  test('injectMessage supports a contenteditable composer', () => {
+  test('injectMessage fills a contenteditable and dispatches input', () => {
     document.body.innerHTML = '<div contenteditable="true" class="composer"></div>';
-    const original = document.execCommand;
+    const el = document.querySelector('.composer');
+    Object.defineProperty(el, 'isContentEditable', { value: true, configurable: true });
     document.execCommand = jest.fn().mockReturnValue(true);
+    const events = [];
+    el.addEventListener('input', (e) => events.push(e));
     try {
       chrome.runtime.sendMessage.mockImplementation(() => undefined);
       loadScript();
       const respond = jest.fn();
       listener()({ type: 'INJECT_MESSAGE', text: 'Hello there' }, {}, respond);
       expect(respond.mock.calls[0][0].success).toBe(true);
+      expect(el.textContent).toBe('Hello there');
+      expect(events).toHaveLength(1);
     } finally {
-      if (original === undefined) delete document.execCommand;
-      else document.execCommand = original;
+      delete document.execCommand;
+    }
+  });
+
+  test('injectMessage falls back when execCommand is unavailable', () => {
+    document.body.innerHTML = '<div contenteditable="true"></div>';
+    const el = document.querySelector('[contenteditable]');
+    Object.defineProperty(el, 'isContentEditable', { value: true, configurable: true });
+    document.execCommand = undefined;
+    const events = [];
+    el.addEventListener('input', (e) => events.push(e));
+    try {
+      chrome.runtime.sendMessage.mockImplementation(() => undefined);
+      loadScript();
+      const respond = jest.fn();
+      listener()({ type: 'INJECT_MESSAGE', text: 'Hi' }, {}, respond);
+      expect(respond.mock.calls[0][0].success).toBe(true);
+      expect(el.textContent).toBe('Hi');
+      expect(events).toHaveLength(1);
+    } finally {
+      delete document.execCommand;
     }
   });
 });

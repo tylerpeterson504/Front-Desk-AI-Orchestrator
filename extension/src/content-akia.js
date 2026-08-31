@@ -36,7 +36,7 @@
     return null;
   }
 
-  var MESSAGE_SELECTORS = ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]'];
+  var MESSAGE_SELECTORS = ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message-item" i]', '[data-testid*="message-row" i]', '[data-testid*="message-bubble" i]'];
   var SENDER_SELECTORS = ['.sender-name', '.message-sender', '[data-test="sender"]', '[data-testid*="sender" i]'];
   var TEXT_SELECTORS = ['.message-text', '.message-body', '[data-test="message-text"]'];
   var TIME_SELECTORS = ['.message-time', '.timestamp', '[data-test="timestamp"]', 'time'];
@@ -63,12 +63,34 @@
       return { sender: sender || null, text: text, time: time || null };
     }).filter(function (m) { return !!m.text; });
 
-    var activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '[data-testid*="guest" i]']);
+    var activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '[data-testid*="guest-name" i]']);
     var conversationEl = root.querySelector('[data-conversation-id]');
     var conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
 
-    if (DEBUG) log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
+    if (DEBUG) {
+      log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
+      logDiscovery(root);
+    }
     return { messages: messages, activeGuest: activeGuest, conversationId: conversationId };
+  }
+
+  // Debug discovery: probe broad selector families and log counts so the real
+  // Akia selectors can be pinned down from a logged-in tab.
+  function logDiscovery(root) {
+    if (!DEBUG) return;
+    var probes = {
+      'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
+      'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
+      'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
+    };
+    Object.keys(probes).forEach(function (label) {
+      var total = 0, samples = [];
+      probes[label].forEach(function (sel) {
+        var n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
+        if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
+      });
+      log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
+    });
   }
 
   function hasContext(ctx) { return ctx.messages.length > 0 || !!ctx.activeGuest; }
@@ -102,8 +124,23 @@
     try {
       if (el.isContentEditable) {
         el.focus();
-        document.execCommand('selectAll', false, null);
-        document.execCommand('insertText', false, text);
+        var before = el.textContent;
+        var ok = false;
+        // execCommand is deprecated but still the most reliable way to write
+        // into a rich editor while preserving undo history. Fall back to a
+        // direct textContent write if it is missing or did nothing.
+        try {
+          var s = document.execCommand('selectAll', false, null);
+          var i = document.execCommand('insertText', false, text);
+          ok = !!(s && i);
+        } catch (_) { ok = false; }
+        if (!ok || el.textContent === before) el.textContent = text;
+        var InputEventCtor = window.InputEvent;
+        var evt = InputEventCtor
+          ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
+          : new Event('input', { bubbles: true });
+        el.dispatchEvent(evt);
+        el.dispatchEvent(new Event('change', { bubbles: true }));
         return true;
       }
       // React/Vue controlled inputs need the native setter so the framework
@@ -117,11 +154,11 @@
       } else {
         el.value = text;
       }
-      var InputEventCtor = window.InputEvent;
-      var evt = InputEventCtor
-        ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
+      var InputEventCtor2 = window.InputEvent;
+      var evt2 = InputEventCtor2
+        ? new InputEventCtor2('input', { bubbles: true, inputType: 'insertText', data: text })
         : new Event('input', { bubbles: true });
-      el.dispatchEvent(evt);
+      el.dispatchEvent(evt2);
       el.dispatchEvent(new Event('change', { bubbles: true }));
       el.focus();
       return true;
