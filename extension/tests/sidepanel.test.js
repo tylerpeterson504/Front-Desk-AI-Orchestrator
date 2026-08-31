@@ -228,6 +228,20 @@ describe('templates', () => {
     expect(items[0].textContent).toBe('WiFi Info');
   });
 
+  test('renders a selected template name as text, not markup', async () => {
+    const hostile = '<img src=x onerror="window.__xss = true">';
+    await loadWithTemplates([{ id: 1, name: hostile, tags: [] }]);
+    document.querySelector('#template-list .template-item').click();
+
+    const chip = document.querySelector('#selected-list .selected-item');
+    expect(chip.querySelector('span').textContent).toBe(hostile);
+    expect(chip.querySelector('img')).toBeNull();
+    expect(window.__xss).toBeUndefined();
+    // The remove control still works.
+    chip.querySelector('.remove-btn').click();
+    expect(document.querySelectorAll('#selected-list .selected-item')).toHaveLength(0);
+  });
+
   test('selecting a template shows it in the selected list', async () => {
     await loadWithTemplates([{ id: 1, name: 'WiFi Info', tags: [] }]);
     document.querySelector('#template-list .template-item').click();

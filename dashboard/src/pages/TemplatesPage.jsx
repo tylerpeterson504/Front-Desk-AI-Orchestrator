@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { templatesAPI } from '../services/api';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search } from '../components/icons';
 
 export const TemplatesPage = ({ embedded = false }) => {
   const [templates, setTemplates] = React.useState([]);

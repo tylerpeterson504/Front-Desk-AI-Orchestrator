@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { propertiesAPI } from '../services/api';
-import { Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff } from '../components/icons';
 
 export const PropertiesPage = ({ embedded = false }) => {
   const [properties, setProperties] = React.useState([]);
@@ -11,7 +11,11 @@ export const PropertiesPage = ({ embedded = false }) => {
   const [error, setError] = React.useState('');
   const [showForm, setShowForm] = React.useState(false);
   const [editingId, setEditingId] = React.useState(null);
-  const [showPasswords, setShowPasswords] = React.useState({});
+  // property id -> revealed Wi-Fi password. Fetched on demand, never in the
+  // list payload: the server strips wifi_password from /properties and only
+  // returns it from the audit-logged /:id/wifi route.
+  const [revealed, setRevealed] = React.useState({});
+  const [revealing, setRevealing] = React.useState(null);
   const [formData, setFormData] = React.useState({
     name: '',
     url_pattern: '',
@@ -94,8 +98,20 @@ export const PropertiesPage = ({ embedded = false }) => {
     }
   };
 
-  const togglePassword = (id) => {
-    setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleWifi = async (id) => {
+    if (revealed[id]) {
+      setRevealed(({ [id]: _removed, ...rest }) => rest);
+      return;
+    }
+    try {
+      setRevealing(id);
+      const { data } = await propertiesAPI.getWifi(id);
+      setRevealed((prev) => ({ ...prev, [id]: data.password }));
+    } catch (err) {
+      setError(err.message || 'Failed to reveal WiFi password');
+    } finally {
+      setRevealing(null);
+    }
   };
 
   if (loading && properties.length === 0) return <LoadingSpinner />;
@@ -209,7 +225,22 @@ export const PropertiesPage = ({ embedded = false }) => {
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
                       <p>🕐 Checkout: {property.checkout_time || '—'}</p>
-                      <p>📶 WiFi: {property.wifi_ssid || '—'}</p>
+                      <p className="flex items-center space-x-2">
+                        <span>📶 WiFi: {property.wifi_ssid || '—'}</span>
+                        <button
+                          onClick={() => toggleWifi(property.id)}
+                          disabled={revealing === property.id}
+                          className="inline-flex items-center space-x-1 text-blue-600 hover:underline disabled:opacity-60"
+                          title={revealed[property.id] ? 'Hide password' : 'Reveal password (logged)'}
+                        >
+                          {revealed[property.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          <span>
+                            {revealing === property.id
+                              ? 'Revealing…'
+                              : revealed[property.id] || 'Show password'}
+                          </span>
+                        </button>
+                      </p>
                       {property.tone_guidelines && <p>🎨 {property.tone_guidelines}</p>}
                     </div>
                   </div>

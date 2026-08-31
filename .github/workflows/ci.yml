@@ -38,10 +38,29 @@ jobs:
         env:
           JWT_SECRET: ci-only-secret-not-for-production
 
-  # A `dashboard` build job is deliberately absent: `react-scripts build`
-  # currently fails resolving named exports from lucide-react, and Tailwind
-  # classes are used without Tailwind installed. Both are fixed in the frontend
-  # PR, which adds the build job here.
+  build-dashboard:
+    name: Build dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install
+        working-directory: dashboard
+        run: npm ci
+
+      # CI=true makes eslint warnings fail the build, which is the point: this
+      # job exists to stop the dashboard rotting back to unbuildable.
+      - name: Build
+        working-directory: dashboard
+        run: npm run build
+        env:
+          CI: true
 
   audit:
     name: Audit production dependencies
