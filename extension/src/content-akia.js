@@ -21,7 +21,9 @@
   }
 
   function getRoot() {
-    return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
+    // '.website-chat-client-body[role="log"]' is the verified Akia conversation
+    // log; the rest are the staff-inbox / generic app-shell fallbacks.
+    return document.querySelector('.website-chat-client-body, [role="log"], main, [role="main"], #app, #chat, [data-app-root]') || document.body;
   }
 
   function firstText(root, selectors) {
@@ -36,10 +38,37 @@
     return null;
   }
 
-  var MESSAGE_SELECTORS = ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message-item" i]', '[data-testid*="message-row" i]', '[data-testid*="message-bubble" i]'];
-  var SENDER_SELECTORS = ['.sender-name', '.message-sender', '[data-test="sender"]', '[data-testid*="sender" i]'];
-  var TEXT_SELECTORS = ['.message-text', '.message-body', '[data-test="message-text"]'];
-  var TIME_SELECTORS = ['.message-time', '.timestamp', '[data-test="timestamp"]', 'time'];
+  // VERIFIED against the live Akia website-chat DOM (Aug 2026):
+  //
+  //   div.website-chat-client-body[role="log"]
+  //     div.website-chat-typing-indicator.website-chat-message.incoming  <- NOT a message
+  //       div.message  (three .website-chat-typing-dot spans)
+  //     section[aria-label="Message group"]
+  //       article.website-chat-message.incoming
+  //         address.author   "Hotel St Pierre"
+  //         div.message      "Send a message to our hotel staff."
+  //         time.timestamp   "a few seconds ago"
+  //
+  // Two traps this encodes:
+  //  1. `.message` is the TEXT node inside a row, not the row itself. Using it
+  //     as a row selector loses sender/time.
+  //  2. The typing indicator also carries `.website-chat-message` and contains a
+  //     `.message` div, so it must be excluded or it yields phantom messages.
+  //
+  // Akia ships no data-testid attributes, so class/element selectors are all
+  // that is available.
+  var MESSAGE_SELECTORS = [
+    'article.website-chat-message',
+    // Unverified fallbacks for the staff inbox (a different app; still a guess).
+    '.message-item', '.chat-message', '[data-test="message"]',
+    '[data-testid*="message-item" i]', '[data-testid*="message-row" i]', '[data-testid*="message-bubble" i]'
+  ];
+  // Rows matching these are structural chrome, not real messages.
+  var MESSAGE_EXCLUDE = ['.website-chat-typing-indicator', '[role="status"]'];
+  var SENDER_SELECTORS = ['address.author', '.author', '.sender-name', '.message-sender', '[data-test="sender"]', '[data-testid*="sender" i]'];
+  // ':scope > .message' keeps us on the row's own text child, never a nested one.
+  var TEXT_SELECTORS = [':scope > .message', '.message-text', '.message-body', '[data-test="message-text"]'];
+  var TIME_SELECTORS = ['time.timestamp', '.timestamp', '.message-time', '[data-test="timestamp"]', 'time'];
 
   function extractChatContext() {
     var root = getRoot();
@@ -53,17 +82,39 @@
       } catch (_) {}
     });
     var nodes = collected.filter(function (n) {
+      // Drop structural chrome (the typing indicator carries the same class as
+      // a real row and would otherwise yield a phantom message).
+      var excluded = MESSAGE_EXCLUDE.some(function (sel) {
+        try { return n.matches(sel) || n.closest(sel); } catch (_) { return false; }
+      });
+      if (excluded) return false;
+      // Keep only the leaf-most row so a group wrapper doesn't double as a row.
       return !collected.some(function (m) { return m !== n && n.contains(m); });
     });
 
     var messages = nodes.map(function (el) {
-      var sender = firstText(el, SENDER_SELECTORS) || firstText(el.parentElement, SENDER_SELECTORS);
+      var sender = firstText(el, SENDER_SELECTORS);
+      // Akia marks direction on the row itself; .incoming is the hotel/staff
+      // side. Consult this BEFORE any parent fallback.
+      if (!sender) {
+        try {
+          if (el.matches('.incoming')) sender = 'hotel';
+          else if (el.matches('.outgoing')) sender = 'guest';
+        } catch (_) {}
+      }
+      // Only look outside the row when the row is the sole row under its
+      // parent. Akia groups rows in a <section>, so an unguarded parent lookup
+      // would attribute the first row's author to every sibling.
+      if (!sender && el.parentElement) {
+        var siblingRows = nodes.filter(function (n) { return n.parentElement === el.parentElement; });
+        if (siblingRows.length <= 1) sender = firstText(el.parentElement, SENDER_SELECTORS);
+      }
       var text = firstText(el, TEXT_SELECTORS) || (el.innerText || el.textContent || '').trim();
       var time = firstText(el, TIME_SELECTORS);
       return { sender: sender || null, text: text, time: time || null };
     }).filter(function (m) { return !!m.text; });
 
-    var activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '[data-testid*="guest-name" i]']);
+    var activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name" i]']);
     var conversationEl = root.querySelector('[data-conversation-id]');
     var conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
 
@@ -101,11 +152,36 @@
   }
 
   // --- Message injection: textarea, input, or contenteditable ---
+  // VERIFIED Akia composer (Aug 2026):
+  //   form.website-chat-client-composer[aria-label="Send message form"]
+  //     div.faux-field
+  //       input[name="form_helper" type="checkbox"]        <- decoy, must not match
+  //       input#message[name="butter" aria-label="Message input"]
+  //       button#send-button.composer-send[type="submit"]
+  //
+  // Note it is a plain text <input>, NOT a textarea and NOT contenteditable,
+  // and the field name ("butter") is deliberately meaningless — so match on
+  // the id/aria-label, never the name. The sibling checkbox is a honeypot;
+  // every selector below is typed/scoped so it can never be selected.
   var COMPOSER_SELECTORS = [
+    '.website-chat-client-composer input#message',
+    '.website-chat-client-composer input[aria-label="Message input" i]',
+    '.website-chat-client-composer input[type="text"]',
+    'input[aria-label="Message input" i]',
+    // Unverified staff-inbox / generic fallbacks.
     'textarea.message-input', 'input.message-input', '[data-test="message-input"]',
     '.chat-input textarea',
     'textarea[placeholder*="message" i]', 'textarea[placeholder*="reply" i]', 'textarea[placeholder*="type" i]',
+    'input[type="text"][placeholder*="message" i]',
     '[contenteditable="true"]'
+  ];
+
+  // The send button, so a caller can submit after injecting.
+  var SEND_SELECTORS = [
+    '.website-chat-client-composer button#send-button',
+    '.website-chat-client-composer button.composer-send',
+    '.website-chat-client-composer button[type="submit"]',
+    'button[aria-label="Send message" i]'
   ];
 
   function findComposer() {

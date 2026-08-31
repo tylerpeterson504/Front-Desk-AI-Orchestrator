@@ -232,6 +232,78 @@ describe('content-akia.js extraction and injection', () => {
     expect(sent).toHaveLength(0);
   });
 
+  // Fixture copied verbatim from the live Akia website-chat DOM (Aug 2026),
+  // captured from Hotel St Pierre's public widget. Do not "tidy" this markup:
+  // the duplicated .website-chat-message class on the typing indicator and the
+  // .message text div nested inside it are exactly the traps the extractor has
+  // to survive.
+  const REAL_AKIA_DOM = `
+    <div class="website-chat-client-body" aria-label="Chat conversation" role="log">
+      <div aria-hidden="true" aria-label="" class="website-chat-typing-indicator website-chat-message incoming" role="status">
+        <div class="message">
+          <span aria-hidden="true" class="website-chat-typing-dot"></span>
+          <span aria-hidden="true" class="website-chat-typing-dot"></span>
+          <span aria-hidden="true" class="website-chat-typing-dot"></span>
+        </div>
+      </div>
+      <section aria-label="Message group">
+        <article aria-label="Message from Hotel St Pierre " class="website-chat-message incoming">
+          <address class="author">Hotel St Pierre </address>
+          <div class="message">Send a message to our hotel staff.
+</div>
+          <time class="timestamp">a few seconds ago</time>
+        </article>
+        <article aria-label="Message from you" class="website-chat-message outgoing">
+          <div class="message">What time is check-in?</div>
+          <time class="timestamp">just now</time>
+        </article>
+      </section>
+    </div>
+  `;
+
+  test('extracts from the real Akia website-chat DOM and skips the typing indicator', () => {
+    document.body.innerHTML = REAL_AKIA_DOM;
+    const sent = [];
+    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+    loadScript();
+    expect(sent).toHaveLength(1);
+    // The typing indicator must NOT appear as a message, and the .message div
+    // inside each article must not be mistaken for a row of its own.
+    expect(sent[0].data.messages).toEqual([
+      { sender: 'Hotel St Pierre', text: 'Send a message to our hotel staff.', time: 'a few seconds ago' },
+      { sender: 'guest', text: 'What time is check-in?', time: 'just now' }
+    ]);
+  });
+
+  test('injects into the real Akia composer without touching the honeypot field', () => {
+    document.body.innerHTML = `
+      <form class="website-chat-client-composer" aria-label="Send message form">
+        <div class="faux-field">
+          <input name="form_helper" type="checkbox">
+          <input id="message" name="butter" placeholder="Type your message here." aria-label="Message input" type="text">
+          <button id="send-button" class="composer-send composer-send-disabled" aria-label="Send message" type="submit">
+            <span class="website-chat-arrow-right"></span>
+          </button>
+        </div>
+      </form>
+    `;
+    chrome.runtime.sendMessage.mockImplementation(() => undefined);
+    loadScript();
+    const events = [];
+    const field = document.getElementById('message');
+    field.addEventListener('input', () => events.push('input'));
+    field.addEventListener('change', () => events.push('change'));
+
+    const respond = jest.fn();
+    listener()({ type: 'INJECT_MESSAGE', text: 'Check-in is at 4 PM.' }, {}, respond);
+
+    expect(field.value).toBe('Check-in is at 4 PM.');
+    expect(events).toEqual(['input', 'change']);
+    // The decoy checkbox must be untouched.
+    expect(document.querySelector('input[name="form_helper"]').checked).toBe(false);
+    expect(respond).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
   test('answers GET_CHAT_CONTEXT', () => {
     document.body.innerHTML = `
       <div class="message-item"><span class="message-text">hello</span></div>
