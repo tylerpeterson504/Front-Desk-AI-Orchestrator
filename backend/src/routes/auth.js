@@ -75,7 +75,13 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
-  const user = await db.oneOrNone('SELECT * FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
+  // Enumerated rather than SELECT *, so a future column (a reset token, a TOTP
+  // secret) is not pulled into memory here by accident. `password` is needed for
+  // the compare below and is never put on the response.
+  const user = await db.oneOrNone(
+    'SELECT id, email, name, role, password FROM users WHERE LOWER(email) = $1',
+    [normalizedEmail]
+  );
 
   // Same response for unknown email and bad password, so the endpoint is not
   // an account-existence oracle.

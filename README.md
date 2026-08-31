@@ -106,7 +106,7 @@ stack and pg code are logged server-side as one JSON line against that same
 
 ```bash
 cd backend   && npm install && npm test   # 75 tests (routes, auth, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
-cd extension && npm install && npm test   # 44 tests (sidepanel, content scripts, config override, chip escaping)
+cd extension && npm install && npm test   # 44 tests (sidepanel, content scripts, observer debouncing, config override, chip escaping)
 ```
 
 Logging is suppressed under Jest; set `LOG_VERBOSE=1` to see it.

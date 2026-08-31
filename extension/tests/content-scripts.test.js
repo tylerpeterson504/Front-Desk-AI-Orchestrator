@@ -160,25 +160,6 @@ describe('content-stayntouch.js extraction', () => {
     expect(response.value.data.roomNumber).toBe('101');
   });
 
-  test('MutationObserver re-broadcasts on DOM change', () => {
-    document.body.innerHTML = '<div class="guest-name">First</div>';
-    const sent = [];
-    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
-    loadScript();
-    expect(sent).toHaveLength(1);
-    const el = document.querySelector('.guest-name');
-    el.textContent = 'Second';
-    el.dispatchEvent(new Event('childList'));
-    // Direct mutation through the observer: append a node to trigger it
-    const extra = document.createElement('div');
-    extra.className = 'room-number';
-    extra.textContent = '9';
-    document.body.appendChild(extra);
-    // jsdom MutationObserver is async; flush with a microtask + tick
-    return Promise.resolve().then(() => {
-      expect(sent.length).toBeGreaterThanOrEqual(1);
-    });
-  });
 });
 
 describe('content-akia.js extraction and injection', () => {
