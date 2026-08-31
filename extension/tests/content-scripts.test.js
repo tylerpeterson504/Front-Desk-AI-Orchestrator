@@ -160,6 +160,23 @@ describe('content-stayntouch.js extraction', () => {
     expect(response.value.data.roomNumber).toBe('101');
   });
 
+  test('falls back to label/value pairs when selectors miss', () => {
+    // A PMS that renders label + value rows instead of .guest-name elements.
+    document.body.innerHTML = `
+      <dl>
+        <dt>Guest Name</dt><dd>Jane Doe</dd>
+        <dt>Room</dt><dd>204</dd>
+      </dl>
+    `;
+    const sent = [];
+    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+    loadScript();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].type).toBe('GUEST_INFO_UPDATED');
+    expect(sent[0].data.guestName).toBe('Jane Doe');
+    expect(sent[0].data.roomNumber).toBe('204');
+  });
+
 });
 
 describe('content-akia.js extraction and injection', () => {
@@ -258,6 +275,22 @@ describe('content-akia.js extraction and injection', () => {
     const respond = jest.fn();
     listener()({ type: 'SOMETHING_ELSE' }, {}, respond);
     expect(respond).not.toHaveBeenCalled();
+  });
+
+  test('injectMessage supports a contenteditable composer', () => {
+    document.body.innerHTML = '<div contenteditable="true" class="composer"></div>';
+    const original = document.execCommand;
+    document.execCommand = jest.fn().mockReturnValue(true);
+    try {
+      chrome.runtime.sendMessage.mockImplementation(() => undefined);
+      loadScript();
+      const respond = jest.fn();
+      listener()({ type: 'INJECT_MESSAGE', text: 'Hello there' }, {}, respond);
+      expect(respond.mock.calls[0][0].success).toBe(true);
+    } finally {
+      if (original === undefined) delete document.execCommand;
+      else document.execCommand = original;
+    }
   });
 });
 

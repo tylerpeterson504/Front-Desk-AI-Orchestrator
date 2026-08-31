@@ -1,90 +1,158 @@
 // Content script for Akia guest messaging platform
-// Pipeline B: Captures active chat context and supports message injection
+// Captures active chat context and injects drafted messages into the composer.
+//
+// Hardened: multi-strategy selectors with ancestor-dedup, contenteditable
+// injection, a try/catch guard so a reloaded extension never crashes the
+// observer, a 300ms debounced MutationObserver, and an optional debug-discovery
+// mode. Enable debug by running  localStorage.setItem('fdao-debug','1')  in the
+// Akia tab and watch the console for what was found.
 
 (function () {
-  function extractChatContext() {
-    const messages = [];
+  'use strict';
 
-    document.querySelectorAll(
-      '.message-item, .chat-message, [data-test="message"]'
-    ).forEach((el) => {
-      const sender = getText('.sender-name, .message-sender, [data-test="sender"]', el);
-      const text = getText('.message-text, .message-body, [data-test="message-text"]', el);
-      const time = getText('.message-time, .timestamp', el);
-      if (text) {
-        messages.push({ sender, text, time });
+  var DEBUG = false;
+  try { DEBUG = localStorage.getItem('fdao-debug') === '1'; } catch (_) {}
+  function log() { if (DEBUG) console.log.apply(console, ['[FDAO/akia]'].concat([].slice.call(arguments))); }
+  function warn() { if (DEBUG) console.warn.apply(console, ['[FDAO/akia]'].concat([].slice.call(arguments))); }
+
+  function safeSend(payload) {
+    try { chrome.runtime.sendMessage(payload); }
+    catch (e) { warn('sendMessage failed:', e && e.message); }
+  }
+
+  function getRoot() {
+    return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
+  }
+
+  function firstText(root, selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+      var el = null;
+      try { el = root.querySelector(selectors[i]); } catch (_) {}
+      if (el) {
+        var t = (el.innerText || el.textContent || '').trim();
+        if (t) return t;
       }
+    }
+    return null;
+  }
+
+  var MESSAGE_SELECTORS = ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]'];
+  var SENDER_SELECTORS = ['.sender-name', '.message-sender', '[data-test="sender"]', '[data-testid*="sender" i]'];
+  var TEXT_SELECTORS = ['.message-text', '.message-body', '[data-test="message-text"]'];
+  var TIME_SELECTORS = ['.message-time', '.timestamp', '[data-test="timestamp"]', 'time'];
+
+  function extractChatContext() {
+    var root = getRoot();
+
+    // Gather candidate message nodes from every strategy, then keep only the
+    // leaf-most ones so a list wrapper doesn't double as a "message".
+    var collected = [];
+    MESSAGE_SELECTORS.forEach(function (sel) {
+      try {
+        root.querySelectorAll(sel).forEach(function (n) { collected.push(n); });
+      } catch (_) {}
+    });
+    var nodes = collected.filter(function (n) {
+      return !collected.some(function (m) { return m !== n && n.contains(m); });
     });
 
-    return {
-      messages,
-      activeGuest: getText('.active-guest-name, .conversation-guest, [data-test="active-guest"]'),
-      conversationId: document.querySelector('[data-conversation-id]')
-        ?.getAttribute('data-conversation-id') || null
-    };
+    var messages = nodes.map(function (el) {
+      var sender = firstText(el, SENDER_SELECTORS) || firstText(el.parentElement, SENDER_SELECTORS);
+      var text = firstText(el, TEXT_SELECTORS) || (el.innerText || el.textContent || '').trim();
+      var time = firstText(el, TIME_SELECTORS);
+      return { sender: sender || null, text: text, time: time || null };
+    }).filter(function (m) { return !!m.text; });
+
+    var activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '[data-testid*="guest" i]']);
+    var conversationEl = root.querySelector('[data-conversation-id]');
+    var conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
+
+    if (DEBUG) log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
+    return { messages: messages, activeGuest: activeGuest, conversationId: conversationId };
   }
 
-  function getText(selector, root = document) {
-    const el = root.querySelector(selector);
-    return el ? el.textContent.trim() : null;
-  }
+  function hasContext(ctx) { return ctx.messages.length > 0 || !!ctx.activeGuest; }
 
   function sendChatContext() {
-    const context = extractChatContext();
-    if (context.messages.length > 0 || context.activeGuest) {
-      chrome.runtime.sendMessage({ type: 'CHAT_CONTEXT_UPDATED', data: context });
-    }
+    var ctx = extractChatContext();
+    if (hasContext(ctx)) safeSend({ type: 'CHAT_CONTEXT_UPDATED', data: ctx });
   }
 
-  // Inject a message into the Akia chat input
+  // --- Message injection: textarea, input, or contenteditable ---
+  var COMPOSER_SELECTORS = [
+    'textarea.message-input', 'input.message-input', '[data-test="message-input"]',
+    '.chat-input textarea',
+    'textarea[placeholder*="message" i]', 'textarea[placeholder*="reply" i]', 'textarea[placeholder*="type" i]',
+    '[contenteditable="true"]'
+  ];
+
+  function findComposer() {
+    for (var i = 0; i < COMPOSER_SELECTORS.length; i++) {
+      var el = null;
+      try { el = document.querySelector(COMPOSER_SELECTORS[i]); } catch (_) {}
+      if (el) return el;
+    }
+    return null;
+  }
+
   function injectMessage(text) {
-    const input = document.querySelector(
-      'textarea.message-input, input.message-input, [data-test="message-input"], .chat-input textarea'
-    );
-    if (!input) return false;
+    var el = findComposer();
+    if (!el) { warn('inject: composer not found'); return false; }
 
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      'value'
-    )?.set || Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-
-    if (nativeInputValueSetter) {
-      nativeInputValueSetter.call(input, text);
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    } else {
-      input.value = text;
-    }
-    input.focus();
-    return true;
+    try {
+      if (el.isContentEditable) {
+        el.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, text);
+        return true;
+      }
+      // React/Vue controlled inputs need the native setter so the framework
+      // sees the change, not just a DOM property write.
+      var proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype
+        : el instanceof HTMLInputElement ? HTMLInputElement.prototype : null;
+      if (proto) {
+        var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+        if (desc && desc.set) desc.set.call(el, text);
+        else el.value = text;
+      } else {
+        el.value = text;
+      }
+      var InputEventCtor = window.InputEvent;
+      var evt = InputEventCtor
+        ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
+        : new Event('input', { bubbles: true });
+      el.dispatchEvent(evt);
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.focus();
+      return true;
+    } catch (e) { warn('inject failed:', e && e.message); return false; }
   }
 
-  // Send context on load
+  // Initial capture.
   sendChatContext();
 
-  const MUTATION_DEBOUNCE_MS = 300;
-
-  // Re-send on DOM changes (new messages arriving)
-  // Debounced: one extraction per burst of DOM changes. These hosts are SPAs that mutate the DOM
-  // constantly, and the undebounced version re-extracted and messaged the
-  // background worker on every single mutation.
-  let pending = null;
-  const observer = new MutationObserver(() => {
-    if (typeof document === 'undefined' || !document.body) return;
+  // Debounced re-capture on DOM changes (new messages arriving).
+  var MUTATION_DEBOUNCE_MS = 300;
+  var pending = null;
+  function scheduleCapture() {
     if (pending) clearTimeout(pending);
-    pending = setTimeout(() => {
-      pending = null;
-      sendChatContext();
-    }, MUTATION_DEBOUNCE_MS);
-  });
-  if (typeof document !== 'undefined' && document.body) observer.observe(document.body, { childList: true, subtree: true });
+    pending = setTimeout(function () { pending = null; sendChatContext(); }, MUTATION_DEBOUNCE_MS);
+  }
+  var observer = new MutationObserver(function () { scheduleCapture(); });
+  if (document.body) {
+    try { observer.observe(document.body, { childList: true, subtree: true }); }
+    catch (e) { warn('observe failed:', e && e.message); }
+  }
 
-  // Listen for requests from the side panel
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Respond to the side panel.
+  chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
     if (message.type === 'GET_CHAT_CONTEXT') {
       sendResponse({ data: extractChatContext() });
-    } else if (message.type === 'INJECT_MESSAGE') {
-      const success = injectMessage(message.text);
-      sendResponse({ success });
+      return false;
+    }
+    if (message.type === 'INJECT_MESSAGE') {
+      sendResponse({ success: injectMessage(message.text) });
+      return false;
     }
   });
 })();
