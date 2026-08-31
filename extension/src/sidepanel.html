@@ -7,89 +7,157 @@
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
+  <!-- Auth prompt -->
   <div id="auth-prompt" class="auth-prompt hidden">
-    <h2>🏨 Desk AI</h2>
-    <p>Sign in to access the Front Desk AI Copilot</p>
-    <input type="email" id="auth-email" class="form-input" placeholder="Email" autocomplete="email" />
-    <input type="password" id="auth-password" class="form-input" placeholder="Password" autocomplete="current-password" />
-    <div id="auth-error" class="hidden" style="color:#ef4444;font-size:12px;margin-bottom:8px;"></div>
-    <button id="btn-login" class="btn btn-primary">Sign In</button>
+    <div class="auth-card">
+      <div class="auth-emblem" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="currentColor">
+          <path d="M16 2 C 14 6, 13.5 10, 16 14 C 18.5 10, 18 6, 16 2 Z"/>
+          <path d="M14 9 C 8 9, 6 14, 10 16 C 12 14, 13 11, 14 9 Z"/>
+          <path d="M18 9 C 24 9, 26 14, 22 16 C 20 14, 19 11, 18 9 Z"/>
+          <rect x="9" y="16" width="14" height="2.6" rx="1.3"/>
+          <path d="M15 18.6 L 15 26 C 15 27.5, 17 27.5, 17 26 L 17 18.6 Z"/>
+          <rect x="10" y="23" width="12" height="2.2" rx="1.1"/>
+          <path d="M16 26 L 20 31 L 12 31 Z"/>
+        </svg>
+      </div>
+      <h2>Welcome back</h2>
+      <p>Sign in to access the Front Desk AI Copilot</p>
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <input type="email" id="auth-email" class="form-input" placeholder="Email" autocomplete="email" style="margin:0;width:auto;flex:1;padding:0;border:0;background:transparent;font-size:13px" />
+      </div>
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="auth-password" class="form-input" placeholder="Password" autocomplete="current-password" style="margin:0;width:auto;flex:1;padding:0;border:0;background:transparent;font-size:13px" />
+      </div>
+      <div id="auth-error" class="auth-error hidden"></div>
+      <button id="btn-login" class="btn btn-primary">Sign In</button>
+    </div>
   </div>
 
+  <!-- Main panel -->
   <div id="main-panel" class="sidepanel-container hidden">
-    <!-- Header -->
+    <!-- French Quarter header -->
     <div class="header">
-      <h1>🏨 Desk AI</h1>
-      <button id="btn-logout" class="btn-icon" title="Logout">⎋</button>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="status-bar">
-      <div class="status-item">
-        <span class="status-dot" id="dot-property"></span>
-        <span id="label-property">No property</span>
+      <div class="lamp" aria-hidden="true"></div>
+      <div class="theme-bar" id="theme-bar">
+        <button class="swatch active" data-theme="frenchQuarter" title="French Quarter" style="background:linear-gradient(135deg,#234346,#e8b75e 90%)"></button>
+        <button class="swatch" data-theme="mardiGras" title="Mardi Gras" style="background:linear-gradient(135deg,#7b2e9e,#0f8e3d 50%,#e8b75e)"></button>
+        <button class="swatch" data-theme="gardenDistrict" title="Garden District" style="background:linear-gradient(135deg,#3f7d4e,#c98a1b)"></button>
+        <button class="swatch" data-theme="midnightBourbon" title="Midnight Bourbon" style="background:linear-gradient(135deg,#1a1620,#d4a84b)"></button>
+        <button class="swatch" data-theme="cafeDuMonde" title="Café du Monde" style="background:linear-gradient(135deg,#3b2a1a,#e8b75e)"></button>
+        <button class="swatch" data-theme="bourbonStreet" title="Bourbon Street" style="background:linear-gradient(135deg,#7b1e1e,#e8b75e)"></button>
+        <label class="theme-custom" title="Custom color"><input type="color" id="custom-color" value="#c1440e"></label>
       </div>
-      <div class="status-item">
-        <span class="status-dot" id="dot-guest"></span>
-        <span id="label-guest">No guest</span>
+
+      <div class="header-inner">
+        <div class="header-row">
+          <div class="brand">
+            <span class="medallion" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="currentColor">
+                <path d="M16 2 C 14 6, 13.5 10, 16 14 C 18.5 10, 18 6, 16 2 Z"/>
+                <path d="M14 9 C 8 9, 6 14, 10 16 C 12 14, 13 11, 14 9 Z"/>
+                <path d="M18 9 C 24 9, 26 14, 22 16 C 20 14, 19 11, 18 9 Z"/>
+                <rect x="9" y="16" width="14" height="2.6" rx="1.3"/>
+                <path d="M15 18.6 L 15 26 C 15 27.5, 17 27.5, 17 26 L 17 18.6 Z"/>
+                <rect x="10" y="23" width="12" height="2.2" rx="1.1"/>
+                <path d="M16 26 L 20 31 L 12 31 Z"/>
+              </svg>
+            </span>
+            <span><span class="brand-name">Desk AI</span><br><span class="brand-sub">French Quarter</span></span>
+          </div>
+          <div class="header-actions">
+            <button id="btn-logout" class="icon-btn" title="Sign out" aria-label="Sign out">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-item"><span class="status-dot" id="dot-property"></span><span id="label-property">No property</span></div>
+          <div class="status-item"><span class="status-dot" id="dot-guest"></span><span id="label-guest">No guest</span></div>
+        </div>
+      </div>
+
+      <div class="railing" aria-hidden="true">
+        <svg viewBox="0 0 240 30" preserveAspectRatio="none">
+          <defs>
+            <pattern id="iron" x="0" y="0" width="40" height="30" patternUnits="userSpaceOnUse">
+              <rect x="0" y="2" width="40" height="3" fill="currentColor"/>
+              <rect x="0" y="25" width="40" height="3" fill="currentColor"/>
+              <rect x="3" y="5" width="1.6" height="20" fill="currentColor"/>
+              <rect x="35.4" y="5" width="1.6" height="20" fill="currentColor"/>
+              <path d="M20 25 C 20 18, 28 18, 28 12 C 28 8, 22 8, 22 12 C 22 14.5, 25 14.5, 25 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M20 25 C 20 18, 12 18, 12 12 C 12 8, 18 8, 18 12 C 18 14.5, 15 14.5, 15 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="20" cy="7" r="1.4" fill="currentColor"/>
+            </pattern>
+          </defs>
+          <rect width="240" height="30" fill="url(#iron)"/>
+        </svg>
+        <svg class="railing-corner" style="left:0" viewBox="0 0 22 30" preserveAspectRatio="none"><path d="M2 4 C 14 4, 18 10, 18 18 C 18 24, 14 28, 8 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="28" r="1.4" fill="currentColor"/></svg>
+        <svg class="railing-corner" style="right:0;transform:scaleX(-1)" viewBox="0 0 22 30" preserveAspectRatio="none"><path d="M2 4 C 14 4, 18 10, 18 18 C 18 24, 14 28, 8 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="28" r="1.4" fill="currentColor"/></svg>
+        <!-- French Quarter header photo: "Iron Balcony with Ferns - 1985 New Orleans French Quarter"
+             by Larry Syverson, Wikimedia Commons, licensed CC BY-SA 2.0
+             https://commons.wikimedia.org/wiki/File:Iron_Balcony_with_Ferns_-_1985_New_Orleans_French_Quarter.jpg -->
+        <span class="photo-credit">Photo: L. Syverson / Wikimedia (CC BY-SA 2.0)</span>
       </div>
     </div>
 
-    <!-- Guest Info -->
-    <div class="section" id="section-guest">
-      <h3>👤 Guest Info</h3>
-      <div class="info-block" id="guest-info-block">Waiting for guest data…</div>
-    </div>
+    <!-- Scrollable body of cards -->
+    <div class="body">
+      <div class="section" id="section-guest">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Guest Info</h3>
+        <div class="info-block" id="guest-info-block">Waiting for guest data…</div>
+      </div>
 
-    <!-- Chat Context -->
-    <div class="section" id="section-chat">
-      <h3>💬 Chat Context</h3>
-      <div class="info-block" id="chat-context-block">No active chat</div>
-    </div>
+      <div class="section" id="section-chat">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Chat Context</h3>
+        <div class="info-block" id="chat-context-block">No active chat</div>
+      </div>
 
-    <!-- Shift Notes -->
-    <div class="section">
-      <h3>📋 Shift Notes</h3>
-      <div class="shift-notes info-block" id="shift-notes-block">Loading…</div>
-    </div>
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>Shift Notes</h3>
+        <div class="shift-notes info-block" id="shift-notes-block">Loading…</div>
+      </div>
 
-    <!-- Templates -->
-    <div class="section">
-      <h3>📄 Templates</h3>
-      <input type="text" id="template-search" class="form-input" placeholder="Search templates…" />
-      <div class="template-list" id="template-list"></div>
-    </div>
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Templates</h3>
+        <input type="text" id="template-search" class="form-input" placeholder="Search templates…" />
+        <div class="template-list" id="template-list"></div>
+      </div>
 
-    <!-- Selected Templates -->
-    <div class="section" id="section-selected" style="display:none;">
-      <h3>✅ Selected</h3>
-      <div class="selected-list" id="selected-list"></div>
-    </div>
+      <div class="section" id="section-selected" style="display:none;">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Selected</h3>
+        <div class="selected-list" id="selected-list"></div>
+      </div>
 
-    <!-- Tone Toggle -->
-    <div class="section">
-      <h3>🎨 Tone</h3>
-      <div class="tone-toggle">
-        <button class="tone-btn active" data-tone="professional">Professional</button>
-        <button class="tone-btn" data-tone="friendly">Friendly</button>
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.504 5.555-5.555C21.965 6.012 17.461 2 12 2z"/></svg>Tone</h3>
+        <div class="tone-toggle">
+          <button class="tone-btn active" data-tone="professional">Professional</button>
+          <button class="tone-btn" data-tone="friendly">Friendly</button>
+        </div>
       </div>
     </div>
 
-    <!-- Generate & Response -->
-    <div class="section">
-      <button id="btn-generate" class="btn btn-primary">Generate Response</button>
-      <div class="response-box empty mt-2" id="response-box">Response will appear here…</div>
-      <button id="btn-copy" class="btn btn-secondary hidden">Copy</button>
-      <button id="btn-inject" class="btn btn-secondary hidden">Inject to Chat</button>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <a href="http://localhost:3000" target="_blank">Open Dashboard</a>
+    <!-- Sticky compose -->
+    <div class="compose">
+      <div class="response-box empty" id="response-box">Response will appear here…</div>
+      <div class="gen-row">
+        <button id="btn-generate" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Generate Response
+        </button>
+        <button id="btn-copy" class="btn btn-secondary hidden">Copy</button>
+        <button id="btn-inject" class="btn btn-secondary hidden">Inject to Chat</button>
+      </div>
+      <div class="footer"><a href="http://localhost:3000" target="_blank">Open Dashboard ↗</a></div>
     </div>
   </div>
 
   <script src="config.js"></script>
+  <script src="theme.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 </html>
