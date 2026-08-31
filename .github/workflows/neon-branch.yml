@@ -11,6 +11,11 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
+# Least privilege by default. Neon branches are managed through NEON_API_KEY,
+# not the GitHub token, so read access to the checkout is all any job needs.
+permissions:
+  contents: read
+
 jobs:
   setup:
     name: Setup
