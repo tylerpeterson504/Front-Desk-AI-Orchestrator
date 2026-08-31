@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [backend, extension]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+
+      - name: Install
+        working-directory: ${{ matrix.package }}
+        run: npm ci
+
+      # Both suites mock the database, so no connection string is needed here.
+      # Migrations are exercised against a real Neon branch in neon-branch.yml.
+      - name: Test
+        working-directory: ${{ matrix.package }}
+        run: npm test
+        env:
+          JWT_SECRET: ci-only-secret-not-for-production
+
+  # A `dashboard` build job is deliberately absent: `react-scripts build`
+  # currently fails resolving named exports from lucide-react, and Tailwind
+  # classes are used without Tailwind installed. Both are fixed in the frontend
+  # PR, which adds the build job here.
+
+  audit:
+    name: Audit production dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Audit backend
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high

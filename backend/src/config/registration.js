@@ -11,7 +11,7 @@
 //
 // Default when REGISTRATION_MODE is unset:
 //   production      → invite
-//   everything else → open, so local dev, Docker and CI keep working
+//   everything else → open, so local dev and CI keep working
 //
 // Invite token is presented as either `X-Registration-Token: <token>` or
 // `{ "invite_token": "<token>" }` in the body, compared in constant time

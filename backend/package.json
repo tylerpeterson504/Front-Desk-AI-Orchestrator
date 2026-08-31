@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for Front Desk AI Orchestrator",
   "main": "src/index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
@@ -12,9 +15,9 @@
     "encrypt-wifi": "node db/encrypt-wifi.js",
     "set-role": "node db/set-role.js",
     "test": "jest --runInBand",
-    "test:auth": "jest tests/auth.test.js",
-    "test:properties": "jest tests/properties.test.js",
-    "test:templates": "jest tests/templates.test.js"
+    "test:api": "jest tests/api.test.js",
+    "test:security": "jest tests/security.test.js",
+    "test:coverage": "jest --runInBand --coverage"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

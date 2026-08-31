@@ -113,11 +113,24 @@ Logging is suppressed under Jest; set `LOG_VERBOSE=1` to see it.
 
 ## Local development
 
-Docker (recommended): see `DOCKER_SETUP.md` — starts PostgreSQL 12, backend
-(:3001), and dashboard (:3000), runs migrations and seeds demo data
-(`demo@example.com` / `password123`).
+There is no container setup — the database is Neon, so local dev talks to a Neon
+branch directly.
 
-Backend only: `cd backend && npm run dev` (listens on `PORT` or 3001).
+1. Copy `backend/.env.example` to `backend/.env` and set `DATABASE_URL` to a Neon
+   connection string (create a dev branch in the Neon console so you are not
+   pointing at production).
+2. Prepare the schema and demo data:
+   ```bash
+   cd backend && npm ci && npm run db-setup
+   ```
+   `db-setup` runs migrations then seeds; seeding is skipped automatically when
+   users already exist. Demo login: `demo@example.com` / `password123`.
+3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
+4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
+   (:3000, proxies to `REACT_APP_API_URL`).
+
+Postgres is only reachable over TLS, so keep `sslmode=require` in the connection
+string.
 
 ## Chrome Extension
 
