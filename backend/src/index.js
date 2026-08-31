@@ -46,17 +46,32 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' }
 });
 
-// Rate limit auth endpoints to mitigate brute-force attacks
+// Rate limit credential-guessing endpoints to mitigate brute-force attacks.
+// Refresh and logout are excluded: they are not guessable (an unknown refresh
+// token is simply rejected) and they run on a timer. A front desk shares one
+// public IP, so with 15-minute access tokens a handful of staff would otherwise
+// exhaust this budget on legitimate refreshes and be logged out.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+  skip: (req) => req.path === '/refresh' || req.path === '/logout'
+});
+
+// Refresh still needs a ceiling — one client refreshes ~4 times an hour, so this
+// is generous for a shared IP and still caps a token-stuffing loop.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' }
 });
 
 // Routes
-app.use('/api/auth', authLimiter, require('./routes/auth'));
+app.use('/api/auth', authLimiter, refreshLimiter, require('./routes/auth'));
 app.use('/api/properties', apiLimiter, require('./routes/properties'));
 app.use('/api/templates', apiLimiter, require('./routes/templates'));
 app.use('/api/shift-notes', apiLimiter, require('./routes/shiftNotes'));

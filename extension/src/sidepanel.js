@@ -8,6 +8,8 @@ let API_BASE = (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let authToken = null;
+// Single-use: every refresh returns a replacement that must be written back.
+let refreshToken = null;
 let allTemplates = [];
 let selectedTemplates = [];
 let currentTone = 'professional';
@@ -22,12 +24,77 @@ function getHeaders() {
   };
 }
 
-async function apiRequest(method, path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
+// Session endpoints must never trigger a refresh: a 401 from them is final.
+const SESSION_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
+
+// One refresh at a time. The panel fires several requests on open (templates,
+// shift notes, property detection); if each rotated the refresh token the
+// stragglers would present a superseded one, which the server reads as theft
+// and answers by revoking every session for the user.
+let refreshInFlight = null;
+
+async function persistSession(data) {
+  authToken = data.token;
+  const stored = { token: data.token };
+  if (data.refresh_token) stored.refreshToken = data.refresh_token;
+  await chrome.storage.local.set(stored);
+}
+
+async function clearSession() {
+  authToken = null;
+  refreshToken = null;
+  await chrome.storage.local.remove(['token', 'refreshToken']);
+}
+
+function refreshSession() {
+  if (refreshInFlight) return refreshInFlight;
+  if (!refreshToken) return Promise.resolve(false);
+
+  refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  })
+    .then(async (res) => {
+      if (!res.ok) return false;
+      const data = await res.json();
+      refreshToken = data.refresh_token || refreshToken;
+      await persistSession(data);
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshInFlight = null;
+    });
+
+  return refreshInFlight;
+}
+
+async function send(method, path, body) {
+  return fetch(`${API_BASE}${path}`, {
     method,
     headers: getHeaders(),
     body: body ? JSON.stringify(body) : undefined
   });
+}
+
+async function apiRequest(method, path, body) {
+  let res = await send(method, path, body);
+
+  // Access tokens last 15 minutes, so an expired one is routine during a shift.
+  // Refresh once, replay, and only fall back to the login prompt if that fails.
+  if (res.status === 401 && !SESSION_PATHS.includes(path)) {
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      res = await send(method, path, body);
+    }
+    if (!refreshed || res.status === 401) {
+      await clearSession();
+      showAuthPrompt();
+      throw new Error('Session expired — please sign in again');
+    }
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || 'Request failed');
@@ -50,7 +117,8 @@ async function init() {
   if (typeof loadApiBaseUrl === 'function') {
     API_BASE = (await loadApiBaseUrl()) + '/api';
   }
-  const stored = await chrome.storage.local.get(['token']);
+  const stored = await chrome.storage.local.get(['token', 'refreshToken']);
+  refreshToken = stored.refreshToken || null;
   if (stored.token) {
     authToken = stored.token;
     showMainPanel();
@@ -81,8 +149,8 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   errorEl.classList.add('hidden');
   try {
     const data = await apiRequest('POST', '/auth/login', { email, password });
-    authToken = data.token;
-    await chrome.storage.local.set({ token: data.token });
+    refreshToken = data.refresh_token || null;
+    await persistSession(data);
     showMainPanel();
   } catch (err) {
     errorEl.textContent = err.message || 'Login failed';
@@ -91,9 +159,18 @@ document.getElementById('btn-login').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-logout').addEventListener('click', async () => {
-  authToken = null;
-  await chrome.storage.local.remove(['token']);
-  showAuthPrompt();
+  // Tell the server first so the session is actually revoked, then clear
+  // locally regardless — a failed call must not leave the panel signed in.
+  try {
+    if (refreshToken) {
+      await apiRequest('POST', '/auth/logout', { refresh_token: refreshToken });
+    }
+  } catch (err) {
+    // Nothing useful to show: we are logging out either way.
+  } finally {
+    await clearSession();
+    showAuthPrompt();
+  }
 });
 
 // ─── Property detection ───────────────────────────────────────────────────────
