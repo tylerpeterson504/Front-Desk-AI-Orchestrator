@@ -19,7 +19,9 @@ export const LoginPage = ({ onAuthenticated }) => {
     try {
       const { data } = await authAPI.login(email.trim(), password);
       if (!data?.token) throw new Error('Login response did not include a token');
-      tokenStore.set(data.token);
+      // Stores both the access token and the refresh token that keeps the
+      // session alive once the 15-minute access token expires.
+      tokenStore.setSession(data);
       onAuthenticated(data.user);
     } catch (err) {
       // 401 here means bad credentials; anything else is worth showing verbatim.

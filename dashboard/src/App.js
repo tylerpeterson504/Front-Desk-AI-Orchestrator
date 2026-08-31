@@ -42,10 +42,16 @@ function App() {
     };
   }, []);
 
-  const handleLogout = () => {
-    tokenStore.clear();
-    setUser(null);
-    setPage('templates');
+  // Revoke the session server-side, not just locally: clearing localStorage
+  // used to leave the token valid until it expired.
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+    } finally {
+      tokenStore.clear();
+      setUser(null);
+      setPage('templates');
+    }
   };
 
   if (checking) return <LoadingSpinner />;

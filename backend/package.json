@@ -14,6 +14,7 @@
     "db-setup": "node db/db-setup.js",
     "encrypt-wifi": "node db/encrypt-wifi.js",
     "set-role": "node db/set-role.js",
+    "prune-sessions": "node db/prune-sessions.js",
     "test": "jest --runInBand",
     "test:api": "jest tests/api.test.js",
     "test:security": "jest tests/security.test.js",

@@ -3,7 +3,21 @@ const { httpError } = require('../lib/httpError');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || (!isProduction ? 'dev-secret-change-in-production' : null);
-const TOKEN_TTL = process.env.JWT_TTL || '12h';
+// Access tokens are deliberately short-lived: they are stateless, so the only
+// bound on a stolen or de-privileged token is its expiry. Long-lived sessions
+// live in the refresh_tokens table instead, where they can be revoked.
+const ACCESS_TOKEN_TTL = process.env.JWT_TTL || '15m';
+
+// Seconds, for the `expires_in` a client needs to schedule a refresh. Kept in
+// sync with ACCESS_TOKEN_TTL by parsing it rather than by a second constant.
+function accessTokenTtlSeconds() {
+  const match = /^(\d+)([smhd])?$/.exec(String(ACCESS_TOKEN_TTL).trim());
+  if (!match) return 900;
+  const value = Number(match[1]);
+  const unit = match[2] || 's';
+  const multiplier = { s: 1, m: 60, h: 3600, d: 86400 }[unit];
+  return value * multiplier;
+}
 
 function authenticateToken(req, res, next) {
   if (!JWT_SECRET) {
@@ -46,8 +60,8 @@ function generateToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     JWT_SECRET,
-    { expiresIn: TOKEN_TTL }
+    { expiresIn: ACCESS_TOKEN_TTL }
   );
 }
 
-module.exports = { authenticateToken, requireRole, generateToken };
+module.exports = { authenticateToken, requireRole, generateToken, accessTokenTtlSeconds };

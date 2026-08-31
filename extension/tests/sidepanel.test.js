@@ -91,11 +91,11 @@ describe('init and auth flow', () => {
     expect(called[1].headers.Authorization).toBe('Bearer tok123');
   });
 
-  test('login stores the token and swaps panels', async () => {
+  test('login stores both tokens and swaps panels', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ token: 'jwt-abc' })
+      json: async () => ({ token: 'jwt-abc', refresh_token: 'refresh-abc' })
     });
     loadSidepanel();
     document.getElementById('auth-email').value = 'agent@example.com';
@@ -103,7 +103,10 @@ describe('init and auth flow', () => {
     document.getElementById('btn-login').click();
     await flush();
     await flush();
-    expect(chrome.storage.local.set).toHaveBeenCalledWith({ token: 'jwt-abc' });
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      token: 'jwt-abc',
+      refreshToken: 'refresh-abc'
+    });
     expect(document.getElementById('main-panel').classList.contains('hidden')).toBe(false);
   });
 
@@ -124,15 +127,126 @@ describe('init and auth flow', () => {
     expect(err.textContent).toBe('Invalid credentials');
   });
 
-  test('logout clears the token and returns to the auth prompt', async () => {
-    chrome.storage.local.get.mockResolvedValue({ token: 'tok' });
+  test('logout revokes the session server-side and returns to the auth prompt', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
     global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     loadSidepanel();
     await flush();
     await flush();
     document.getElementById('btn-logout').click();
     await flush();
-    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token']);
+    await flush();
+
+    const logoutCall = global.fetch.mock.calls.find(([url]) => url.endsWith('/auth/logout'));
+    expect(logoutCall).toBeTruthy();
+    expect(JSON.parse(logoutCall[1].body)).toEqual({ refresh_token: 'refresh-1' });
+    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token', 'refreshToken']);
+    expect(document.getElementById('auth-prompt').classList.contains('hidden')).toBe(false);
+  });
+
+  test('logout still clears locally when the revoke call fails', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    global.fetch = jest.fn().mockImplementation((url) => {
+      if (String(url).endsWith('/auth/logout')) return Promise.reject(new Error('offline'));
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    loadSidepanel();
+    await flush();
+    await flush();
+    document.getElementById('btn-logout').click();
+    await flush();
+    await flush();
+
+    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token', 'refreshToken']);
+    expect(document.getElementById('auth-prompt').classList.contains('hidden')).toBe(false);
+  });
+});
+
+describe('access token refresh', () => {
+  // The panel opens with an access token that expired mid-shift. Every API call
+  // 401s once, the panel refreshes silently, and the user sees no interruption.
+  function expiredThenOk({ refreshOk = true } = {}) {
+    const seen = new Set();
+    return jest.fn().mockImplementation((url, options) => {
+      const path = String(url);
+      if (path.endsWith('/auth/refresh')) {
+        return Promise.resolve({
+          ok: refreshOk,
+          status: refreshOk ? 200 : 401,
+          json: async () =>
+            refreshOk
+              ? { token: 'fresh-jwt', refresh_token: 'refresh-2' }
+              : { error: 'Invalid refresh token' }
+        });
+      }
+      // First attempt per path is unauthorized; the replay succeeds.
+      if (!seen.has(path)) {
+        seen.add(path);
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({ error: 'expired' }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [],
+        headers: { get: () => null }
+      });
+    });
+  }
+
+  test('a 401 triggers one refresh and the request is replayed', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'stale', refreshToken: 'refresh-1' });
+    global.fetch = expiredThenOk();
+    loadSidepanel();
+    await flush();
+    await flush();
+    await flush();
+
+    const refreshCalls = global.fetch.mock.calls.filter(([url]) =>
+      String(url).endsWith('/auth/refresh')
+    );
+    // Several requests fire on open; they must share a single refresh, because
+    // refresh tokens are single-use and a superseded one revokes the family.
+    expect(refreshCalls).toHaveLength(1);
+    expect(JSON.parse(refreshCalls[0][1].body)).toEqual({ refresh_token: 'refresh-1' });
+
+    // The rotated pair is persisted for next time.
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      token: 'fresh-jwt',
+      refreshToken: 'refresh-2'
+    });
+
+    // The user stays in the panel, and the replay carried the new token.
+    expect(document.getElementById('main-panel').classList.contains('hidden')).toBe(false);
+    const replay = global.fetch.mock.calls
+      .filter(([url]) => String(url).includes('/templates'))
+      .pop();
+    expect(replay[1].headers.Authorization).toBe('Bearer fresh-jwt');
+  });
+
+  test('a dead refresh token drops back to the login prompt', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'stale', refreshToken: 'revoked' });
+    global.fetch = expiredThenOk({ refreshOk: false });
+    loadSidepanel();
+    await flush();
+    await flush();
+    await flush();
+
+    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token', 'refreshToken']);
+    expect(document.getElementById('auth-prompt').classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('main-panel').classList.contains('hidden')).toBe(true);
+  });
+
+  test('no refresh is attempted when there is no refresh token', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'stale' });
+    global.fetch = expiredThenOk();
+    loadSidepanel();
+    await flush();
+    await flush();
+    await flush();
+
+    expect(
+      global.fetch.mock.calls.filter(([url]) => String(url).endsWith('/auth/refresh'))
+    ).toHaveLength(0);
     expect(document.getElementById('auth-prompt').classList.contains('hidden')).toBe(false);
   });
 });

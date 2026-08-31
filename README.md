@@ -105,8 +105,8 @@ stack and pg code are logged server-side as one JSON line against that same
 ## Testing
 
 ```bash
-cd backend   && npm install && npm test   # 75 tests (routes, auth, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
-cd extension && npm install && npm test   # 44 tests (sidepanel, content scripts, observer debouncing, config override, chip escaping)
+cd backend   && npm install && npm test   # 94 tests (routes, auth, refresh/revocation, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
+cd extension && npm install && npm test   # 48 tests (sidepanel, silent refresh, content scripts, observer debouncing, config override, chip escaping)
 ```
 
 Logging is suppressed under Jest; set `LOG_VERBOSE=1` to see it.
@@ -130,6 +130,47 @@ branch directly.
    (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate:
    it validates any stored token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
+
+### Sessions
+
+Authentication is a short-lived access token plus a revocable refresh token.
+
+| | Access token | Refresh token |
+|---|---|---|
+| Form | JWT, signed with `JWT_SECRET` | opaque random string, 32 bytes |
+| Lifetime | `JWT_TTL`, default **15m** | `REFRESH_TOKEN_TTL_DAYS`, default **30d** |
+| Stored server-side | no | yes — SHA-256 hash only, in `refresh_tokens` |
+| Revocable | not directly | yes, immediately |
+
+The access token stays stateless so no request pays for a database lookup, which
+is why it is short: expiry is the only bound on a stolen or de-privileged one.
+Anything long-lived is the refresh token, whose state lives in Postgres and can
+be revoked.
+
+- `POST /api/auth/login`, `POST /api/auth/register` → `{ token, expires_in, refresh_token, user }`
+- `POST /api/auth/refresh` → new `token` **and** a new `refresh_token`
+- `POST /api/auth/logout` → 204, revokes the session
+- `POST /api/auth/logout-all` → revokes every session for the caller
+
+Refresh tokens are **single-use**. Refreshing revokes the presented token and
+returns a successor in the same family, so a client must store what it gets back.
+Presenting a superseded token means a replay or a stolen copy, so the whole
+family is revoked and that user has to log in again — this is how theft is
+detected, and it is why both clients funnel concurrent 401s through one in-flight
+refresh instead of racing.
+
+Sessions are also revoked when an admin changes a user's role, so the old role
+cannot be refreshed into a fresh access token.
+
+Both clients refresh silently: a 401 on any endpoint triggers one refresh and one
+replay, and only a failed refresh returns the user to the login screen. Expired
+rows can be cleared with `cd backend && npm run prune-sessions`.
+
+What this does not do: an access token already issued stays valid until it
+expires, so revocation takes effect within one access-token lifetime (15 minutes
+by default) rather than instantly. Making it instant means checking a blocklist
+on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
+window if you want it tighter.
 
 Styling is Tailwind, compiled by PostCSS through CRA (`dashboard/tailwind.config.js`,
 `src/index.css`) — there is no CDN script, so `npm run build` is what produces the
