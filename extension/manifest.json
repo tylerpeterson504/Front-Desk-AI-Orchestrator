@@ -10,8 +10,13 @@
   ],
   "host_permissions": [
     "http://localhost:3001/*",
+    "http://127.0.0.1:3001/*",
     "https://app.us1.stayntouch.com/*",
     "https://sys.akia.ai/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -29,13 +34,23 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://app.us1.stayntouch.com/*"],
-      "js": ["src/config.js", "src/content-stayntouch.js"],
+      "matches": [
+        "https://app.us1.stayntouch.com/*"
+      ],
+      "js": [
+        "src/config.js",
+        "src/content-stayntouch.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://sys.akia.ai/*"],
-      "js": ["src/config.js", "src/content-akia.js"],
+      "matches": [
+        "https://sys.akia.ai/*"
+      ],
+      "js": [
+        "src/config.js",
+        "src/content-akia.js"
+      ],
       "run_at": "document_idle"
     }
   ],

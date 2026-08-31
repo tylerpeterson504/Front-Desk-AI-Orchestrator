@@ -6,7 +6,14 @@ global.chrome = {
       set: jest.fn(),
       remove: jest.fn(),
       clear: jest.fn()
+    },
+    onChanged: {
+      addListener: jest.fn()
     }
+  },
+  permissions: {
+    request: jest.fn(),
+    contains: jest.fn()
   },
   runtime: {
     onMessage: {

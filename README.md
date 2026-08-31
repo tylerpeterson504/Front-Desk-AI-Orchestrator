@@ -106,7 +106,7 @@ stack and pg code are logged server-side as one JSON line against that same
 
 ```bash
 cd backend   && npm install && npm test   # 75 tests (routes, auth, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
-cd extension && npm install && npm test   # 38 tests (sidepanel, content scripts, config)
+cd extension && npm install && npm test   # 44 tests (sidepanel, content scripts, config override, chip escaping)
 ```
 
 Logging is suppressed under Jest; set `LOG_VERBOSE=1` to see it.
@@ -127,7 +127,13 @@ branch directly.
    users already exist. Demo login: `demo@example.com` / `password123`.
 3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
-   (:3000, proxies to `REACT_APP_API_URL`).
+   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate:
+   it validates any stored token against `GET /api/auth/me` before rendering, and
+   sends you back to the login form on a 401 from any endpoint.
+
+Styling is Tailwind, compiled by PostCSS through CRA (`dashboard/tailwind.config.js`,
+`src/index.css`) — there is no CDN script, so `npm run build` is what produces the
+stylesheet.
 
 Postgres is only reachable over TLS, so keep `sslmode=require` in the connection
 string.
@@ -136,8 +142,19 @@ string.
 
 1. Open `chrome://extensions/` → Developer mode → **Load unpacked**
 2. Select the `extension/` folder
-3. API base URL is centralized in `extension/src/config.js`
-   (`http://localhost:3001` by default)
+3. The API base URL is centralized in `extension/src/config.js`
+   (`http://localhost:3001` by default). To point an install at a deployed
+   backend, open the extension popup, enter the URL under **Backend URL** and
+   save — no code edit and no repackaging. The value is stored in
+   `chrome.storage.local` as `apiBaseUrl`, validated as an `http(s)` origin, and
+   picked up by the side panel and content scripts (including live changes).
+   Clearing the field restores the default.
+
+Because the target backend origin is unknown at packaging time, the manifest ships
+only localhost/127.0.0.1 in `host_permissions` and declares `http://*/*` +
+`https://*/*` as `optional_host_permissions`. Saving a custom URL triggers a
+runtime permission request for just that origin, so Chrome asks the operator
+instead of the extension holding blanket access.
 
 Content-script host matches (MV3 manifest):
 - `https://app.us1.stayntouch.com/*` — Pipeline A (guest info)

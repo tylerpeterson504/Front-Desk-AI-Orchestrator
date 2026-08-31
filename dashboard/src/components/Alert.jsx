@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X } from './icons';
 
 const STYLES = {
   error: 'bg-red-50 border-red-400 text-red-800',

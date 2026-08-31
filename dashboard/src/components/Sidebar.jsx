@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, FileText, ClipboardList, LogOut, Building2, StickyNote } from 'lucide-react';
+import { FileText, ClipboardList, LogOut, Building2, StickyNote } from './icons';
 
 const NAV_ITEMS = [
   { id: 'templates', label: 'Templates', icon: FileText },
@@ -8,17 +8,18 @@ const NAV_ITEMS = [
   { id: 'audit', label: 'Audit Logs', icon: ClipboardList }
 ];
 
-export const Sidebar = ({ page, onNavigate }) => {
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  };
+// `onLogout` is owned by App so logging out re-renders into the login screen.
+// This used to redirect to /login, a path the app has no route for, which meant
+// logging out landed on the dev server's 404.
+export const Sidebar = ({ page, onNavigate, user, onLogout = () => {} }) => {
 
   return (
     <aside className="w-64 bg-blue-800 text-white flex flex-col h-screen flex-shrink-0">
       <div className="p-6 border-b border-blue-700">
         <h1 className="text-xl font-bold">🏨 Desk AI</h1>
-        <p className="text-blue-300 text-sm mt-1">Front Desk Copilot</p>
+        <p className="text-blue-300 text-sm mt-1 truncate" title={user?.email}>
+          {user?.name || user?.email || 'Front Desk Copilot'}
+        </p>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -43,7 +44,7 @@ export const Sidebar = ({ page, onNavigate }) => {
 
       <div className="p-4 border-t border-blue-700">
         <button
-          onClick={handleLogout}
+          onClick={onLogout}
           className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-blue-200 hover:bg-blue-700 hover:text-white transition-colors"
         >
           <LogOut size={18} />

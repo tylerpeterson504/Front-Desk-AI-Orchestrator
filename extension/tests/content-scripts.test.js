@@ -41,10 +41,53 @@ describe('config.js shared module', () => {
     expect(config.getPropertyConfig()).toBeNull();
   });
 
-  test('getApiBaseUrl is centralized and stable', () => {
+  test('getApiBaseUrl is centralized and defaults to local dev', () => {
     const config = loadConfig('app.us1.stayntouch.com');
     expect(config.getApiBaseUrl()).toBe('http://localhost:3001');
     expect(config.getAllProperties()).toHaveLength(2);
+  });
+
+  test('loadApiBaseUrl applies the chrome.storage.local override', async () => {
+    chrome.storage.local.get.mockResolvedValue({ apiBaseUrl: 'https://api.example.com/' });
+    const config = loadConfig('app.us1.stayntouch.com');
+
+    await expect(config.loadApiBaseUrl()).resolves.toBe('https://api.example.com');
+    // The override has to be visible to the synchronous accessor too, since
+    // content scripts cannot await storage.
+    expect(config.getApiBaseUrl()).toBe('https://api.example.com');
+  });
+
+  test('loadApiBaseUrl falls back to the default when storage is empty', async () => {
+    chrome.storage.local.get.mockResolvedValue({});
+    const config = loadConfig('app.us1.stayntouch.com');
+    await expect(config.loadApiBaseUrl()).resolves.toBe('http://localhost:3001');
+  });
+
+  test('loadApiBaseUrl survives a storage failure', async () => {
+    chrome.storage.local.get.mockRejectedValue(new Error('storage unavailable'));
+    const config = loadConfig('app.us1.stayntouch.com');
+    await expect(config.loadApiBaseUrl()).resolves.toBe('http://localhost:3001');
+  });
+
+  test('rejects overrides that are not http(s) URLs', () => {
+    const config = loadConfig('app.us1.stayntouch.com');
+    for (const bad of ['javascript:alert(1)', 'file:///etc/passwd', 'not a url', '', null]) {
+      expect(config.setApiBaseUrlOverride(bad)).toBe('http://localhost:3001');
+    }
+    expect(config.normalizeApiBaseUrl('https://api.example.com//')).toBe('https://api.example.com');
+  });
+
+  test('a storage change updates the cached override without a reload', () => {
+    const config = loadConfig('app.us1.stayntouch.com');
+    const listener = chrome.storage.onChanged.addListener.mock.calls.at(-1)[0];
+
+    listener({ apiBaseUrl: { newValue: 'https://later.example.com' } }, 'local');
+    expect(config.getApiBaseUrl()).toBe('https://later.example.com');
+
+    // Changes in other areas or to other keys must not touch it.
+    listener({ apiBaseUrl: { newValue: 'https://sync.example.com' } }, 'sync');
+    listener({ token: { newValue: 'x' } }, 'local');
+    expect(config.getApiBaseUrl()).toBe('https://later.example.com');
   });
 });
 

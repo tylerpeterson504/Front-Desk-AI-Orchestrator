@@ -1,8 +1,9 @@
 // Front Desk AI Side Panel Logic
 
-// API base URL comes from the shared extension config (single source of truth).
-// An optional `apiBaseUrl` in chrome.storage.local overrides it per install,
-// so production deployments do not require code edits.
+// API base URL comes from the shared extension config (single source of truth),
+// which owns the chrome.storage.local `apiBaseUrl` override. init() awaits
+// loadApiBaseUrl() before the first request, so this initial value only matters
+// if something calls out before then.
 let API_BASE = (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -46,10 +47,10 @@ function setDot(id, active) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
-  const stored = await chrome.storage.local.get(['token', 'apiBaseUrl']);
-  if (stored.apiBaseUrl) {
-    API_BASE = String(stored.apiBaseUrl).replace(/\/+$/, '') + '/api';
+  if (typeof loadApiBaseUrl === 'function') {
+    API_BASE = (await loadApiBaseUrl()) + '/api';
   }
+  const stored = await chrome.storage.local.get(['token']);
   if (stored.token) {
     authToken = stored.token;
     showMainPanel();
@@ -224,8 +225,18 @@ function renderSelected() {
   selectedTemplates.forEach((t) => {
     const el = document.createElement('div');
     el.className = 'selected-item';
-    el.innerHTML = `<span>${t.name}</span><button class="remove-btn" data-id="${t.id}">✕</button>`;
-    el.querySelector('.remove-btn').addEventListener('click', () => {
+    // Template names are user-supplied and arrive from the API, so they are set
+    // as text rather than interpolated into markup.
+    const label = document.createElement('span');
+    label.textContent = t.name;
+
+    const removeButton = document.createElement('button');
+    removeButton.className = 'remove-btn';
+    removeButton.dataset.id = t.id;
+    removeButton.textContent = '✕';
+
+    el.append(label, removeButton);
+    removeButton.addEventListener('click', () => {
       selectedTemplates = selectedTemplates.filter((s) => s.id !== t.id);
       renderTemplates(allTemplates);
       renderSelected();
