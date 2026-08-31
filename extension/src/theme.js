@@ -30,7 +30,7 @@
   }
 
   function markSwatchActive(name) {
-    const bar = document.getElementById('theme-bar');
+    const bar = document.getElementById('theme-row');
     if (!bar) return;
     bar.querySelectorAll('.swatch').forEach((sw) => {
       sw.classList.toggle('active', sw.dataset.theme === name);
@@ -83,14 +83,36 @@
   }
 
   function wire() {
-    const bar = document.getElementById('theme-bar');
+    const bar = document.getElementById('theme-row');
     if (!bar) return;
+
+    const toggle = document.getElementById('theme-toggle');
+    function setRowOpen(open) {
+      bar.classList.toggle('open', open);
+      if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    if (toggle) {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setRowOpen(!bar.classList.contains('open'));
+      });
+    }
+    // Close the row when clicking anywhere outside it (and outside the toggle).
+    document.addEventListener('click', (e) => {
+      if (!bar.classList.contains('open')) return;
+      if (bar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
+      setRowOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && bar.classList.contains('open')) setRowOpen(false);
+    });
 
     bar.querySelectorAll('.swatch').forEach((sw) => {
       sw.addEventListener('click', () => {
         applyTheme(sw.dataset.theme);
         markSwatchActive(sw.dataset.theme);
         persistTheme(sw.dataset.theme);
+        setRowOpen(false);
       });
     });
 

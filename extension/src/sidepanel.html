@@ -41,16 +41,6 @@
     <!-- French Quarter header -->
     <div class="header">
       <div class="lamp" aria-hidden="true"></div>
-      <div class="theme-bar" id="theme-bar">
-        <button class="swatch active" data-theme="frenchQuarter" title="French Quarter" style="background:linear-gradient(135deg,#234346,#e8b75e 90%)"></button>
-        <button class="swatch" data-theme="mardiGras" title="Mardi Gras" style="background:linear-gradient(135deg,#7b2e9e,#0f8e3d 50%,#e8b75e)"></button>
-        <button class="swatch" data-theme="gardenDistrict" title="Garden District" style="background:linear-gradient(135deg,#3f7d4e,#c98a1b)"></button>
-        <button class="swatch" data-theme="midnightBourbon" title="Midnight Bourbon" style="background:linear-gradient(135deg,#1a1620,#d4a84b)"></button>
-        <button class="swatch" data-theme="cafeDuMonde" title="Café du Monde" style="background:linear-gradient(135deg,#3b2a1a,#e8b75e)"></button>
-        <button class="swatch" data-theme="bourbonStreet" title="Bourbon Street" style="background:linear-gradient(135deg,#7b1e1e,#e8b75e)"></button>
-        <label class="theme-custom" title="Custom color"><input type="color" id="custom-color" value="#c1440e"></label>
-      </div>
-
       <div class="header-inner">
         <div class="header-row">
           <div class="brand">
@@ -68,10 +58,24 @@
             <span><span class="brand-name">Desk AI</span><br><span class="brand-sub">French Quarter</span></span>
           </div>
           <div class="header-actions">
+            <button id="theme-toggle" class="icon-btn" title="Themes" aria-label="Choose theme" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
+            </button>
             <button id="btn-logout" class="icon-btn" title="Sign out" aria-label="Sign out">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
             </button>
           </div>
+        </div>
+
+        <div class="theme-row" id="theme-row">
+          <span class="theme-label">Theme</span>
+          <button class="swatch active" data-theme="frenchQuarter" title="French Quarter" style="background:linear-gradient(135deg,#234346,#e8b75e 90%)"></button>
+          <button class="swatch" data-theme="mardiGras" title="Mardi Gras" style="background:linear-gradient(135deg,#7b2e9e,#0f8e3d 50%,#e8b75e)"></button>
+          <button class="swatch" data-theme="gardenDistrict" title="Garden District" style="background:linear-gradient(135deg,#3f7d4e,#c98a1b)"></button>
+          <button class="swatch" data-theme="midnightBourbon" title="Midnight Bourbon" style="background:linear-gradient(135deg,#1a1620,#d4a84b)"></button>
+          <button class="swatch" data-theme="cafeDuMonde" title="Café du Monde" style="background:linear-gradient(135deg,#3b2a1a,#e8b75e)"></button>
+          <button class="swatch" data-theme="bourbonStreet" title="Bourbon Street" style="background:linear-gradient(135deg,#7b1e1e,#e8b75e)"></button>
+          <label class="theme-custom" title="Custom color"><input type="color" id="custom-color" value="#c1440e"></label>
         </div>
 
         <div class="status-bar">
