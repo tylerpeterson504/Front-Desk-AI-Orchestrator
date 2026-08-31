@@ -4,13 +4,36 @@ require('dotenv').config();
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env.local') });
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const logger = require('./lib/logger');
+const { requestId, notFound, errorHandler } = require('./middleware/errorHandler');
+const { getMode } = require('./config/registration');
 
 const app = express();
 
 app.disable('x-powered-by');
+app.use(helmet());
+app.use(requestId);
+
+// CORS: an unset CORS_ORIGIN used to mean "reflect any origin". In production
+// that is now a hard failure instead of a silent open door.
+const corsOrigins = String(process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (!corsOrigins.length) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CORS_ORIGIN must list the allowed browser origins in production');
+  }
+  logger.warn('CORS_ORIGIN is not set; allowing localhost origins for development only');
+}
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()) : true
+  origin: corsOrigins.length
+    ? corsOrigins
+    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]
 }));
 app.use(express.json({ limit: '256kb' }));
 
@@ -45,11 +68,18 @@ app.use('/api/github', apiLimiter, require('./routes/github'));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+app.use(notFound);
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 3001;
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
+    logger.info('backend started', {
+      port: PORT,
+      env: process.env.NODE_ENV || 'development',
+      registration_mode: getMode()
+    });
   });
 }
 

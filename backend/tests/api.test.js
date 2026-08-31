@@ -57,7 +57,7 @@ describe('auth routes', () => {
       db.one.mockResolvedValueOnce({ id: 1, email: 'a@b.c', name: 'A', role: 'agent', created_at: 'now' });
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: 'a@b.c', password: 'pw12345', name: 'A' });
+        .send({ email: 'a@b.c', password: 'correct-horse-battery', name: 'A' });
       expect(res.status).toBe(201);
       expect(res.body.token).toBeTruthy();
       expect(res.body.user.email).toBe('a@b.c');
@@ -74,7 +74,7 @@ describe('auth routes', () => {
       db.one.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }));
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: 'dup@b.c', password: 'pw', name: 'D' });
+        .send({ email: 'dup@b.c', password: 'correct-horse-battery', name: 'D' });
       expect(res.status).toBe(409);
       expect(res.body.error).toBe('Email already in use');
     });

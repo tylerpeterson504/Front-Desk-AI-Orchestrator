@@ -53,13 +53,63 @@ so dev/test still work without a key.
   only ever sees staff-approved text owned by the authenticated user.
 - Properties and templates are scoped to the JWT-authenticated caller
   (`user_id`), with 403 on foreign resources.
+- `guest_info` and `chat_context` arrive from third-party pages and are treated
+  as untrusted: unknown keys dropped, values length-capped, control characters
+  stripped, then wrapped in explicit data fences that the model is instructed
+  never to read as instructions.
+
+## Accounts and roles
+
+`role` is never accepted from a registration request — every new account is
+created as `agent`. Promotion happens two ways:
+
+- `PATCH /api/auth/users/:id/role` — requires an authenticated `admin`
+- `npm run set-role -- someone@example.com admin` — server-side bootstrap for
+  the first admin
+
+Registration itself is gated by `REGISTRATION_MODE`:
+
+| Mode     | Behaviour                                                        |
+|----------|------------------------------------------------------------------|
+| `invite` | Requires `X-Registration-Token` matching `REGISTRATION_INVITE_TOKEN` |
+| `open`   | Anyone may register. Refused when `NODE_ENV=production`           |
+| `closed` | Registration disabled entirely                                    |
+
+Unset defaults to `invite` in production and `open` elsewhere, so local dev and
+CI keep working while a deployed instance is closed by default.
+
+## Secrets at rest
+
+`properties.wifi_password` is encrypted with AES-256-GCM before insert
+(`backend/src/lib/secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
+decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route.
+
+Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production,
+warned about in dev. To rewrite rows written before this change:
+
+```bash
+cd backend && npm run encrypt-wifi
+```
+
+Reads pass legacy plaintext through unchanged, so the backfill is optional and
+idempotent.
+
+## Error responses
+
+Routes never return `error.message` from the database driver. 4xx responses
+carry an actionable validation message; 5xx responses collapse to
+`{ "error": "Internal server error", "request_id": "<uuid>" }`. The full error,
+stack and pg code are logged server-side as one JSON line against that same
+`request_id` (also returned as the `X-Request-Id` header).
 
 ## Testing
 
 ```bash
-cd backend   && npm install && npm test   # 40 tests (routes, auth, copilot, prompt hygiene)
+cd backend   && npm install && npm test   # 75 tests (routes, auth, roles, registration gating, input validation, crypto, error hygiene, prompt fencing)
 cd extension && npm install && npm test   # 38 tests (sidepanel, content scripts, config)
 ```
+
+Logging is suppressed under Jest; set `LOG_VERBOSE=1` to see it.
 
 ## Local development
 
@@ -139,7 +189,11 @@ Create a least-privilege token with only the repository permissions your deploym
 ## Deployment
 
 - Backend: any Node host (Freebuff managed hosting configured: install
-  `npm install`, start `npm run start` on port 3001). Requires `DATABASE_URL` / DB env vars, `JWT_SECRET`, and at least one AI key:
-  `PERPLEXITY_API_KEY` or `GOOGLE_API_KEY` in the production environment.
+  `npm install`, start `npm run start` on port 3001). Production requires
+  `DATABASE_URL` / DB env vars, `JWT_SECRET`, `CORS_ORIGIN`,
+  `WIFI_ENCRYPTION_KEY`, a registration policy
+  (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and at least one AI key:
+  `PERPLEXITY_API_KEY` or `GOOGLE_API_KEY`. The server refuses to boot without
+  `CORS_ORIGIN` in production rather than reflecting every origin.
 - Dashboard: static React build (CRA `npm run build`).
 - Extension: load unpacked from `extension/` (no build step).
