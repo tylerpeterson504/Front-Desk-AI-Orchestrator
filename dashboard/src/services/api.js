@@ -91,6 +91,8 @@ async function send(method, path, body) {
 async function request(method, path, body) {
   let res = await send(method, path, body);
 
+  // A 401 on a short-lived access token is the expected steady state, not an
+  // error: try one silent refresh and replay the request before giving up.
   if (res.status === 401 && !SESSION_PATHS.has(path)) {
     const refreshed = await refreshSession();
     if (refreshed) {
