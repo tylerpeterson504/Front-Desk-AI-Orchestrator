@@ -133,23 +133,23 @@ export const authAPI = {
 
 export const templatesAPI = {
   getAll: async () => ({ data: await api.getTemplates() }),
-  create: (payload) => api.createTemplate(payload),
-  update: (id, payload) => api.updateTemplate(id, payload),
-  delete: (id) => api.deleteTemplate(id)
+  create: async (payload) => ({ data: await api.createTemplate(payload) }),
+  update: async (id, payload) => ({ data: await api.updateTemplate(id, payload) }),
+  delete: async (id) => ({ data: await api.deleteTemplate(id) })
 };
 
 export const propertiesAPI = {
   getAll: async () => ({ data: await api.getProperties() }),
   getWifi: async (id) => ({ data: await request(`/properties/${id}/wifi`) }),
-  create: (payload) => api.createProperty(payload),
-  update: (id, payload) => api.updateProperty(id, payload),
-  delete: (id) => api.deleteProperty(id)
+  create: async (payload) => ({ data: await api.createProperty(payload) }),
+  update: async (id, payload) => ({ data: await api.updateProperty(id, payload) }),
+  delete: async (id) => ({ data: await api.deleteProperty(id) })
 };
 
 export const shiftNotesAPI = {
   getToday: async () => ({ data: await api.getShiftNotes() }),
-  create: (payload) => api.createShiftNote(payload),
-  delete: (id) => request(`/shift-notes/${id}`, { method: 'DELETE' })
+  create: async (payload) => ({ data: await api.createShiftNote(payload) }),
+  delete: async (id) => ({ data: await request(`/shift-notes/${id}`, { method: 'DELETE' }) })
 };
 
 export const auditAPI = {
