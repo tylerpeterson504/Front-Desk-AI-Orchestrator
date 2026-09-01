@@ -43,7 +43,7 @@ jobs:
           # Collapse multiple consecutive hyphens
           SAFE_BRANCH=$(echo "$SAFE_BRANCH" | sed 's/-\+/-/g')
           
-          # Limit to 40 chars to fit within Neon's 63-char limit for "preview/pr-{PR}-{BRANCH}"
+          # Limit to 40 chars to fit within Neon's 63-char limit for "preview-pr-{PR}-{BRANCH}"
           SAFE_BRANCH=$(echo "$SAFE_BRANCH" | cut -c 1-40)
           
           echo "branch=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
@@ -68,7 +68,7 @@ jobs:
 
       - name: Debug - Show branch details
         run: |
-          echo "Branch name to create: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}"
+          echo "Branch name to create: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}"
           echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
           echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
 
@@ -77,7 +77,7 @@ jobs:
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
@@ -117,5 +117,5 @@ jobs:
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
           api_key: ${{ secrets.NEON_API_KEY }}
