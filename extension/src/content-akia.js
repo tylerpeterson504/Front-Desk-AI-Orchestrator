@@ -25,8 +25,26 @@
 
   const MUTATION_DEBOUNCE_MS = 300;
 
+  function readStorageLocal(keys, callback) {
+    let settled = false;
+    function finish(result) {
+      if (settled) return;
+      settled = true;
+      callback(result || {});
+    }
+
+    try {
+      const maybePromise = chrome.storage.local.get(keys, finish);
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise.then(finish).catch(function () { finish({}); });
+      }
+    } catch (_) {
+      finish({});
+    }
+  }
+
   function initDebugMode() {
-    chrome.storage.local.get(['fdao-debug'], function(result) {
+    readStorageLocal(['fdao-debug'], function(result) {
       DEBUG = result['fdao-debug'] === true;
       if (DEBUG) console.log('[FDAO/akia] Debug mode enabled');
     });

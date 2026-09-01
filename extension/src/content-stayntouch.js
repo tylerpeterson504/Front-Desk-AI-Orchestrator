@@ -19,8 +19,26 @@
 
   const MUTATION_DEBOUNCE_MS = 300;
 
+  function readStorageLocal(keys, callback) {
+    let settled = false;
+    function finish(result) {
+      if (settled) return;
+      settled = true;
+      callback(result || {});
+    }
+
+    try {
+      const maybePromise = chrome.storage.local.get(keys, finish);
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        maybePromise.then(finish).catch(function () { finish({}); });
+      }
+    } catch (_) {
+      finish({});
+    }
+  }
+
   function initDebugMode() {
-    chrome.storage.local.get(['fdao-debug'], function(result) {
+    readStorageLocal(['fdao-debug'], function(result) {
       DEBUG = result['fdao-debug'] === true;
       if (DEBUG) console.log('[FDAO/stayntouch] Debug mode enabled');
     });
@@ -129,7 +147,7 @@
   function hasGuestContext(ctx) { return Object.values(ctx).some(function(v) { return !!v; }); }
 
   function sendGuestContext() {
-    try { const ctx = extractGuestContext(); validateGuestContext(ctx); if (hasGuestContext(ctx)) safeSend({ type: 'GUEST_CONTEXT_UPDATED', data: ctx }); }
+    try { const ctx = extractGuestContext(); validateGuestContext(ctx); if (hasGuestContext(ctx)) safeSend({ type: 'GUEST_INFO_UPDATED', data: ctx }); }
     catch (e) { warn('sendGuestContext failed:', e && e.message); }
   }
 
