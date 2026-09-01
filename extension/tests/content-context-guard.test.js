@@ -4,40 +4,29 @@
  */
 
 describe('Content Script Context Guard', function() {
+  function sanitizeText(t) {
+    if (!t || typeof t !== 'string') return t;
+    let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   describe('sanitizeText', function() {
     it('should return null/undefined as-is', function() {
-      const contentScript = {
-        sanitizeText: function(t) {
-          if (!t || typeof t !== 'string') return t;
-          let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-          return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
-      };
-      expect(contentScript.sanitizeText(null)).toBeNull();
-      expect(contentScript.sanitizeText(undefined)).toBeUndefined();
+      expect(sanitizeText(null)).toBeNull();
+      expect(sanitizeText(undefined)).toBeUndefined();
     });
 
     it('should return non-string values as-is', function() {
-      const contentScript = {
-        sanitizeText: function(t) {
-          if (!t || typeof t !== 'string') return t;
-          return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        }
-      };
-      expect(contentScript.sanitizeText(123)).toBe(123);
-      expect(contentScript.sanitizeText(true)).toBe(true);
+      expect(sanitizeText(123)).toBe(123);
+      expect(sanitizeText(true)).toBe(true);
     });
 
     it('should escape HTML entities', function() {
-      const contentScript = {
-        sanitizeText: function(t) {
-          if (!t || typeof t !== 'string') return t;
-          let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-          s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-          return s;
-        }
-      };
-      expect(contentScript.sanitizeText('<script>alert("xss")</script>')).toBe('');
+      expect(sanitizeText('<b>"test" & \'hello\'</b>')).toBe('&lt;b&gt;&quot;test&quot; &amp; &#39;hello&#39;&lt;/b&gt;');
+    });
+
+    it('should remove script elements', function() {
+      expect(sanitizeText('<script>alert("xss")</script>')).toBe('');
     });
   });
 
