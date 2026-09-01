@@ -20,8 +20,7 @@ jobs:
   setup:
     name: Setup
     outputs:
-      branch: ${{ steps.branch_name.outputs.current_branch }}
-      branch_safe: ${{ steps.sanitize_branch.outputs.branch_safe }}
+      branch: ${{ steps.sanitize_branch.outputs.branch }}
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
@@ -31,16 +30,24 @@ jobs:
       - name: Sanitize branch name for Neon
         id: sanitize_branch
         run: |
-          # Remove invalid characters and replace slashes with hyphens
-          SAFE_BRANCH=$(echo "${{ steps.branch_name.outputs.current_branch }}" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/^-*//g' | sed 's/-*$//g')
+          # Get the current branch and replace invalid characters
+          BRANCH_NAME="${{ steps.branch_name.outputs.current_branch }}"
           
-          # Neon has a 63-character limit for branch names
-          # Format: preview-pr-{PR_NUMBER}-{BRANCH_NAME}
-          # Reserve ~20 chars for "preview-pr-" prefix and PR number
-          # Truncate branch name to ensure total stays under 63 chars
+          # Replace slashes and other invalid characters with hyphens
+          SAFE_BRANCH="${BRANCH_NAME//\//-}"
+          SAFE_BRANCH="${SAFE_BRANCH//[^a-zA-Z0-9._-]/-}"
+          
+          # Remove leading/trailing hyphens
+          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | sed 's/^-*//g' | sed 's/-*$//g')
+          
+          # Collapse multiple consecutive hyphens
+          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | sed 's/-\+/-/g')
+          
+          # Limit to 40 chars to fit within Neon's 63-char limit for "preview/pr-{PR}-{BRANCH}"
           SAFE_BRANCH=$(echo "$SAFE_BRANCH" | cut -c 1-40)
           
-          echo "branch_safe=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "branch=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Sanitized branch: $SAFE_BRANCH"
 
   create_neon_branch:
     name: Create Neon Branch
@@ -59,12 +66,18 @@ jobs:
         id: get_expiration_date
         run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
 
+      - name: Debug - Show branch details
+        run: |
+          echo "Branch name to create: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}"
+          echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
+          echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
+
       - name: Create Neon Branch
         id: create_neon_branch
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
@@ -104,5 +117,5 @@ jobs:
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
           api_key: ${{ secrets.NEON_API_KEY }}
