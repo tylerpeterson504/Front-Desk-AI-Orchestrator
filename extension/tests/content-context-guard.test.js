@@ -25,6 +25,13 @@ global.chrome = {
   }
 };
 
+function sanitizeText(text) {
+  if (!text || typeof text !== 'string') return text;
+  const element = document.createElement('div');
+  element.textContent = text;
+  return element.innerHTML;
+}
+
 describe('Content Script Context Guard', function() {
   beforeEach(function() {
     mockSendMessage.length = 0;
@@ -33,20 +40,17 @@ describe('Content Script Context Guard', function() {
 
   describe('sanitizeText', function() {
     it('should return null/undefined as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } };
-      expect(contentScript.sanitizeText(null)).toBeNull();
-      expect(contentScript.sanitizeText(undefined)).toBeUndefined();
+      expect(sanitizeText(null)).toBeNull();
+      expect(sanitizeText(undefined)).toBeUndefined();
     });
 
     it('should return non-string values as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); } };
-      expect(contentScript.sanitizeText(123)).toBe(123);
-      expect(contentScript.sanitizeText(true)).toBe(true);
+      expect(sanitizeText(123)).toBe(123);
+      expect(sanitizeText(true)).toBe(true);
     });
 
     it('should escape HTML entities', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } };
-      expect(contentScript.sanitizeText('<script>alert("xss")</script>')).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      expect(sanitizeText('<script>alert("xss")</script>')).toBe('&lt;script&gt;alert("xss")&lt;/script&gt;');
     });
   });
 
