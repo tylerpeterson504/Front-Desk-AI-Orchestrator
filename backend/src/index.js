@@ -4,6 +4,7 @@ require('dotenv').config();
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env.local') });
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const logger = require('./lib/logger');
@@ -13,6 +14,10 @@ const { getMode } = require('./config/registration');
 const app = express();
 
 app.disable('x-powered-by');
+// The app runs behind a reverse proxy (preview/deploy) that sets X-Forwarded-For.
+// Without this, express-rate-limit raises ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and
+// rate-limit keys resolve to the proxy instead of the client.
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(requestId);
 
@@ -82,6 +87,19 @@ app.use('/api/github', apiLimiter, require('./routes/github'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Serve dashboard static files in production.
+// The SPA catch-all is registered BEFORE the notFound middleware so unknown
+// browser routes serve the app shell, while unknown /api routes keep their
+// JSON 404 (with request id) from the notFound middleware.
+const dashboardBuild = path.join(__dirname, '../../dashboard/build');
+app.use(express.static(dashboardBuild));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(dashboardBuild, 'index.html'), (err) => {
+    if (err) next();
+  });
+});
 
 app.use(notFound);
 app.use(errorHandler);

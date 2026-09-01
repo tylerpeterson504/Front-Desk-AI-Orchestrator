@@ -26,10 +26,15 @@
   const MUTATION_DEBOUNCE_MS = 300;
 
   function initDebugMode() {
-    chrome.storage.local.get(['fdao-debug'], function(result) {
+    function applyResult(result) {
       DEBUG = result['fdao-debug'] === true;
       if (DEBUG) console.log('[FDAO/akia] Debug mode enabled');
-    });
+    }
+
+    try {
+      const result = chrome.storage.local.get(['fdao-debug'], applyResult);
+      if (result && typeof result.then === 'function') result.then(applyResult).catch(function () {});
+    } catch (_) {}
   }
 
   function log(message, data) {
@@ -48,19 +53,22 @@
 
   function sanitizeText(text) {
     if (!text || typeof text !== 'string') return text;
-    let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    sanitized = sanitized
+    return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-    return sanitized;
   }
 
   function safeSend(payload) {
     try {
-      chrome.runtime.sendMessage(payload);
+      const result = chrome.runtime.sendMessage(payload);
+      if (result && typeof result.catch === 'function') {
+        result.catch(function (e) {
+          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message);
+        });
+      }
     } catch (e) {
       warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message);
     }
