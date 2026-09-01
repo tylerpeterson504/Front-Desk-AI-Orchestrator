@@ -20,12 +20,18 @@ jobs:
   setup:
     name: Setup
     outputs:
-      branch: ${{ steps.branch_name.outputs.current_branch }}
+      branch: ${{ steps.sanitize_branch.outputs.branch }}
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
         id: branch_name
         uses: tj-actions/branch-names@v8
+
+      - name: Sanitize branch name
+        id: sanitize_branch
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.current_branch }}
+        run: echo "branch=${BRANCH_NAME//\//-}" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
     name: Create Neon Branch
