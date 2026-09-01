@@ -60,7 +60,23 @@
 
   function sanitizeText(text) {
     if (!text || typeof text !== 'string') return text;
-    return text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim();
+    let result = text;
+    let start = result.toLowerCase().indexOf('<script');
+    while (start !== -1) {
+      const endTagStart = result.toLowerCase().indexOf('</script', start + 7);
+      if (endTagStart === -1) {
+        result = result.slice(0, start);
+        break;
+      }
+      const endTagClose = result.indexOf('>', endTagStart);
+      if (endTagClose === -1) {
+        result = result.slice(0, start);
+        break;
+      }
+      result = result.slice(0, start) + result.slice(endTagClose + 1);
+      start = result.toLowerCase().indexOf('<script');
+    }
+    return result.trim();
   }
 
   function safeSend(payload) {

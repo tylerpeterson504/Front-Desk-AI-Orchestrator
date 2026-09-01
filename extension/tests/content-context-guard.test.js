@@ -33,19 +33,19 @@ describe('Content Script Context Guard', function() {
 
   describe('sanitizeText', function() {
     it('should return null/undefined as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim(); } };
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let result = t; let start = result.toLowerCase().indexOf('<script'); while (start !== -1) { const endTagStart = result.toLowerCase().indexOf('</script', start + 7); if (endTagStart === -1) { result = result.slice(0, start); break; } const endTagClose = result.indexOf('>', endTagStart); if (endTagClose === -1) { result = result.slice(0, start); break; } result = result.slice(0, start) + result.slice(endTagClose + 1); start = result.toLowerCase().indexOf('<script'); } return result.trim(); } };
       expect(contentScript.sanitizeText(null)).toBeNull();
       expect(contentScript.sanitizeText(undefined)).toBeUndefined();
     });
 
     it('should return non-string values as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim(); } };
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let result = t; let start = result.toLowerCase().indexOf('<script'); while (start !== -1) { const endTagStart = result.toLowerCase().indexOf('</script', start + 7); if (endTagStart === -1) { result = result.slice(0, start); break; } const endTagClose = result.indexOf('>', endTagStart); if (endTagClose === -1) { result = result.slice(0, start); break; } result = result.slice(0, start) + result.slice(endTagClose + 1); start = result.toLowerCase().indexOf('<script'); } return result.trim(); } };
       expect(contentScript.sanitizeText(123)).toBe(123);
       expect(contentScript.sanitizeText(true)).toBe(true);
     });
 
     it('should strip script tags and trim text', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim(); } };
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let result = t; let start = result.toLowerCase().indexOf('<script'); while (start !== -1) { const endTagStart = result.toLowerCase().indexOf('</script', start + 7); if (endTagStart === -1) { result = result.slice(0, start); break; } const endTagClose = result.indexOf('>', endTagStart); if (endTagClose === -1) { result = result.slice(0, start); break; } result = result.slice(0, start) + result.slice(endTagClose + 1); start = result.toLowerCase().indexOf('<script'); } return result.trim(); } };
       expect(contentScript.sanitizeText('  hello <script>alert("xss")</script>  ')).toBe('hello');
     });
   });
