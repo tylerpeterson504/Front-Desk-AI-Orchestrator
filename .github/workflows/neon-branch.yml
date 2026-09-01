@@ -33,6 +33,13 @@ jobs:
         run: |
           # Remove invalid characters and replace slashes with hyphens
           SAFE_BRANCH=$(echo "${{ steps.branch_name.outputs.current_branch }}" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/^-*//g' | sed 's/-*$//g')
+          
+          # Neon has a 63-character limit for branch names
+          # Format: preview-pr-{PR_NUMBER}-{BRANCH_NAME}
+          # Reserve ~20 chars for "preview-pr-" prefix and PR number
+          # Truncate branch name to ensure total stays under 63 chars
+          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | cut -c 1-40)
+          
           echo "branch_safe=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
