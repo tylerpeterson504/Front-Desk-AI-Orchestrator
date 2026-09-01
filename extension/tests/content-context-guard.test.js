@@ -27,6 +27,7 @@ describe('Content Script Context Guard', function() {
 
     it('should remove script elements', function() {
       expect(sanitizeText('<script>alert("xss")</script>')).toBe('');
+      expect(sanitizeText('hello<script>alert("xss")</script>world')).toBe('helloworld');
     });
   });
 
@@ -72,6 +73,10 @@ describe('Content Script Context Guard', function() {
 
     it('should reject empty string', function() {
       expect(injectMessage('')).toBe(false);
+    });
+
+    it('should accept a valid message', function() {
+      expect(injectMessage('Hello')).toBe(true);
     });
   });
 });
