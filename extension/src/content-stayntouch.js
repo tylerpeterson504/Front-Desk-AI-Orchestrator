@@ -60,14 +60,7 @@
 
   function sanitizeText(text) {
     if (!text || typeof text !== 'string') return text;
-    let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    sanitized = sanitized
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    return sanitized;
+    return text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim();
   }
 
   function safeSend(payload) {
@@ -92,10 +85,10 @@
   const GUEST_SELECTORS = {
     guestName: ['[data-test="guest-name"]', '.guest-name', '.guest-name-value', '#guest-name', '[data-testid*="guest-name" i]', '[data-testid*="name" i]'],
     roomNumber: ['[data-test="room-number"]', '.room-number', '.room-num', '#room-number', '[data-testid*="room" i]'],
-    arrivalDate: ['[data-test="arrival-date"]', '.arrival-date', '.check-in-date', '#arrival-date', '[data-testid*="arrival" i]', '[data-testid*="check-in" i]', '[data-testid*="checkin" i]'],
-    departureDate: ['[data-test="departure-date"]', '.departure-date', '.check-out-date', '#departure-date', '[data-testid*="departure" i]', '[data-testid*="check-out" i]', '[data-testid*="checkout" i]'],
+    checkIn: ['[data-test="check-in"]', '.check-in-date', '.arrival-date', '#check-in', '#arrival-date', '[data-testid*="check-in" i]', '[data-testid*="arrival" i]', '[data-testid*="checkin" i]'],
+    checkOut: ['[data-test="check-out"]', '.check-out-date', '.departure-date', '#check-out', '#departure-date', '[data-testid*="departure" i]', '[data-testid*="check-out" i]', '[data-testid*="checkout" i]'],
     confirmationNumber: ['[data-test="confirmation-number"]', '.confirmation-number', '.confirmation', '#confirmation', '#confirmation-number', '[data-testid*="confirmation" i]', '[data-testid*="conf" i]'],
-    status: ['[data-test="status"]', '.status', '.reservation-status', '#status', '[data-testid*="status" i]']
+    reservationStatus: ['[data-test="reservation-status"]', '.reservation-status', '.status', '#reservation-status', '#status', '[data-testid*="status" i]']
   };
 
   function findByLabel(root, patterns) {
@@ -128,10 +121,10 @@
     for (const [field, selectors] of Object.entries(GUEST_SELECTORS)) context[field] = firstText(root, selectors);
     if (!context.guestName) context.guestName = findByLabel(root, ['name', 'guest name', 'guest']);
     if (!context.roomNumber) context.roomNumber = findByLabel(root, ['room', 'room number', 'room #']);
-    if (!context.arrivalDate) context.arrivalDate = findByLabel(root, ['arrival', 'check in', 'check-in', 'arrive']);
-    if (!context.departureDate) context.departureDate = findByLabel(root, ['departure', 'check out', 'check-out', 'depart']);
+    if (!context.checkIn) context.checkIn = findByLabel(root, ['arrival', 'check in', 'check-in', 'checkin', 'arrive']);
+    if (!context.checkOut) context.checkOut = findByLabel(root, ['departure', 'check out', 'check-out', 'checkout', 'depart']);
     if (!context.confirmationNumber) context.confirmationNumber = findByLabel(root, ['confirmation', 'conf', 'confirmation #', 'reservation #']);
-    if (!context.status) context.status = findByLabel(root, ['status', 'reservation status']);
+    if (!context.reservationStatus) context.reservationStatus = findByLabel(root, ['status', 'reservation status']);
     for (const [field] of Object.entries(GUEST_SELECTORS)) if (context[field] === null || context[field] === undefined) context[field] = '';
     if (DEBUG) { log('extracted context:', context); logDiscovery(root); }
     return context;
@@ -139,7 +132,7 @@
 
   function validateGuestContext(ctx) {
     if (!ctx || typeof ctx !== 'object') throw new Error('Guest context must be an object');
-    const requiredFields = ['guestName', 'roomNumber', 'arrivalDate', 'departureDate', 'confirmationNumber', 'status'];
+    const requiredFields = ['guestName', 'roomNumber', 'checkIn', 'checkOut', 'confirmationNumber', 'reservationStatus'];
     for (const field of requiredFields) if (typeof ctx[field] !== 'string') throw new Error(field + ' must be a string');
     return ctx;
   }
@@ -184,9 +177,9 @@
   }
 
   chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
-    if (message.type === 'GET_GUEST_CONTEXT') {
+    if (message.type === 'GET_GUEST_INFO') {
       try { const ctx = extractGuestContext(); validateGuestContext(ctx); sendResponse({ data: ctx }); }
-      catch (e) { warn('GET_GUEST_CONTEXT failed:', e && e.message); sendResponse({ data: { guestName: '', roomNumber: '', arrivalDate: '', departureDate: '', confirmationNumber: '', status: '' } }); }
+      catch (e) { warn('GET_GUEST_INFO failed:', e && e.message); sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', confirmationNumber: '', reservationStatus: '' } }); }
       return false;
     }
   });

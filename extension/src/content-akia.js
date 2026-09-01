@@ -66,14 +66,7 @@
 
   function sanitizeText(text) {
     if (!text || typeof text !== 'string') return text;
-    let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    sanitized = sanitized
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    return sanitized;
+    return text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').trim();
   }
 
   function safeSend(payload) {
@@ -222,7 +215,6 @@
   function injectMessage(text) {
     if (!text || typeof text !== 'string') { warn('inject: invalid text input, must be a non-empty string'); return false; }
     if (text.length > 10000) { warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
-    text = sanitizeText(text);
     const el = findComposer();
     if (!el) { warn('inject: composer not found'); return false; }
     try {

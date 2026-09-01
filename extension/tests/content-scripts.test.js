@@ -1,42 +1,62 @@
 /**
- * Tests for content scripts (akia and stayntouch).
- * Tests DOM extraction, injection, and edge cases.
+ * Smoke tests for the content scripts.
+ * Verifies they load cleanly and do not broadcast on an empty DOM.
  */
 
-describe('Content Scripts Edge Cases', function() {
-  let originalBody;
+describe('Content scripts smoke tests', function() {
+  const originalMutationObserver = window.MutationObserver;
 
   beforeEach(function() {
-    originalBody = document.body.innerHTML;
     document.body.innerHTML = '';
+    chrome.runtime.sendMessage.mockClear();
+    chrome.runtime.onMessage.addListener.mockClear();
+    const MockMutationObserver = class {
+      observe() {}
+      disconnect() {}
+    };
+    window.MutationObserver = MockMutationObserver;
+    global.MutationObserver = MockMutationObserver;
   });
 
   afterEach(function() {
-    document.body.innerHTML = originalBody;
+    window.MutationObserver = originalMutationObserver;
+    global.MutationObserver = originalMutationObserver;
+    jest.resetModules();
   });
 
-  describe('Empty DOM', function() {
-    it('should handle empty DOM without errors', function() {
-      document.body.innerHTML = '';
-      // Test that extraction functions don't crash
+  function loadScript(path) {
+    jest.isolateModules(function() {
+      require(path);
     });
+  }
+
+  it('loads the Akia script without broadcasting on an empty DOM', function() {
+    loadScript('../src/content-akia.js');
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
 
-  describe('Malformed HTML', function() {
-    it('should handle unclosed tags', function() {
-      document.body.innerHTML = '<div><p>Unclosed tag';
-      // Test that extraction doesn't crash
+  it('loads the Stayntouch script and serves the guest-info contract on an empty DOM', function() {
+    let listener = null;
+    chrome.runtime.onMessage.addListener.mockImplementation(function(fn) {
+      listener = fn;
     });
-  });
 
-  describe('Rapid DOM Mutations', function() {
-    it('should handle rapid DOM mutations with debouncing', function(done) {
-      document.body.innerHTML = '<div id="container"></div>';
-      const container = document.getElementById('container');
-      for (let i = 0; i < 50; i++) {
-        setTimeout(() => { container.innerHTML += '<div class="message">Message ' + i + '</div>'; }, i * 10);
+    loadScript('../src/content-stayntouch.js');
+
+    expect(typeof listener).toBe('function');
+    const sendResponse = jest.fn();
+    listener({ type: 'GET_GUEST_INFO' }, null, sendResponse);
+
+    expect(sendResponse).toHaveBeenCalledWith({
+      data: {
+        guestName: '',
+        roomNumber: '',
+        checkIn: '',
+        checkOut: '',
+        confirmationNumber: '',
+        reservationStatus: ''
       }
-      setTimeout(done, 1000);
     });
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
 });
