@@ -19,16 +19,29 @@
 
   const MUTATION_DEBOUNCE_MS = 300;
 
+  function getLocalStorageValue(keys, callback) {
+    try {
+      if (chrome.storage.local.get.length > 1) {
+        chrome.storage.local.get(keys, callback);
+        return;
+      }
+
+      const result = chrome.storage.local.get(keys);
+      if (result && typeof result.then === 'function') {
+        result.then(callback).catch(function () {});
+        return;
+      }
+      if (result && typeof result === 'object') callback(result);
+    } catch (_) {}
+  }
+
   function initDebugMode() {
     function applyResult(result) {
       DEBUG = result['fdao-debug'] === true;
       if (DEBUG) console.log('[FDAO/stayntouch] Debug mode enabled');
     }
 
-    try {
-      const result = chrome.storage.local.get(['fdao-debug'], applyResult);
-      if (result && typeof result.then === 'function') result.then(applyResult).catch(function () {});
-    } catch (_) {}
+    getLocalStorageValue(['fdao-debug'], applyResult);
   }
 
   function log(message, data) {
