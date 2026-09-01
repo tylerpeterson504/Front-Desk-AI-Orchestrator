@@ -75,6 +75,17 @@ const refreshLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' }
 });
 
+// The dashboard shell is a single static file read from disk. Give it a high
+// ceiling so normal browser refreshes are unaffected while still putting a
+// bound on repeated filesystem hits from one client.
+const appShellLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' }
+});
+
 // Routes
 app.use('/api/auth', authLimiter, refreshLimiter, require('./routes/auth'));
 app.use('/api/properties', apiLimiter, require('./routes/properties'));
@@ -94,7 +105,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 // JSON 404 (with request id) from the notFound middleware.
 const dashboardBuild = path.join(__dirname, '../../dashboard/build');
 app.use(express.static(dashboardBuild));
-app.get('*', (req, res, next) => {
+app.get('*', appShellLimiter, (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
   res.sendFile(path.join(dashboardBuild, 'index.html'), (err) => {
     if (err) next();
