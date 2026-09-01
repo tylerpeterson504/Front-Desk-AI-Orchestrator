@@ -5,8 +5,8 @@ INSERT INTO users (email, password, name, role) VALUES
 
 -- Your properties
 INSERT INTO properties (user_id, name, url_pattern, wifi_ssid, wifi_password, checkout_time, tone_guidelines) VALUES
-(1, 'St.Pierre Hotel', 'stpierre', 'StPierre-Guest', 'guest123', '11:00:00', 'Professional, formal, courteous'),
-(1, 'Andrew Jackson Hotel', 'andrewjackson', 'AndrewJackson-Guest', 'guest456', '11:00:00', 'Friendly, welcoming, professional');
+(1, 'St.Pierre Hotel', 'stpierre', 'StPierre-Guest', 'DEMO-NOT-A-REAL-PASSWORD', '11:00:00', 'Professional, formal, courteous'),
+(1, 'Andrew Jackson Hotel', 'andrewjackson', 'AndrewJackson-Guest', 'DEMO-NOT-A-REAL-PASSWORD', '11:00:00', 'Friendly, welcoming, professional');
 
 -- Demo templates
 INSERT INTO templates (user_id, name, category, content, tags) VALUES

@@ -38,6 +38,42 @@
     .btn:hover {
       background: #1e3a8a;
     }
+    .settings {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      text-align: left;
+    }
+    .settings label {
+      display: block;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .settings input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .settings .btn {
+      width: 100%;
+    }
+    .status {
+      font-size: 11px;
+      margin: 8px 0 0 0;
+      min-height: 14px;
+    }
+    .status.error {
+      color: #b91c1c;
+    }
+    .status.ok {
+      color: #15803d;
+    }
   </style>
 </head>
 <body>
@@ -45,7 +81,15 @@
     <h2>🏨 Desk AI</h2>
     <p>Open the sidepanel to access the Front Desk AI Copilot</p>
     <button class="btn" id="open-sidepanel">Open Sidepanel</button>
+
+    <div class="settings">
+      <label for="api-base-url">Backend URL</label>
+      <input id="api-base-url" type="url" placeholder="http://localhost:3001" spellcheck="false" />
+      <button class="btn" id="save-api-base-url">Save</button>
+      <p class="status" id="settings-status"></p>
+    </div>
   </div>
+  <script src="config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

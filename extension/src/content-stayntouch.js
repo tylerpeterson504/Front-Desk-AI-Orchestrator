@@ -30,9 +30,20 @@
   // Send on page load
   sendGuestInfo();
 
+  const MUTATION_DEBOUNCE_MS = 300;
+
   // Re-send when the DOM changes (SPA navigation)
+  // Debounced: one extraction per burst of DOM changes. These hosts are SPAs that mutate the DOM
+  // constantly, and the undebounced version re-extracted and messaged the
+  // background worker on every single mutation.
+  let pending = null;
   const observer = new MutationObserver(() => {
-    if (typeof document !== 'undefined' && document.body) sendGuestInfo();
+    if (typeof document === 'undefined' || !document.body) return;
+    if (pending) clearTimeout(pending);
+    pending = setTimeout(() => {
+      pending = null;
+      sendGuestInfo();
+    }, MUTATION_DEBOUNCE_MS);
   });
   if (typeof document !== 'undefined' && document.body) observer.observe(document.body, { childList: true, subtree: true });
 

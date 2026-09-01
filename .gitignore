@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
+# Root-level lockfile only; sub-project lockfiles (backend/, dashboard/, extension/) are committed for CI.
+/package-lock.json
 
 # Environment variables
 .env
