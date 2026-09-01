@@ -294,3 +294,83 @@ describe('background.js relay', () => {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
 });
+
+describe('exception-safe broadcast path (safeSend)', () => {
+  // When the service worker reloads, chrome.runtime.sendMessage throws
+  // synchronously ("Extension context invalidated") and the MutationObserver
+  // callback would die mid-broadcast. The scripts must swallow it and keep the
+  // observer alive so a later mutation still gets a chance to broadcast.
+  const CASES = [
+    { path: '../src/content-stayntouch.js', fixture: '<div class="guest-name">Jane</div>', type: 'GUEST_INFO_UPDATED' },
+    { path: '../src/content-akia.js', fixture: '<div class="message-item"><span class="message-text">hi</span></div>', type: 'CHAT_CONTEXT_UPDATED' }
+  ];
+
+  for (const { path: scriptPath, fixture, type } of CASES) {
+    describe(scriptPath, () => {
+      beforeEach(() => {
+        jest.resetModules();
+        jest.clearAllMocks();
+        // Restore the promise-returning sendMessage that other tests replace.
+        chrome.runtime.sendMessage.mockReset();
+        chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
+      });
+
+      function loadScript() {
+        jest.isolateModules(() => {
+          require(scriptPath);
+        });
+      }
+
+      test('a synchronous throw from sendMessage does not kill the observer', async () => {
+        document.body.innerHTML = fixture;
+        let calls = 0;
+        chrome.runtime.sendMessage.mockImplementation(() => {
+          calls += 1;
+          throw new Error('Extension context invalidated.');
+        });
+
+        loadScript(); // load-time broadcast throws internally — swallowed
+        expect(calls).toBe(1);
+
+        // The observer must still be alive: a later DOM mutation triggers another
+        // (also swallowed) broadcast attempt instead of dying silently. Counts are
+        // relative to the pre-mutation baseline because observers attached by
+        // earlier tests in this file stay bound to the shared jsdom document and
+        // also fire on this mutation (exact-count debouncing is covered in
+        // content-observer-debounce.test.js, which loads each script exactly once).
+        const callsBeforeMutation = calls;
+        document.body.appendChild(document.createElement('div'));
+        await Promise.resolve(); // jsdom delivers MutationRecords on a microtask
+        await new Promise((r) => setTimeout(r, 350)); // debounce window (300ms)
+        expect(calls).toBeGreaterThan(callsBeforeMutation);
+      });
+
+      test('a rejected sendMessage promise does not surface an unhandled rejection', async () => {
+        document.body.innerHTML = fixture;
+        const rejections = [];
+        process.on('unhandledRejection', (err) => rejections.push(err));
+        chrome.runtime.sendMessage.mockImplementation(() => Promise.reject(new Error('no receiver')));
+
+        try {
+          loadScript();
+          document.body.appendChild(document.createElement('div'));
+          await Promise.resolve();
+          await new Promise((r) => setTimeout(r, 350));
+          await new Promise((r) => setTimeout(r, 10)); // let any unhandled rejection fire
+          expect(rejections).toHaveLength(0);
+        } finally {
+          process.off('unhandledRejection', (err) => rejections.push(err));
+        }
+      });
+
+      test(`successful broadcasts still carry ${type}`, () => {
+        document.body.innerHTML = fixture;
+        const sent = [];
+        chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+        loadScript();
+        expect(sent).toHaveLength(1);
+        expect(sent[0].type).toBe(type);
+      });
+    });
+  }
+});

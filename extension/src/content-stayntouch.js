@@ -19,11 +19,24 @@
     return el ? el.textContent.trim() : null;
   }
 
+  // Exception-safe broadcast: sendMessage throws synchronously when the
+  // extension context is invalidated (service worker reload) and returns a
+  // promise that can reject when no receiver exists. Either failure must not
+  // propagate into the MutationObserver callback.
+  function safeSend(message) {
+    try {
+      const result = chrome.runtime.sendMessage(message);
+      if (result && typeof result.catch === "function") result.catch(() => {});
+    } catch {
+      // Extension context invalidated — drop this broadcast.
+    }
+  }
+
   function sendGuestInfo() {
     const info = extractGuestInfo();
     const hasData = Object.values(info).some(Boolean);
     if (hasData) {
-      chrome.runtime.sendMessage({ type: 'GUEST_INFO_UPDATED', data: info });
+      safeSend({ type: 'GUEST_INFO_UPDATED', data: info });
     }
   }
 
