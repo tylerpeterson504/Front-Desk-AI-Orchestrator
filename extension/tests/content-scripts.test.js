@@ -60,3 +60,46 @@ describe('Content scripts smoke tests', function() {
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
 });
+
+describe('Content scripts debouncing', function() {
+  beforeEach(function() {
+    document.body.innerHTML = '';
+    chrome.runtime.sendMessage.mockClear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(function() {
+    jest.useRealTimers();
+    jest.resetModules();
+  });
+
+  function loadScript(path) {
+    jest.isolateModules(function() {
+      require(path);
+    });
+  }
+
+  it('coalesces Stayntouch mutations into a single broadcast', async function() {
+    const sent = [];
+    chrome.runtime.sendMessage.mockImplementation(function(payload) {
+      sent.push(payload);
+    });
+
+    document.body.innerHTML = '<div class="guest-name">First</div>';
+    loadScript('../src/config.js');
+    loadScript('../src/content-stayntouch.js');
+
+    expect(sent).toHaveLength(1);
+
+    for (let i = 0; i < 10; i += 1) {
+      document.body.appendChild(document.createElement('div'));
+    }
+
+    await Promise.resolve();
+    expect(sent).toHaveLength(1);
+
+    jest.advanceTimersByTime(300);
+    expect(sent).toHaveLength(2);
+    expect(sent[1].type).toBe('GUEST_INFO_UPDATED');
+  });
+});
