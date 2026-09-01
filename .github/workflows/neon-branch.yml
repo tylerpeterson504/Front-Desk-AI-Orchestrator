@@ -20,12 +20,20 @@ jobs:
   setup:
     name: Setup
     outputs:
-      branch: ${{ steps.branch_name.outputs.current_branch }}
+      branch: ${{ steps.normalize_branch_name.outputs.current_branch }}
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
         id: branch_name
         uses: tj-actions/branch-names@v8
+
+      - name: Normalize branch name
+        id: normalize_branch_name
+        env:
+          BRANCH_NAME: ${{ steps.branch_name.outputs.current_branch }}
+        run: |
+          branch_name="${BRANCH_NAME//[^A-Za-z0-9_-]/-}"
+          echo "current_branch=${branch_name:0:40}" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
     name: Create Neon Branch
