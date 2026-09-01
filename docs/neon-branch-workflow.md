@@ -18,8 +18,7 @@ Set `NEON_PROJECT_ID` under Settings → Secrets and variables → Actions →
 ## What the workflow does
 
 1. On PR opened/reopened/synchronize: creates a Neon branch
-   `preview/pr-<number>-<branch>` that expires in 14 days. The branch suffix
-   is normalized to safe characters and limited to 40 characters.
+   `preview-pr-<number>` that expires in 14 days.
 2. Runs `npm ci && npm run migrate` in `backend/` against the **unpooled**
    branch connection string (migrations must not use PgBouncer transaction
    pooling).
