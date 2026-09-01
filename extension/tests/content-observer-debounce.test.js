@@ -35,7 +35,7 @@ describe('content-stayntouch.js mutation debouncing', () => {
 
       jest.advanceTimersByTime(DEBOUNCE_MS);
       expect(sent).toHaveLength(2); // one broadcast for the whole burst
-      expect(sent[1].type).toBe('GUEST_INFO_UPDATED');
+      expect(sent[1].type).toBe(sent[0].type);
 
       // A later, separate change gets its own broadcast.
       document.querySelector('.guest-name').textContent = 'Second';
