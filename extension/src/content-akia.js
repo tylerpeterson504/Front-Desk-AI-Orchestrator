@@ -48,8 +48,7 @@
 
   function sanitizeText(text) {
     if (!text || typeof text !== 'string') return text;
-    let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    sanitized = sanitized
+    const sanitized = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
