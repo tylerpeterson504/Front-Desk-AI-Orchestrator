@@ -1,0 +1,16 @@
+{
+  "name": "front-desk-ai-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Front-Desk AI Orchestrator: backend API + CRA dashboard + Chrome extension",
+  "scripts": {
+    "start": "npm run start --prefix dashboard",
+    "build": "npm run build --prefix dashboard",
+    "test": "npm test --prefix backend && npm test --prefix extension"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1"
+  }
+}

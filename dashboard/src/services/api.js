@@ -1,4 +1,7 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+// Same-origin by default: the backend serves this dashboard in production.
+// Override with REACT_APP_API_URL for development against a local backend
+// (e.g. REACT_APP_API_URL=http://localhost:3001/api).
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 const TOKEN_KEY = 'token';
 const REFRESH_KEY = 'refresh_token';
 
@@ -117,7 +120,6 @@ export const authAPI = {
   login: (email, password) => request('POST', '/auth/login', { email, password }),
   register: (email, password, name) => request('POST', '/auth/register', { email, password, name }),
   me: () => request('GET', '/auth/me'),
-
   // Revokes the session server-side, then clears local state either way: a
   // failed network call must not leave the user apparently logged in.
   logout: async () => {
@@ -130,7 +132,6 @@ export const authAPI = {
       tokenStore.clear();
     }
   },
-
   logoutEverywhere: () => request('POST', '/auth/logout-all')
 };
 
@@ -140,7 +141,6 @@ export const propertiesAPI = {
   create: (data) => request('POST', '/properties', data),
   update: (id, data) => request('PUT', `/properties/${id}`, data),
   delete: (id) => request('DELETE', `/properties/${id}`),
-  // Audit-logged on the server; only call this on an explicit user action.
   getWifi: (id) => request('GET', `/properties/${id}/wifi`)
 };
 
@@ -163,6 +163,5 @@ export const shiftNotesAPI = {
 };
 
 export const auditAPI = {
-  getLogs: (limit = 100, offset = 0) =>
-    request('GET', `/audit-logs?limit=${limit}&offset=${offset}`)
+  getLogs: (limit = 100, offset = 0) => request('GET', `/audit-logs?limit=${limit}&offset=${offset}`)
 };

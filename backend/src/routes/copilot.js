@@ -3,11 +3,11 @@ const router = express.Router();
 const db = require('../config/database').db;
 const { authenticateToken } = require('../config/auth');
 const { httpError, asyncHandler } = require('../lib/httpError');
-const { draftGuestReply, MODEL_NAME } = require('../services/llm');
+const { draftGuestReply } = require('../services/llm');
 
 // POST /api/copilot/draft
 // Body: { property_id?, tone?, template_ids?: number[], guest_info?: {...}, chat_context?: {...} }
-// Returns: { draft, meta: { model, template_count, property, tone } }
+// Returns: { draft, meta: { provider, template_count, property, tone } }
 //
 // `guest_info` and `chat_context` are page-collected and therefore UNTRUSTED —
 // a guest can type anything into a chat. They are whitelisted and length-capped
@@ -108,14 +108,15 @@ router.post('/draft', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   let draft;
+  let provider;
   try {
-    draft = await draftGuestReply({
+    ({ text: draft, provider } = await draftGuestReply({
       property,
       guestInfo,
       chatContext,
       templates,
       tone: toneSafe
-    });
+    }));
   } catch (error) {
     if (error.code === 'LLM_NOT_CONFIGURED') {
       throw httpError(503, 'AI drafting not configured on the server');
@@ -126,7 +127,7 @@ router.post('/draft', authenticateToken, asyncHandler(async (req, res) => {
   res.json({
     draft,
     meta: {
-      model: MODEL_NAME,
+      provider,
       template_count: templates.length,
       property: property ? { id: property.id, name: property.name } : null,
       tone: toneSafe

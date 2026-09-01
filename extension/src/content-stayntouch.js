@@ -80,7 +80,14 @@
   }
 
   function safeSend(payload) {
-    try { chrome.runtime.sendMessage(payload); }
+    try {
+      const result = chrome.runtime.sendMessage(payload);
+      if (result && typeof result.catch === 'function') {
+        result.catch(function (e) {
+          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message);
+        });
+      }
+    }
     catch (e) { warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message); }
   }
 

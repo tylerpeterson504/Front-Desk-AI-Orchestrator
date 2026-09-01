@@ -33,6 +33,17 @@ const SESSION_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 // and answers by revoking every session for the user.
 let refreshInFlight = null;
 
+// Safe storage read: a rejected chrome.storage read (context invalidated,
+// storage quota error) must never kill the init path — resolve to {} instead.
+async function safeStorageGet(keys) {
+  try {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return {};
+    return (await chrome.storage.local.get(keys)) || {};
+  } catch {
+    return {};
+  }
+}
+
 async function persistSession(data) {
   authToken = data.token;
   const stored = { token: data.token };
@@ -117,7 +128,7 @@ async function init() {
   if (typeof loadApiBaseUrl === 'function') {
     API_BASE = (await loadApiBaseUrl()) + '/api';
   }
-  const stored = await chrome.storage.local.get(['token', 'refreshToken']);
+  const stored = await safeStorageGet(['token', 'refreshToken']);
   refreshToken = stored.refreshToken || null;
   if (stored.token) {
     authToken = stored.token;

@@ -2,6 +2,8 @@
 //
 // All pg-promise access is mocked so the suites exercise routing, auth
 // enforcement, input validation, and user-scoping without a live database.
+const fs = require('fs');
+const path = require('path');
 const request = require('supertest');
 
 jest.mock('../src/config/database', () => {
@@ -385,7 +387,7 @@ describe('copilot route', () => {
   it('drafts with server-resolved templates and returns meta', async () => {
     db.oneOrNone.mockResolvedValueOnce({ id: 1, name: 'P1', checkout_time: '11:00:00', tone_guidelines: 'Pro', wifi_ssid: 'Guest' });
     db.any.mockResolvedValueOnce([{ id: 5, name: 'Checkout', category: 'checkout', content: 'Checkout at 11.' }]);
-    draftGuestReply.mockResolvedValueOnce('Dear guest, checkout is at 11.');
+    draftGuestReply.mockResolvedValueOnce({ text: 'Dear guest, checkout is at 11.', provider: 'test' });
 
     const res = await request(app)
       .post('/api/copilot/draft')
@@ -400,7 +402,7 @@ describe('copilot route', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.draft).toContain('checkout');
-    expect(res.body.meta.model).toBe('test-model');
+    expect(res.body.meta.provider).toBe('test');
     expect(res.body.meta.template_count).toBe(1);
     expect(res.body.meta.tone).toBe('friendly');
 
@@ -477,5 +479,35 @@ describe('health', () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+  });
+});
+
+describe('routing fallbacks', () => {
+  it('returns a JSON 404 for unknown /api routes (never the SPA shell)', async () => {
+    const res = await request(app).get('/api/does-not-exist');
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/json');
+    expect(res.body.error).toBe('Not found');
+    expect(res.headers['x-request-id']).toBeTruthy();
+  });
+
+  it('returns a JSON 404 for unknown /api subpaths with trailing segments', async () => {
+    const res = await request(app).get('/api/copilot/unknown-subroute');
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/json');
+  });
+
+  it('serves the SPA shell for non-API routes when the dashboard build exists', async () => {
+    const buildIndex = path.join(__dirname, '../../dashboard/build/index.html');
+    if (!fs.existsSync(buildIndex)) {
+      // No dashboard build present (e.g. CI without a dashboard build step):
+      // the catch-all then falls through to notFound, which is still correct.
+      const res = await request(app).get('/some-spa-route');
+      expect([200, 404]).toContain(res.status);
+      return;
+    }
+    const res = await request(app).get('/some-spa-route');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
   });
 });

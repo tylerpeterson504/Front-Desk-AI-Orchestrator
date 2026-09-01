@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+# Root-level lockfile only; sub-project lockfiles (backend/, dashboard/, extension/) are committed for CI.
+/package-lock.json
 
 # Environment variables
 .env

@@ -21,11 +21,19 @@ jobs:
     name: Setup
     outputs:
       branch: ${{ steps.branch_name.outputs.current_branch }}
+      branch_safe: ${{ steps.sanitize_branch.outputs.branch_safe }}
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
         id: branch_name
         uses: tj-actions/branch-names@v8
+
+      - name: Sanitize branch name for Neon
+        id: sanitize_branch
+        run: |
+          # Remove invalid characters and replace slashes with hyphens
+          SAFE_BRANCH=$(echo "${{ steps.branch_name.outputs.current_branch }}" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/^-*//g' | sed 's/-*$//g')
+          echo "branch_safe=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
     name: Create Neon Branch
@@ -49,7 +57,7 @@ jobs:
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
@@ -89,5 +97,5 @@ jobs:
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
           api_key: ${{ secrets.NEON_API_KEY }}
