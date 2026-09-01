@@ -29,4 +29,3 @@
   });
   console.log('\nProbe complete.');
 })();
-runStayntouchSelectorProbe();
