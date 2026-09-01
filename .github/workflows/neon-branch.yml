@@ -20,20 +20,22 @@ jobs:
   setup:
     name: Setup
     outputs:
-      branch: ${{ steps.normalize_branch_name.outputs.current_branch }}
+      branch: ${{ steps.branch_name.outputs.current_branch }}
+      branch_safe: ${{ steps.sanitize_branch.outputs.branch_safe }}
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
         id: branch_name
         uses: tj-actions/branch-names@v8
 
-      - name: Normalize branch name
-        id: normalize_branch_name
+      - name: Sanitize branch name for Neon
+        id: sanitize_branch
+        shell: bash
         env:
           BRANCH_NAME: ${{ steps.branch_name.outputs.current_branch }}
         run: |
-          branch_name="${BRANCH_NAME//[^A-Za-z0-9_-]/-}"
-          echo "current_branch=${branch_name:0:40}" >> "$GITHUB_OUTPUT"
+          branch_name="${BRANCH_NAME//[!A-Za-z0-9_-]/-}"
+          echo "branch_safe=${branch_name:0:40}" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
     name: Create Neon Branch
@@ -57,7 +59,7 @@ jobs:
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
@@ -97,5 +99,5 @@ jobs:
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch_safe }}
           api_key: ${{ secrets.NEON_API_KEY }}
