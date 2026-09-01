@@ -128,7 +128,7 @@ export const api = {
 export const authAPI = {
   login: async (email, password) => ({ data: await api.login(email, password) }),
   me: async () => ({ data: await api.me() }),
-  logout: () => api.logout()
+  logout: async () => ({ data: await api.logout() })
 };
 
 export const templatesAPI = {
