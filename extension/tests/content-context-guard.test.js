@@ -34,19 +34,19 @@ describe('Content Script Context Guard', function() {
   describe('sanitizeText', function() {
     it('should return null/undefined as-is', function() {
       const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); return s; } };
-      expect(contentScript.sanitizeText(null)).to.be.null;
-      expect(contentScript.sanitizeText(undefined)).to.be.undefined;
+      expect(contentScript.sanitizeText(null)).toBeNull();
+      expect(contentScript.sanitizeText(undefined)).toBeUndefined();
     });
 
     it('should return non-string values as-is', function() {
       const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); } };
-      expect(contentScript.sanitizeText(123)).to.equal(123);
-      expect(contentScript.sanitizeText(true)).to.be.true;
+      expect(contentScript.sanitizeText(123)).toBe(123);
+      expect(contentScript.sanitizeText(true)).toBe(true);
     });
 
     it('should escape HTML entities', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); return s; } };
-      expect(contentScript.sanitizeText('<script>alert("xss")</script>')).to.equal('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } };
+      expect(contentScript.sanitizeText('<script>alert("xss")</script>')).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
     });
   });
 
@@ -66,30 +66,30 @@ describe('Content Script Context Guard', function() {
         return ctx;
       };
       const validContext = { messages: [{ sender: 'hotel', text: 'Hello', time: '10:00' }], activeGuest: 'John Doe', conversationId: '12345' };
-      expect(() => validateContext(validContext)).not.to.throw();
+      expect(() => validateContext(validContext)).not.toThrow();
     });
 
     it('should throw if context is not an object', function() {
       const validateContext = function(ctx) { if (!ctx || typeof ctx !== 'object') throw new Error('Context must be an object'); };
-      expect(() => validateContext(null)).to.throw('Context must be an object');
+      expect(() => validateContext(null)).toThrow('Context must be an object');
     });
 
     it('should throw if messages is not an array', function() {
       const validateContext = function(ctx) { if (!Array.isArray(ctx.messages)) throw new Error('messages must be an array'); };
-      expect(() => validateContext({ messages: 'not an array', activeGuest: 'John', conversationId: '123' })).to.throw('messages must be an array');
+      expect(() => validateContext({ messages: 'not an array', activeGuest: 'John', conversationId: '123' })).toThrow('messages must be an array');
     });
   });
 
   describe('injectMessage validation', function() {
     it('should reject non-string input', function() {
       const injectMessage = function(text) { if (!text || typeof text !== 'string') return false; return true; };
-      expect(injectMessage(null)).to.be.false;
-      expect(injectMessage(123)).to.be.false;
+      expect(injectMessage(null)).toBe(false);
+      expect(injectMessage(123)).toBe(false);
     });
 
     it('should reject empty string', function() {
       const injectMessage = function(text) { if (!text || typeof text !== 'string') return false; return true; };
-      expect(injectMessage('')).to.be.false;
+      expect(injectMessage('')).toBe(false);
     });
   });
 });

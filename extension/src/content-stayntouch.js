@@ -87,7 +87,7 @@
   function firstText(root, selectors) {
     for (let i = 0; i < selectors.length; i++) {
       let el = null; try { el = root.querySelector(selectors[i]); } catch (_) {}
-      if (el) { const t = sanitizeText(el.innerText || el.textContent || ''); if (t) return t; }
+      if (el) { const t = (el.innerText || el.textContent || '').trim(); if (t) return t; }
     }
     return null;
   }
@@ -123,7 +123,7 @@
           }
         }
       }
-      if (valueEl && valueEl !== node) { const v = sanitizeText(valueEl.innerText || valueEl.textContent || ''); if (v && normalize(v) !== own) return v; }
+      if (valueEl && valueEl !== node) { const v = (valueEl.innerText || valueEl.textContent || '').trim(); if (v && normalize(v) !== own) return v; }
     }
     return null;
   }

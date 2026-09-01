@@ -98,7 +98,7 @@
       let el = null;
       try { el = root.querySelector(selectors[i]); } catch (_) {}
       if (el) {
-        const t = sanitizeText(el.innerText || el.textContent || '');
+        const t = (el.innerText || el.textContent || '').trim();
         if (t) return t;
       }
     }
@@ -161,7 +161,7 @@
         const siblingRows = nodes.filter(function (n) { return n.parentElement === el.parentElement; });
         if (siblingRows.length <= 1) sender = firstText(el.parentElement, SENDER_SELECTORS);
       }
-      const text = firstText(el, TEXT_SELECTORS) || sanitizeText(el.innerText || el.textContent || '').trim();
+      const text = firstText(el, TEXT_SELECTORS) || (el.innerText || el.textContent || '').trim();
       const time = firstText(el, TIME_SELECTORS);
       return { sender: sender || null, text: text, time: time || null };
     }).filter(function (m) { return !!m.text; });
@@ -225,7 +225,6 @@
   function injectMessage(text) {
     if (!text || typeof text !== 'string') { warn('inject: invalid text input, must be a non-empty string'); return false; }
     if (text.length > 10000) { warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
-    text = sanitizeText(text);
     const el = findComposer();
     if (!el) { warn('inject: composer not found'); return false; }
     try {
