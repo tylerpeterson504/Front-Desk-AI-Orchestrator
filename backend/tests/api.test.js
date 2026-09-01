@@ -2,6 +2,8 @@
 //
 // All pg-promise access is mocked so the suites exercise routing, auth
 // enforcement, input validation, and user-scoping without a live database.
+const fs = require('fs');
+const path = require('path');
 const request = require('supertest');
 
 jest.mock('../src/config/database', () => {
@@ -477,5 +479,35 @@ describe('health', () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+  });
+});
+
+describe('routing fallbacks', () => {
+  it('returns a JSON 404 for unknown /api routes (never the SPA shell)', async () => {
+    const res = await request(app).get('/api/does-not-exist');
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/json');
+    expect(res.body.error).toBe('Not found');
+    expect(res.headers['x-request-id']).toBeTruthy();
+  });
+
+  it('returns a JSON 404 for unknown /api subpaths with trailing segments', async () => {
+    const res = await request(app).get('/api/copilot/unknown-subroute');
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toContain('application/json');
+  });
+
+  it('serves the SPA shell for non-API routes when the dashboard build exists', async () => {
+    const buildIndex = path.join(__dirname, '../../dashboard/build/index.html');
+    if (!fs.existsSync(buildIndex)) {
+      // No dashboard build present (e.g. CI without a dashboard build step):
+      // the catch-all then falls through to notFound, which is still correct.
+      const res = await request(app).get('/some-spa-route');
+      expect([200, 404]).toContain(res.status);
+      return;
+    }
+    const res = await request(app).get('/some-spa-route');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
   });
 });
