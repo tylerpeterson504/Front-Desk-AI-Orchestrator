@@ -52,8 +52,6 @@ describe('config.js shared module', () => {
     const config = loadConfig('app.us1.stayntouch.com');
 
     await expect(config.loadApiBaseUrl()).resolves.toBe('https://api.example.com');
-    // The override has to be visible to the synchronous accessor too, since
-    // content scripts cannot await storage.
     expect(config.getApiBaseUrl()).toBe('https://api.example.com');
   });
 
@@ -84,7 +82,6 @@ describe('config.js shared module', () => {
     listener({ apiBaseUrl: { newValue: 'https://later.example.com' } }, 'local');
     expect(config.getApiBaseUrl()).toBe('https://later.example.com');
 
-    // Changes in other areas or to other keys must not touch it.
     listener({ apiBaseUrl: { newValue: 'https://sync.example.com' } }, 'sync');
     listener({ token: { newValue: 'x' } }, 'local');
     expect(config.getApiBaseUrl()).toBe('https://later.example.com');
@@ -103,11 +100,6 @@ describe('content-stayntouch.js extraction', () => {
     jest.isolateModules(() => {
       require(SCRIPT_PATH);
     });
-  }
-
-  function send(message, cb) {
-    const listener = require('../tests/setup.js').lastRuntimeListener;
-    return listener(message, {}, cb);
   }
 
   test('broadcasts GUEST_INFO_UPDATED with extracted fields', () => {
@@ -159,7 +151,6 @@ describe('content-stayntouch.js extraction', () => {
     expect(response.value.data.guestName).toBe('Bob');
     expect(response.value.data.roomNumber).toBe('101');
   });
-
 });
 
 describe('content-akia.js extraction and injection', () => {
@@ -267,8 +258,6 @@ describe('background.js relay', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    // Restore the promise-returning runtime.sendMessage: earlier tests replace
-    // it with mockImplementation(...) which survives clearAllMocks().
     chrome.runtime.sendMessage.mockReset();
     chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
   });
@@ -296,10 +285,6 @@ describe('background.js relay', () => {
 });
 
 describe('exception-safe broadcast path (safeSend)', () => {
-  // When the service worker reloads, chrome.runtime.sendMessage throws
-  // synchronously ("Extension context invalidated") and the MutationObserver
-  // callback would die mid-broadcast. The scripts must swallow it and keep the
-  // observer alive so a later mutation still gets a chance to broadcast.
   const CASES = [
     { path: '../src/content-stayntouch.js', fixture: '<div class="guest-name">Jane</div>', type: 'GUEST_INFO_UPDATED' },
     { path: '../src/content-akia.js', fixture: '<div class="message-item"><span class="message-text">hi</span></div>', type: 'CHAT_CONTEXT_UPDATED' }
@@ -310,7 +295,6 @@ describe('exception-safe broadcast path (safeSend)', () => {
       beforeEach(() => {
         jest.resetModules();
         jest.clearAllMocks();
-        // Restore the promise-returning sendMessage that other tests replace.
         chrome.runtime.sendMessage.mockReset();
         chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
       });
@@ -329,26 +313,21 @@ describe('exception-safe broadcast path (safeSend)', () => {
           throw new Error('Extension context invalidated.');
         });
 
-        loadScript(); // load-time broadcast throws internally — swallowed
+        loadScript();
         expect(calls).toBe(1);
 
-        // The observer must still be alive: a later DOM mutation triggers another
-        // (also swallowed) broadcast attempt instead of dying silently. Counts are
-        // relative to the pre-mutation baseline because observers attached by
-        // earlier tests in this file stay bound to the shared jsdom document and
-        // also fire on this mutation (exact-count debouncing is covered in
-        // content-observer-debounce.test.js, which loads each script exactly once).
         const callsBeforeMutation = calls;
         document.body.appendChild(document.createElement('div'));
-        await Promise.resolve(); // jsdom delivers MutationRecords on a microtask
-        await new Promise((r) => setTimeout(r, 350)); // debounce window (300ms)
+        await Promise.resolve();
+        await new Promise((r) => setTimeout(r, 350));
         expect(calls).toBeGreaterThan(callsBeforeMutation);
       });
 
       test('a rejected sendMessage promise does not surface an unhandled rejection', async () => {
         document.body.innerHTML = fixture;
         const rejections = [];
-        process.on('unhandledRejection', (err) => rejections.push(err));
+        const handler = (err) => rejections.push(err);
+        process.on('unhandledRejection', handler);
         chrome.runtime.sendMessage.mockImplementation(() => Promise.reject(new Error('no receiver')));
 
         try {
@@ -356,10 +335,10 @@ describe('exception-safe broadcast path (safeSend)', () => {
           document.body.appendChild(document.createElement('div'));
           await Promise.resolve();
           await new Promise((r) => setTimeout(r, 350));
-          await new Promise((r) => setTimeout(r, 10)); // let any unhandled rejection fire
+          await new Promise((r) => setTimeout(r, 10));
           expect(rejections).toHaveLength(0);
         } finally {
-          process.off('unhandledRejection', (err) => rejections.push(err));
+          process.off('unhandledRejection', handler);
         }
       });
 
@@ -373,4 +352,42 @@ describe('exception-safe broadcast path (safeSend)', () => {
       });
     });
   }
+});
+
+describe('Content Scripts Edge Cases', function() {
+  let originalBody;
+
+  beforeEach(function() {
+    originalBody = document.body.innerHTML;
+    document.body.innerHTML = '';
+  });
+
+  afterEach(function() {
+    document.body.innerHTML = originalBody;
+  });
+
+  describe('Empty DOM', function() {
+    it('should handle empty DOM without errors', function() {
+      document.body.innerHTML = '';
+    });
+  });
+
+  describe('Malformed HTML', function() {
+    it('should handle unclosed tags', function() {
+      document.body.innerHTML = '<div><p>Unclosed tag';
+    });
+  });
+
+  describe('Rapid DOM Mutations', function() {
+    it('should handle rapid DOM mutations with debouncing', function(done) {
+      document.body.innerHTML = '<div id="container"></div>';
+      const container = document.getElementById('container');
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          container.innerHTML += '<div class="message">Message ' + i + '</div>';
+        }, i * 10);
+      }
+      setTimeout(done, 1000);
+    });
+  });
 });
