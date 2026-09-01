@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { auditAPI } from '../services/api';
-import { Calendar, FileText } from 'lucide-react';
+import { Calendar, FileText } from '../components/icons';
 
 export const AuditPage = ({ embedded = false }) => {
   const [logs, setLogs] = React.useState([]);

@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { shiftNotesAPI, propertiesAPI } from '../services/api';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from '../components/icons';
 
 export const ShiftNotesPage = ({ embedded = false }) => {
   const [notes, setNotes] = React.useState([]);
@@ -14,11 +14,7 @@ export const ShiftNotesPage = ({ embedded = false }) => {
   const [selectedProperty, setSelectedProperty] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
 
-  React.useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async () => {
+  const loadAll = React.useCallback(async () => {
     try {
       setLoading(true);
       const [notesRes, propsRes] = await Promise.all([
@@ -27,8 +23,11 @@ export const ShiftNotesPage = ({ embedded = false }) => {
       ]);
       setNotes(notesRes.data);
       setProperties(propsRes.data);
-      if (propsRes.data.length && !selectedProperty) {
-        setSelectedProperty(String(propsRes.data[0].id));
+      // Default to the first property, but never clobber a choice the user has
+      // already made — reading it from state here would also make this callback
+      // change identity on every selection.
+      if (propsRes.data.length) {
+        setSelectedProperty((current) => current || String(propsRes.data[0].id));
       }
       setError('');
     } catch (err) {
@@ -37,7 +36,11 @@ export const ShiftNotesPage = ({ embedded = false }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
