@@ -1,10 +1,10 @@
 // LLM drafting service.
 //
-// Provider order: Perplexity Sonar (PERPLEXITY_API_KEY), Mistral
-// (MISTRAL_API_KEY), then Google Gemini (GOOGLE_API_KEY) as the fallback.
-// Keys are read server-side only and are never shipped to the extension or
-// dashboard. With no key present, `draftGuestReply` throws LLM_NOT_CONFIGURED
-// and the caller degrades to local template stitching.
+// Primary provider is Perplexity Sonar (PERPLEXITY_API_KEY); Google Gemini
+// (GOOGLE_API_KEY) is the fallback. Keys are read server-side only and are
+// never shipped to the extension or dashboard. With neither key present,
+// `draftGuestReply` throws LLM_NOT_CONFIGURED and the caller degrades to local
+// template stitching.
 //
 // Prompt-injection posture: guest names, reservation fields and chat messages
 // are collected from third-party pages, so a guest can type instructions into a
@@ -15,7 +15,6 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const perplexity = require('./perplexity');
-const mistral = require('./mistral');
 
 const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
@@ -111,10 +110,6 @@ function buildPrompt({ property, guestInfo, chatContext, templates, tone }) {
 async function draftGuestReply({ property, guestInfo, chatContext, templates, tone }) {
   const prompt = buildPrompt({ property, guestInfo, chatContext, templates, tone });
 
-  const systemMsg = { role: 'system', content: 'You are a hotel front-desk assistant. Reply only with the guest-facing message, without citations or markdown.' };
-  const userMsg = { role: 'user', content: prompt };
-
-  // Provider order: Perplexity, Mistral, Gemini
   if (perplexity.isConfigured()) {
     const result = await perplexity.complete([
       {
@@ -125,17 +120,12 @@ async function draftGuestReply({ property, guestInfo, chatContext, templates, to
       },
       { role: 'user', content: prompt }
     ]);
-    return { text: result.text, provider: 'perplexity' };
-  }
-
-  if (mistral.isConfigured()) {
-    const result = await mistral.complete([systemMsg, userMsg]);
-    return { text: result.text, provider: 'mistral' };
+    return result.text;
   }
 
   const model = getModel();
   if (!model) {
-    const err = new Error('LLM not configured (PERPLEXITY_API_KEY, MISTRAL_API_KEY, or GOOGLE_API_KEY missing)');
+    const err = new Error('LLM not configured (PERPLEXITY_API_KEY or GOOGLE_API_KEY missing)');
     err.code = 'LLM_NOT_CONFIGURED';
     throw err;
   }
@@ -144,7 +134,7 @@ async function draftGuestReply({ property, guestInfo, chatContext, templates, to
   if (!text || !text.trim()) {
     throw new Error('Empty LLM response');
   }
-  return { text: text.trim(), provider: 'gemini' };
+  return text.trim();
 }
 
 module.exports = { draftGuestReply, buildPrompt, MODEL_NAME, FENCE_OPEN, FENCE_CLOSE };

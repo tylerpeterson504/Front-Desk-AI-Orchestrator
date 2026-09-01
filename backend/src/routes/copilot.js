@@ -7,7 +7,7 @@ const { draftGuestReply } = require('../services/llm');
 
 // POST /api/copilot/draft
 // Body: { property_id?, tone?, template_ids?: number[], guest_info?: {...}, chat_context?: {...} }
-// Returns: { draft, meta: { model, template_count, property, tone } }
+// Returns: { draft, meta: { provider, template_count, property, tone } }
 //
 // `guest_info` and `chat_context` are page-collected and therefore UNTRUSTED —
 // a guest can type anything into a chat. They are whitelisted and length-capped

@@ -14,7 +14,7 @@ export const tokenStore = {
   set: (token) => localStorage.setItem(TOKEN_KEY, token),
   getRefresh: () => localStorage.getItem(REFRESH_KEY),
   setSession: ({ token, refresh_token: refreshToken }) => {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_KEY, token);
     if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
   },
   clear: () => {
@@ -23,149 +23,95 @@ export const tokenStore = {
   }
 };
 
-// Subscribers (the app shell) are told when the server rejects our token so the
-// UI can drop back to the login screen instead of showing empty pages.
-const unauthorizedHandlers = new Set();
-
-export function onUnauthorized(handler) {
-  unauthorizedHandlers.add(handler);
-  return () => unauthorizedHandlers.delete(handler);
+class ApiError extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
 }
 
-function getHeaders() {
-  const token = tokenStore.get();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: 'Bearer ' + token } : {})
-  };
-}
-
-// Paths that must never trigger a refresh attempt: they are how a session is
-// established or ended, so a 401 from them is final.
-const SESSION_PATHS = new Set(['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']);
-
-// One refresh in flight at a time. Several pages loading at once will all get
-// 401s within milliseconds of each other; without this they would each rotate
-// the refresh token, and the losers would present a superseded one — which the
-// server treats as theft and revokes the whole family.
-let refreshInFlight = null;
-
-function refreshSession() {
-  if (refreshInFlight) return refreshInFlight;
-
+async function refreshTokens() {
   const refreshToken = tokenStore.getRefresh();
-  if (!refreshToken) return Promise.resolve(false);
+  if (!refreshToken) throw new ApiError('No refresh token', 401, 'NO_REFRESH');
 
-  refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken })
-  })
-    .then(async (res) => {
-      if (!res.ok) return false;
-      const data = await res.json();
-      tokenStore.setSession(data);
-      return true;
-    })
-    .catch(() => false)
-    .finally(() => {
-      refreshInFlight = null;
-    });
-
-  return refreshInFlight;
-}
-
-function logoutLocally() {
-  tokenStore.clear();
-  unauthorizedHandlers.forEach((handler) => handler());
-}
-
-async function send(method, path, body) {
-  return fetch(`${API_BASE}${path}`, {
-    method,
-    headers: getHeaders(),
-    body: body ? JSON.stringify(body) : undefined
   });
+  if (!res.ok) {
+    tokenStore.clear();
+    throw new ApiError('Session expired', 401, 'REFRESH_FAILED');
+  }
+  const data = await res.json();
+  tokenStore.setSession(data);
+  return data.token;
 }
 
-async function request(method, path, body) {
-  let res = await send(method, path, body);
+async function request(path, { method = 'GET', body, auth = true, retry = true } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (auth) {
+    const token = tokenStore.get();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
 
-  // A 401 on a short-lived access token is the expected steady state, not an
-  // error: try one silent refresh and replay the request before giving up.
-  if (res.status === 401 && !SESSION_PATHS.has(path)) {
-    const refreshed = await refreshSession();
-    if (refreshed) {
-      res = await send(method, path, body);
-    }
-    if (!refreshed || res.status === 401) {
-      logoutLocally();
-    }
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined
+  });
+
+  // Single-use refresh token flow: on 401, try exactly one refresh + retry.
+  if (res.status === 401 && auth && retry) {
+    await refreshTokens();
+    return request(path, { method, body, auth, retry: false });
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw Object.assign(new Error(err.error || 'Request failed'), {
-      status: res.status,
-      requestId: err.request_id
-    });
+    let message = `Request failed (${res.status})`;
+    let code;
+    try {
+      const data = await res.json();
+      if (data.error) message = data.error;
+      code = data.code;
+    } catch {
+      // non-JSON error body
+    }
+    throw new ApiError(message, res.status, code);
   }
-
-  if (res.status === 204) return { data: null };
-  const data = await res.json();
-  return { data };
+  return res.json();
 }
 
-export const authAPI = {
-  login: (email, password) => request('POST', '/auth/login', { email, password }),
-  register: (email, password, name) => request('POST', '/auth/register', { email, password, name }),
-  me: () => request('GET', '/auth/me'),
+export const api = {
+  // Auth
+  login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password }, auth: false }),
+  register: (payload) => request('/auth/register', { method: 'POST', body: payload, auth: false }),
+  logout: () => request('/auth/logout', { method: 'POST', body: {} }),
 
-  // Revokes the session server-side, then clears local state either way: a
-  // failed network call must not leave the user apparently logged in.
-  logout: async () => {
-    const refreshToken = tokenStore.getRefresh();
-    try {
-      if (refreshToken) {
-        await request('POST', '/auth/logout', { refresh_token: refreshToken });
-      }
-    } finally {
-      tokenStore.clear();
-    }
-  },
+  // Properties
+  getProperties: () => request('/properties'),
+  getProperty: (id) => request(`/properties/${id}`),
+  createProperty: (payload) => request('/properties', { method: 'POST', body: payload }),
+  updateProperty: (id, payload) => request(`/properties/${id}`, { method: 'PUT', body: payload }),
+  deleteProperty: (id) => request(`/properties/${id}`, { method: 'DELETE' }),
 
-  logoutEverywhere: () => request('POST', '/auth/logout-all')
+  // Templates
+  getTemplates: () => request('/templates'),
+  createTemplate: (payload) => request('/templates', { method: 'POST', body: payload }),
+  updateTemplate: (id, payload) => request(`/templates/${id}`, { method: 'PUT', body: payload }),
+  deleteTemplate: (id) => request(`/templates/${id}`, { method: 'DELETE' }),
+
+  // Shift notes
+  getShiftNotes: (params) => request(`/shift-notes${params ? `?${new URLSearchParams(params)}` : ''}`),
+  createShiftNote: (payload) => request('/shift-notes', { method: 'POST', body: payload }),
+
+  // Copilot
+  draftReply: (payload) => request('/copilot/draft', { method: 'POST', body: payload }),
+
+  // Audit logs
+  getAuditLogs: (params) => request(`/audit-logs${params ? `?${new URLSearchParams(params)}` : ''}`)
 };
 
-export const propertiesAPI = {
-  getAll: () => request('GET', '/properties'),
-  getOne: (id) => request('GET', `/properties/${id}`),
-  create: (data) => request('POST', '/properties', data),
-  update: (id, data) => request('PUT', `/properties/${id}`, data),
-  delete: (id) => request('DELETE', `/properties/${id}`),
-  // Audit-logged on the server; only call this on an explicit user action.
-  getWifi: (id) => request('GET', `/properties/${id}/wifi`)
-};
-
-export const templatesAPI = {
-  getAll: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request('GET', `/templates${qs ? `?${qs}` : ''}`);
-  },
-  getOne: (id) => request('GET', `/templates/${id}`),
-  create: (data) => request('POST', '/templates', data),
-  update: (id, data) => request('PUT', `/templates/${id}`, data),
-  delete: (id) => request('DELETE', `/templates/${id}`)
-};
-
-export const shiftNotesAPI = {
-  getToday: () => request('GET', '/shift-notes'),
-  create: (data) => request('POST', '/shift-notes', data),
-  update: (id, data) => request('PUT', `/shift-notes/${id}`, data),
-  delete: (id) => request('DELETE', `/shift-notes/${id}`)
-};
-
-export const auditAPI = {
-  getLogs: (limit = 100, offset = 0) =>
-    request('GET', `/audit-logs?limit=${limit}&offset=${offset}`)
-};
+export { ApiError };
