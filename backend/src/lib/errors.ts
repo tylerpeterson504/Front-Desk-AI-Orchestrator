@@ -48,21 +48,3 @@ export class DatabaseError extends AppError {
     this.message = message; // Internal message (not exposed)
   }
 }
-
-export class BadRequestError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(400, 'BAD_REQUEST', message, details);
-  }
-}
-
-export class ConflictError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(409, 'CONFLICT', message, details);
-  }
-}
-
-export class InternalServerError extends AppError {
-  constructor(message: string = 'Internal server error', requestId?: string) {
-    super(500, 'INTERNAL_ERROR', message, undefined, requestId);
-  }
-}
