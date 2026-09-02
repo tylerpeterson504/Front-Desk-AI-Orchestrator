@@ -1,14 +1,22 @@
 {
   "name": "front-desk-ai-extension",
   "version": "1.0.0",
-  "description": "Tests for the Front Desk AI Chrome Extension",
+  "description": "Front Desk AI Chrome Extension",
+  "type": "module",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "build": "vite build",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "lint": "eslint src --ext .js,.ts",
+    "lint:fix": "eslint src --ext .js,.ts --fix"
   },
+  "dependencies": {},
   "devDependencies": {
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "@types/chrome": "^0.0.254",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.3.3",
+    "vitest": "^1.6.0"
   },
   "jest": {
     "testEnvironment": "jsdom",

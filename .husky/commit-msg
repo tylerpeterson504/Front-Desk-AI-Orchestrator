@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Validate commit message format
+# Expected format: <type>(<scope>): <subject>
+# Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci, security
+# Scopes: backend, dashboard, extension, deps, workflow
+
+commit_msg="$1"
+pattern="^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|security)(\([a-z-]+)?\): .+$"
+
+if ! echo "$commit_msg" | grep -Eq "$pattern"; then
+  echo "❌ Invalid commit message format."
+  echo "Expected format: <type>(<scope>): <subject>"
+  echo "Example: feat(backend): add user authentication"
+  echo "Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci, security"
+  echo "Scopes: backend, dashboard, extension, deps, workflow"
+  exit 1
+fi

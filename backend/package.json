@@ -2,13 +2,15 @@
   "name": "front-desk-ai-backend",
   "version": "1.0.0",
   "description": "Backend API for Front Desk AI Orchestrator",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev src/index.ts",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed-runner.js",
     "db-setup": "node db/db-setup.js",
@@ -18,7 +20,9 @@
     "test": "jest --runInBand",
     "test:api": "jest tests/api.test.js",
     "test:security": "jest tests/security.test.js",
-    "test:coverage": "jest --runInBand --coverage"
+    "test:coverage": "jest --runInBand --coverage",
+    "lint": "eslint src --ext .js,.ts",
+    "lint:fix": "eslint src --ext .js,.ts --fix"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -29,17 +33,41 @@
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg-promise": "^11.9.1"
+    "pg-promise": "^11.9.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
+    "winston": "^3.13.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.5.0",
+    "@types/pg": "^8.11.6",
     "jest": "^29.7.0",
     "nodemon": "^3.1.4",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
   },
   "jest": {
     "testEnvironment": "node",
+    "preset": "ts-jest",
     "testMatch": [
+      "**/tests/**/*.test.ts",
       "**/tests/**/*.test.js"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^@config/(.*)$": "<rootDir>/src/config/$1",
+      "^@routes/(.*)$": "<rootDir>/src/routes/$1",
+      "^@services/(.*)$": "<rootDir>/src/services/$1",
+      "^@lib/(.*)$": "<rootDir>/src/lib/$1",
+      "^@middleware/(.*)$": "<rootDir>/src/middleware/$1"
+    }
   }
 }
