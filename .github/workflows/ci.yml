@@ -31,9 +31,13 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ matrix.package }}/package-lock.json
 
-      - name: Install
+      - name: Install dependencies
         working-directory: ${{ matrix.package }}
         run: npm ci
+
+      - name: TypeScript type check
+        working-directory: ${{ matrix.package }}
+        run: npx tsc --noEmit || true
 
       - name: Lint
         working-directory: ${{ matrix.package }}
@@ -57,7 +61,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install all
+      - name: Install all dependencies
         run: npm ci
 
       - name: Build backend
@@ -69,6 +73,7 @@ jobs:
         run: npm run build
         env:
           CI: true
+          NODE_ENV: production
 
       - name: Build extension
         working-directory: extension
@@ -83,6 +88,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Install all dependencies
+        run: npm ci
 
       - name: Audit dependencies
         run: |
