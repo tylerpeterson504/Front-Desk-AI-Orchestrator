@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, ClipboardList, LogOut, Building2, StickyNote } from './icons';
+import { User } from '../types';
 
 const NAV_ITEMS = [
   { id: 'templates', label: 'Templates', icon: FileText },
@@ -8,10 +9,14 @@ const NAV_ITEMS = [
   { id: 'audit', label: 'Audit Logs', icon: ClipboardList }
 ];
 
-// `onLogout` is owned by App so logging out re-renders into the login screen.
-// This used to redirect to /login, a path the app has no route for, which meant
-// logging out landed on the dev server's 404.
-export const Sidebar = ({ page, onNavigate, user, onLogout = () => {} }) => {
+interface SidebarProps {
+  page: string;
+  onNavigate: (page: string) => void;
+  user: User | null;
+  onLogout?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ page, onNavigate, user, onLogout = () => {} }) => {
 
   return (
     <aside className="w-64 bg-blue-800 text-white flex flex-col h-screen flex-shrink-0">
@@ -46,6 +51,7 @@ export const Sidebar = ({ page, onNavigate, user, onLogout = () => {} }) => {
         <button
           onClick={onLogout}
           className="flex items-center space-x-3 px-4 py-3 w-full rounded-lg text-blue-200 hover:bg-blue-700 hover:text-white transition-colors"
+          aria-label="Logout"
         >
           <LogOut size={18} />
           <span>Logout</span>

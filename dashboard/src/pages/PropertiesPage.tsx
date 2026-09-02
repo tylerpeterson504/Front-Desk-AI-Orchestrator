@@ -2,21 +2,35 @@ import React from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
-import { propertiesAPI } from '../services/api';
+import { propertyAPI } from '../services/api';
 import { Plus, Edit2, Trash2, Eye, EyeOff } from '../components/icons';
+import { Property } from '../types';
 
-export const PropertiesPage = ({ embedded = false }) => {
-  const [properties, setProperties] = React.useState([]);
+interface PropertiesPageProps {
+  embedded?: boolean;
+}
+
+interface FormData {
+  name: string;
+  url_pattern: string;
+  wifi_ssid: string;
+  wifi_password: string;
+  checkout_time: string;
+  tone_guidelines: string;
+}
+
+export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false }) => {
+  const [properties, setProperties] = React.useState<Property[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [showForm, setShowForm] = React.useState(false);
-  const [editingId, setEditingId] = React.useState(null);
+  const [editingId, setEditingId] = React.useState<number | null>(null);
   // property id -> revealed Wi-Fi password. Fetched on demand, never in the
   // list payload: the server strips wifi_password from /properties and only
   // returns it from the audit-logged /:id/wifi route.
-  const [revealed, setRevealed] = React.useState({});
-  const [revealing, setRevealing] = React.useState(null);
-  const [formData, setFormData] = React.useState({
+  const [revealed, setRevealed] = React.useState<Record<number, string>>({});
+  const [revealing, setRevealing] = React.useState<number | null>(null);
+  const [formData, setFormData] = React.useState<FormData>({
     name: '',
     url_pattern: '',
     wifi_ssid: '',
@@ -32,8 +46,8 @@ export const PropertiesPage = ({ embedded = false }) => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      const response = await propertiesAPI.getAll();
-      setProperties(response.data);
+      const response = await propertyAPI.getAll();
+      setProperties(response);
       setError('');
     } catch (err) {
       setError('Failed to load properties');
@@ -56,10 +70,10 @@ export const PropertiesPage = ({ embedded = false }) => {
     setShowForm(false);
   };
 
-  const handleEdit = (property) => {
+  const handleEdit = (property: Property) => {
     setFormData({
       name: property.name || '',
-      url_pattern: property.url_pattern || '',
+      url_pattern: property.address || '',
       wifi_ssid: property.wifi_ssid || '',
       wifi_password: '', // never prefill; blank = keep existing
       checkout_time: (property.checkout_time || '11:00:00').slice(0, 5),
@@ -69,28 +83,28 @@ export const PropertiesPage = ({ embedded = false }) => {
     setShowForm(true);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload = { ...formData };
       // On edit, empty wifi_password means "unchanged" (the API never returns it)
       if (editingId && !payload.wifi_password) delete payload.wifi_password;
       if (editingId) {
-        await propertiesAPI.update(editingId, payload);
+        await propertyAPI.update(editingId, payload);
       } else {
-        await propertiesAPI.create(payload);
+        await propertyAPI.create(payload);
       }
       resetForm();
       await loadProperties();
-    } catch (err) {
-      setError(err.message || 'Failed to save property');
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || 'Failed to save property');
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Delete this property? Shift notes linked to it will also be deleted.')) {
       try {
-        await propertiesAPI.delete(id);
+        await propertyAPI.delete(id);
         await loadProperties();
       } catch (err) {
         setError('Failed to delete property');
@@ -98,17 +112,18 @@ export const PropertiesPage = ({ embedded = false }) => {
     }
   };
 
-  const toggleWifi = async (id) => {
+  const toggleWifi = async (id: number) => {
     if (revealed[id]) {
-      setRevealed(({ [id]: _removed, ...rest }) => rest);
+      const { [id]: _removed, ...rest } = revealed;
+      setRevealed(rest);
       return;
     }
     try {
       setRevealing(id);
-      const { data } = await propertiesAPI.getWifi(id);
-      setRevealed((prev) => ({ ...prev, [id]: data.password }));
-    } catch (err) {
-      setError(err.message || 'Failed to reveal WiFi password');
+      const { password } = await propertyAPI.getWifi(id);
+      setRevealed((prev) => ({ ...prev, [id]: password }));
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || 'Failed to reveal WiFi password');
     } finally {
       setRevealing(null);
     }
@@ -150,11 +165,10 @@ export const PropertiesPage = ({ embedded = false }) => {
                 />
                 <input
                   type="text"
-                  placeholder="URL Pattern (e.g. app.us1.stayntouch.com)"
+                  placeholder="Address"
                   value={formData.url_pattern}
                   onChange={(e) => setFormData({ ...formData, url_pattern: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  required
                 />
                 <div className="grid grid-cols-2 gap-4">
                   <input
@@ -220,13 +234,13 @@ export const PropertiesPage = ({ embedded = false }) => {
                     <div className="flex items-center space-x-2 mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">{property.name}</h3>
                       <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                        {property.url_pattern}
+                        {property.address || '\u2014'}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <p>🕐 Checkout: {property.checkout_time || '—'}</p>
+                      <p>🕐 Checkout: {property.checkout_time || '\u2014'}</p>
                       <p className="flex items-center space-x-2">
-                        <span>📶 WiFi: {property.wifi_ssid || '—'}</span>
+                        <span>📶 WiFi: {property.wifi_ssid || '\u2014'}</span>
                         <button
                           onClick={() => toggleWifi(property.id)}
                           disabled={revealing === property.id}
@@ -241,7 +255,7 @@ export const PropertiesPage = ({ embedded = false }) => {
                           </span>
                         </button>
                       </p>
-                      {property.tone_guidelines && <p>🎨 {property.tone_guidelines}</p>}
+                      {property.tone_guidelines && <p>🎭 {property.tone_guidelines}</p>}
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -249,6 +263,7 @@ export const PropertiesPage = ({ embedded = false }) => {
                       onClick={() => handleEdit(property)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded"
                       title="Edit"
+                      aria-label="Edit property"
                     >
                       <Edit2 size={18} />
                     </button>
@@ -256,6 +271,7 @@ export const PropertiesPage = ({ embedded = false }) => {
                       onClick={() => handleDelete(property.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded"
                       title="Delete"
+                      aria-label="Delete property"
                     >
                       <Trash2 size={18} />
                     </button>

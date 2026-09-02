@@ -1,31 +1,37 @@
 import React from 'react';
 import { Alert } from '../components/Alert';
-import { authAPI, tokenStore } from '../services/api';
+import { authAPI } from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import { Loader2, LockKeyhole } from '../components/icons';
+import { User } from '../types';
 
-// Every dashboard page calls an endpoint that requires a bearer token, so
-// without this screen the app rendered empty tables and console 401s and the
-// only way in was pasting a token into localStorage by hand.
-export const LoginPage = ({ onAuthenticated }) => {
+interface LoginPageProps {
+  onAuthenticated: (user: User) => void;
+}
+
+export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError('');
     try {
-      const { data } = await authAPI.login(email.trim(), password);
-      if (!data?.token) throw new Error('Login response did not include a token');
-      // Stores both the access token and the refresh token that keeps the
-      // session alive once the 15-minute access token expires.
-      tokenStore.setSession(data);
-      onAuthenticated(data.user);
-    } catch (err) {
-      // 401 here means bad credentials; anything else is worth showing verbatim.
-      setError(err.status === 401 ? 'Incorrect email or password' : err.message || 'Login failed');
+      const response = await authAPI.login(email.trim(), password);
+      if (!response.token) throw new Error('Login response did not include a token');
+
+      // Store both the access token and the refresh token
+      setCredentials(response.user, response.token, response.refresh_token);
+      onAuthenticated(response.user);
+    } catch (err: unknown) {
+      const errorMessage = (err as { status?: number; message?: string }).status === 401
+        ? 'Incorrect email or password'
+        : (err as { message?: string }).message || 'Login failed';
+      setError(errorMessage);
       setPassword('');
     } finally {
       setSubmitting(false);

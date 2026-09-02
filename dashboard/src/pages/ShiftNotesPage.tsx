@@ -2,12 +2,17 @@ import React from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
-import { shiftNotesAPI, propertiesAPI } from '../services/api';
+import { shiftNoteAPI, propertyAPI } from '../services/api';
 import { Plus, Trash2 } from '../components/icons';
+import { ShiftNote, Property } from '../types';
 
-export const ShiftNotesPage = ({ embedded = false }) => {
-  const [notes, setNotes] = React.useState([]);
-  const [properties, setProperties] = React.useState([]);
+interface ShiftNotesPageProps {
+  embedded?: boolean;
+}
+
+export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false }) => {
+  const [notes, setNotes] = React.useState<ShiftNote[]>([]);
+  const [properties, setProperties] = React.useState<Property[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [newNote, setNewNote] = React.useState('');
@@ -18,16 +23,16 @@ export const ShiftNotesPage = ({ embedded = false }) => {
     try {
       setLoading(true);
       const [notesRes, propsRes] = await Promise.all([
-        shiftNotesAPI.getToday(),
-        propertiesAPI.getAll()
+        shiftNoteAPI.getAll(),
+        propertyAPI.getAll()
       ]);
-      setNotes(notesRes.data);
-      setProperties(propsRes.data);
+      setNotes(notesRes);
+      setProperties(propsRes);
       // Default to the first property, but never clobber a choice the user has
       // already made — reading it from state here would also make this callback
       // change identity on every selection.
-      if (propsRes.data.length) {
-        setSelectedProperty((current) => current || String(propsRes.data[0].id));
+      if (propsRes.length) {
+        setSelectedProperty((current) => current || String(propsRes[0].id));
       }
       setError('');
     } catch (err) {
@@ -42,34 +47,34 @@ export const ShiftNotesPage = ({ embedded = false }) => {
     loadAll();
   }, [loadAll]);
 
-  const handleCreate = async (e) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.trim() || !selectedProperty) return;
     try {
       setSubmitting(true);
-      await shiftNotesAPI.create({
+      await shiftNoteAPI.create({
         property_id: Number(selectedProperty),
         content: newNote.trim()
       });
       setNewNote('');
       await loadAll();
-    } catch (err) {
-      setError(err.message || 'Failed to add shift note');
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || 'Failed to add shift note');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     try {
-      await shiftNotesAPI.delete(id);
+      await shiftNoteAPI.delete(id);
       await loadAll();
     } catch (err) {
       setError('Failed to delete shift note');
     }
   };
 
-  const propertyName = (id) =>
+  const propertyName = (id: number): string =>
     properties.find((p) => p.id === id)?.name || `Property #${id}`;
 
   if (loading) return <LoadingSpinner />;
@@ -129,13 +134,14 @@ export const ShiftNotesPage = ({ embedded = false }) => {
                   <p className="text-gray-800">{note.content}</p>
                   <p className="text-xs text-gray-400 mt-1">
                     {propertyName(note.property_id)} ·{' '}
-                    {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(note.shift_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDelete(note.id)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded"
                   title="Delete"
+                  aria-label="Delete shift note"
                 >
                   <Trash2 size={16} />
                 </button>

@@ -2,15 +2,20 @@ import React from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
-import { templatesAPI } from '../services/api';
+import { templateAPI } from '../services/api';
 import { Plus, Edit2, Trash2, Search } from '../components/icons';
+import { Template } from '../types';
 
-export const TemplatesPage = ({ embedded = false }) => {
-  const [templates, setTemplates] = React.useState([]);
+interface TemplatesPageProps {
+  embedded?: boolean;
+}
+
+export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }) => {
+  const [templates, setTemplates] = React.useState<Template[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [editingId, setEditingId] = React.useState(null);
+  const [editingId, setEditingId] = React.useState<number | null>(null);
   const [showForm, setShowForm] = React.useState(false);
   const [formData, setFormData] = React.useState({
     name: '',
@@ -26,8 +31,8 @@ export const TemplatesPage = ({ embedded = false }) => {
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const response = await templatesAPI.getAll();
-      setTemplates(response.data);
+      const response = await templateAPI.getAll();
+      setTemplates(response);
       setError('');
     } catch (err) {
       setError('Failed to load templates');
@@ -37,7 +42,7 @@ export const TemplatesPage = ({ embedded = false }) => {
     }
   };
 
-  const handleEdit = (template) => {
+  const handleEdit = (template: Template) => {
     setFormData({
       name: template.name || '',
       category: template.category || 'greeting',
@@ -54,7 +59,7 @@ export const TemplatesPage = ({ embedded = false }) => {
     setShowForm(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload = {
@@ -62,21 +67,21 @@ export const TemplatesPage = ({ embedded = false }) => {
         tags: formData.tags.split(',').map((t) => t.trim()).filter(Boolean)
       };
       if (editingId) {
-        await templatesAPI.update(editingId, payload);
+        await templateAPI.update(editingId, payload);
       } else {
-        await templatesAPI.create(payload);
+        await templateAPI.create(payload);
       }
       resetForm();
       await loadTemplates();
-    } catch (err) {
-      setError(err.message || 'Failed to save template');
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || 'Failed to save template');
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure?')) {
       try {
-        await templatesAPI.delete(id);
+        await templateAPI.delete(id);
         await loadTemplates();
       } catch (err) {
         setError('Failed to delete template');
@@ -151,7 +156,7 @@ export const TemplatesPage = ({ embedded = false }) => {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  rows="5"
+                  rows={5}
                   required
                 />
                 <input
@@ -194,7 +199,7 @@ export const TemplatesPage = ({ embedded = false }) => {
                     <p className="text-gray-600 mb-2">{template.content}</p>
                     {template.tags && (
                       <div className="flex flex-wrap gap-2">
-                        {template.tags.map((tag, idx) => (
+                        {template.tags.map((tag: string, idx: number) => (
                           <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                             {tag}
                           </span>
@@ -207,12 +212,15 @@ export const TemplatesPage = ({ embedded = false }) => {
                       onClick={() => handleEdit(template)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded"
                       title="Edit"
+                      aria-label="Edit template"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(template.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded"
+                      title="Delete"
+                      aria-label="Delete template"
                     >
                       <Trash2 size={18} />
                     </button>

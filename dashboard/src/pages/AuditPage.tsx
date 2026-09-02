@@ -4,13 +4,18 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { auditAPI } from '../services/api';
 import { Calendar, FileText } from '../components/icons';
+import { AuditLog } from '../types';
 
-export const AuditPage = ({ embedded = false }) => {
-  const [logs, setLogs] = React.useState([]);
+interface AuditPageProps {
+  embedded?: boolean;
+}
+
+export const AuditPage: React.FC<AuditPageProps> = ({ embedded = false }) => {
+  const [logs, setLogs] = React.useState<AuditLog[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
 
-  const formatDetails = (details) => {
+  const formatDetails = (details: unknown): string => {
     if (!details) return '';
     if (typeof details === 'string') {
       try {
@@ -29,8 +34,8 @@ export const AuditPage = ({ embedded = false }) => {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const response = await auditAPI.getLogs(100, 0);
-      setLogs(response.data);
+      const response = await auditAPI.getAll();
+      setLogs(response);
       setError('');
     } catch (err) {
       setError('Failed to load audit logs');
@@ -60,9 +65,9 @@ export const AuditPage = ({ embedded = false }) => {
                       <span className="inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
                       <h3 className="text-lg font-semibold text-gray-800">{log.action}</h3>
                     </div>
-                    {log.details && (
+                    {log.metadata && (
                       <div className="bg-gray-50 p-3 rounded mt-2 text-sm text-gray-600 max-h-24 overflow-auto">
-                        <pre>{formatDetails(log.details)}</pre>
+                        <pre>{formatDetails(log.metadata)}</pre>
                       </div>
                     )}
                   </div>
