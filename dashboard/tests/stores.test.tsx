@@ -7,36 +7,36 @@ import { useAuditLogsStore } from '../src/stores/auditLogsStore';
 import { useAuthStore } from '../src/stores/authStore';
 
 // Mock API calls
-jest.mock('../src/services/api', () => ({
+vi.mock('../src/services/api', () => ({
   propertyAPI: {
-    getAll: jest.fn(),
-    getOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn()
+    getAll: vi.fn(),
+    getOne: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn()
   },
   templateAPI: {
-    getAll: jest.fn(),
-    getOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn()
+    getAll: vi.fn(),
+    getOne: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn()
   },
   shiftNoteAPI: {
-    getAll: jest.fn(),
-    getOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn()
+    getAll: vi.fn(),
+    getOne: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn()
   },
   auditAPI: {
-    getAll: jest.fn()
+    getAll: vi.fn()
   }
 }));
 
 describe('Zustand Stores', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('usePropertiesStore', () => {
@@ -129,7 +129,8 @@ describe('Zustand Stores', () => {
 
     it('should fetch templates with property filter', async () => {
       const mockTemplates = [
-        { id: 1, name: 'Template 1', property_id: 1 },
+ 
+       { id: 1, name: 'Template 1', property_id: 1 },
         { id: 2, name: 'Template 2', property_id: 1 }
       ];
       
@@ -191,7 +192,8 @@ describe('Zustand Stores', () => {
       expect(result.current.auditLogs).toEqual([]);
       expect(result.current.currentAuditLog).toBeNull();
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
+      expect(result.current.error).
+toBeNull();
       expect(result.current.pagination).toEqual({ page: 1, limit: 20, total: 0, totalPages: 0 });
     });
 
