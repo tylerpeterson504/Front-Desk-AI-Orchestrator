@@ -16,45 +16,12 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NEON_BRANCH_NAME: preview-pr-${{ github.event.number }}
+
 jobs:
-  setup:
-    name: Setup
-    outputs:
-      branch: ${{ steps.sanitize_branch.outputs.branch }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get branch name
-        id: branch_name
-        uses: tj-actions/branch-names@v8
-
-      - name: Sanitize branch name for Neon
-        id: sanitize_branch
-        run: |
-          # Get the current branch and replace invalid characters
-          BRANCH_NAME="${{ steps.branch_name.outputs.current_branch }}"
-          
-          # Replace slashes and other invalid characters with hyphens
-          SAFE_BRANCH="${BRANCH_NAME//\//-}"
-          SAFE_BRANCH="${SAFE_BRANCH//[^a-zA-Z0-9._-]/-}"
-          
-          # Remove leading/trailing hyphens
-          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | sed 's/^-*//g' | sed 's/-*$//g')
-          
-          # Collapse multiple consecutive hyphens
-          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | sed 's/-\+/-/g')
-          
-          # Limit to 40 chars to fit within Neon's 63-char limit for "preview-pr-{PR}-{BRANCH}"
-          SAFE_BRANCH=$(echo "$SAFE_BRANCH" | cut -c 1-40)
-          
-          echo "branch=$SAFE_BRANCH" >> "$GITHUB_OUTPUT"
-          echo "Sanitized branch: $SAFE_BRANCH"
-
-  create_neon_branch:
-    name: Create Neon Branch
-    outputs:
-      db_url: ${{ steps.create_neon_branch_encode.outputs.db_url }}
-      db_url_with_pooler: ${{ steps.create_neon_branch_encode.outputs.db_url_with_pooler }}
-    needs: setup
+  prepare_neon_branch:
+    name: Prepare Neon Branch
     if: |
       github.event_name == 'pull_request' && (
       github.event.action == 'synchronize'
@@ -68,25 +35,28 @@ jobs:
 
       - name: Debug - Show branch details
         run: |
-          echo "Branch name to create: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}"
+          echo "Branch name to create: ${{ env.NEON_BRANCH_NAME }}"
           echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
           echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
 
-      - name: Create Neon Branch
+      - name: Create or reuse Neon Branch
         id: create_neon_branch
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch_name: ${{ env.NEON_BRANCH_NAME }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
-      # Re-encode the connection strings into step outputs safely (no logging).
-      - name: Encode connection strings as outputs
-        id: create_neon_branch_encode
-        run: |
-          echo "db_url=$(echo '${{ steps.create_neon_branch.outputs.db_url }}' | base64 -w0)" >> "$GITHUB_OUTPUT"
-          echo "db_url_with_pooler=$(echo '${{ steps.create_neon_branch.outputs.db_url_with_pooler }}' | base64 -w0)" >> "$GITHUB_OUTPUT"
+      - name: Reset existing Neon Branch on synchronize
+        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
+        id: reset_neon_branch
+        uses: neondatabase/reset-branch-action@v1
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ${{ env.NEON_BRANCH_NAME }}
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
 
       # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
@@ -104,12 +74,11 @@ jobs:
         run: npm ci && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
-          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
+          DATABASE_URL: "${{ steps.reset_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
 
 
   delete_neon_branch:
     name: Delete Neon Branch
-    needs: setup
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
@@ -117,5 +86,5 @@ jobs:
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview-pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          branch: ${{ env.NEON_BRANCH_NAME }}
           api_key: ${{ secrets.NEON_API_KEY }}
