@@ -33,7 +33,7 @@ describe('Content Script Context Guard', function() {
 
   describe('sanitizeText', function() {
     it('should return null/undefined as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let s = t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); return s; } };
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; let s = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); return s; } };
       expect(contentScript.sanitizeText(null)).toBeNull();
       expect(contentScript.sanitizeText(undefined)).toBeUndefined();
     });
