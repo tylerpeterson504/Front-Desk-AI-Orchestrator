@@ -36,7 +36,8 @@ provider's environment settings):
 | `CORS_ORIGIN` | no | unrestricted | Comma-separated allowed browser origins |
 
 When `GOOGLE_API_KEY` is absent the copilot route returns `503
-LLM_NOT_CONFIGURED` and the extension falls back to local template stitching,
+LLM_NOT_CONFIGURED` and the extension falls back to local template st
+itching,
 so dev/test still work without a key.
 
 ### Getting a key
@@ -81,7 +82,8 @@ CI keep working while a deployed instance is closed by default.
 ## Secrets at rest
 
 `properties.wifi_password` is encrypted with AES-256-GCM before insert
-(`backend/src/lib/secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
+(`backend/src/lib/
+secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
 decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route.
 
 Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production,
@@ -127,7 +129,8 @@ branch directly.
    users already exist. Demo login: `demo@example.com` / `password123`.
 3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
-   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate:
+   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate
+:
    it validates any stored token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
 
@@ -167,7 +170,8 @@ replay, and only a failed refresh returns the user to the login screen. Expired
 rows can be cleared with `cd backend && npm run prune-sessions`.
 
 What this does not do: an access token already issued stays valid until it
-expires, so revocation takes effect within one access-token lifetime (15 minutes
+expires, so revocation takes 
+effect within one access-token lifetime (15 minutes
 by default) rather than instantly. Making it instant means checking a blocklist
 on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
 window if you want it tighter.
@@ -205,7 +209,8 @@ Content-script host matches (MV3 manifest):
 
 The copilot supports Perplexity's Sonar API for web-grounded responses. It is called only from the backend, so the API key is never exposed to the extension or dashboard. When configured, Perplexity takes priority over Gemini; Gemini remains the fallback when `PERPLEXITY_API_KEY` is absent.
 
-Add this key in the project's **Keys** tab:
+Add this key in
+ the project's **Keys** tab:
 
 ```text
 PERPLEXITY_API_KEY=your_perplexity_api_key
@@ -247,7 +252,8 @@ The integration does not log or return token values. Create the workspace and to
 
 ## GitHub integration
 
-The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated configuration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
+The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated conf
+iguration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
 
 Add this key in the project's **Keys** tab:
 
@@ -268,3 +274,117 @@ Create a least-privilege token with only the repository permissions your deploym
   `CORS_ORIGIN` in production rather than reflecting every origin.
 - Dashboard: static React build (CRA `npm run build`).
 - Extension: load unpacked from `extension/` (no build step).
+
+
+---
+
+## Development
+
+This project uses a monorepo structure with npm workspaces. The project consists of three main packages:
+
+- **backend**: Express.js API server with TypeScript
+- **dashboard**: React dashboard built with Vite and TypeScript
+- **extension**: Chrome extension with TypeScript
+
+### Prerequisites
+- Node.js >= 22
+- npm >= 10.7.0
+
+### Installation
+
+Clone the repository and install dependencies:
+
+npm install
+npm run install:all
+
+### Running the Project
+
+Start both backend and dashboard in development mode:
+
+npm run dev
+
+Or run them separately:
+
+npm run dev:backend   # Backend only (port 3001)
+npm run dev:dashboard  # Dashboard only (port 3000)
+
+### Available Scripts
+
+Root workspace:
+- npm run install:all - Install all workspace dependencies
+- npm run build:all - Build all packages
+- npm run test - Run all tests
+- npm run lint - Run linting for all workspaces
+- npm run lint:check - Check linting without fixing
+- npm run lint:fix - Fix linting issues
+- npm run format - Format all files
+- npm run typecheck - Type check all workspaces
+
+Backend:
+- npm run dev - Start development server
+- npm run build - Build for production
+- npm run start - Start production server
+- npm run test:coverage - Run tests with coverage
+
+Dashboard:
+- npm run dev - Start development server
+- npm run build - Build for production
+- npm run preview - Preview production build
+
+Extension:
+- npm run build - Build extension
+- npm run test - Run extension tests
+
+### Project Structure
+
+ backend/          # API server
+  src/
+   config/       # Configuration
+   controllers/  # Route controllers
+   entities/     # TypeORM entities
+   lib/          # Utilities
+   middleware/   # Express middleware
+   routes/       # API routes
+   services/     # Business logic
+ 
+ dashboard/         # Web dashboard
+  src/
+   components/   # Reusable UI components
+   pages/        # Page components
+   hooks/        # Custom React hooks
+   services/     # API services
+   stores/       # Zustand state stores
+   types/        # TypeScript types
+   utils/        # Utility functions
+ 
+ extension/         # Chrome extension
+  src/
+   background/   # Background scripts
+   content/      # Content scripts
+   popup/        # Popup UI
+   sidepanel/    # Side panel UI
+   services/     # Shared services
+   types/        # TypeScript types
+
+### Code Quality
+
+This project enforces code quality through:
+- ESLint with TypeScript, React, and Prettier plugins
+- Prettier for consistent code formatting
+- TypeScript for type safety
+- Husky + lint-staged for pre-commit hooks
+- Comprehensive test coverage
+
+Run quality checks:
+
+npm run lint:check  # Check linting
+npm run format:check  # Check formatting
+npm run typecheck  # Check types
+
+### Contributing
+
+See CONTRIBUTING.md for detailed contribution guidelines.
+
+### License
+
+This project is private and proprietary.
