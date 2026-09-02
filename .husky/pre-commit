@@ -1,5 +1,14 @@
 #!/usr/bin/env sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Run linting check
 npm run lint:check
+
+# Run type checking for all workspaces
+echo "Running type checks..."
+npm run typecheck:backend || exit 1
+npm run typecheck:dashboard || exit 1
+npm run typecheck:extension || exit 1
+
+# Run lint-staged for staged files
 lint-staged
