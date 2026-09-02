@@ -67,7 +67,7 @@ const authLimiter = rateLimit({
   skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout'
 });
 
-// Refresh still needs a ceiling — one client refreshes ~4 times an hour, so this
+// Refresh still needs a ceiling â one client refreshes ~4 times an hour, so this
 // is generous for a shared IP and still caps a token-stuffing loop.
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -88,11 +88,8 @@ const appShellLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' }
 });
 
-// Initialize database
-initializeDatabase().catch((err) => {
-  logger.error('Failed to initialize database', { error: err });
-  process.exit(1);
-});
+// Database is initialized only when the server starts (see isMainModule below),
+// so importing this app (e.g. in tests) does not attempt a live connection.
 
 // Routes
 import authRouter from './routes/auth';
@@ -134,17 +131,26 @@ app.use(errorHandler);
 
 const PORT = config.PORT || 3001;
 
-// Start server only if this file is run directly
+// Start server only if this file is run directly. Importing this module
+// (e.g. in tests) must NOT connect to the database; only connect when the
+// server is actually starting.
 const isMainModule = import.meta.url.endsWith(process.argv[1]);
 
 if (isMainModule) {
-  app.listen(PORT, () => {
-    logger.info('backend started', {
-      port: PORT,
-      env: config.NODE_ENV || 'development',
-      registration_mode: getMode()
+  initializeDatabase()
+    .then(() => {
+      app.listen(PORT, () => {
+        logger.info('backend started', {
+          port: PORT,
+          env: config.NODE_ENV || 'development',
+          registration_mode: getMode()
+        });
+      });
+    })
+    .catch((err) => {
+      logger.error('Failed to initialize database', { error: err });
+      process.exit(1);
     });
-  });
 }
 
 export default app;

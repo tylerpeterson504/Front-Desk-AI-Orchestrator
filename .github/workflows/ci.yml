@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ matrix.package }}
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: TypeScript type check
         working-directory: ${{ matrix.package }}
@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install all dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build backend
         working-directory: backend
@@ -91,7 +91,7 @@ jobs:
           cache: npm
 
       - name: Install all dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Audit dependencies
         run: |
