@@ -134,7 +134,10 @@ app.use(errorHandler);
 
 const PORT = config.PORT || 3001;
 
-if (import.meta.url.endsWith(process.argv[1])) {
+// Start server only if this file is run directly
+const isMainModule = import.meta.url.endsWith(process.argv[1]);
+
+if (isMainModule) {
   app.listen(PORT, () => {
     logger.info('backend started', {
       port: PORT,
