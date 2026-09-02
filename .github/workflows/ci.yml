@@ -30,9 +30,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        working-directory: ${{ matrix.package }}
-        timeout-minutes: 15
+      - name: Install all dependencies
+        env:
+          HUSKY: "0"
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: TypeScript type check
@@ -51,6 +51,7 @@ jobs:
         env:
           JWT_SECRET: ci-only-secret-not-for-production
           NODE_ENV: test
+          CI: "true"
 
       - name: Report test failure
         if: failure()
@@ -73,6 +74,8 @@ jobs:
           node-version: 22
 
       - name: Install all dependencies
+        env:
+          HUSKY: "0"
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Build backend
@@ -101,6 +104,8 @@ jobs:
           node-version: 22
 
       - name: Install all dependencies
+        env:
+          HUSKY: "0"
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Audit dependencies
