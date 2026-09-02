@@ -3,6 +3,16 @@
 import { vi } from 'vitest';
 global.jest = vi;
 
+// Shim for jest.isolateModules — Vitest does not provide this method.
+// Jest's isolateModules creates a fresh module registry for the callback;
+// resetModules + callback achieves the same isolation effect.
+if (typeof global.jest.isolateModules !== 'function') {
+  global.jest.isolateModules = (callback) => {
+    vi.resetModules();
+    callback();
+  };
+}
+
 global.chrome = {
   storage: {
     local: {
