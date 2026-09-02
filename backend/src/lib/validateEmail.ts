@@ -1,8 +1,6 @@
-// Simple email validation regex
-// This is not exhaustive but catches most invalid emails
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
 
-export const MAX_EMAIL_LENGTH = 254;
+export { MAX_EMAIL_LENGTH };
 
 export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') {
@@ -11,12 +9,10 @@ export function isValidEmail(email: string): boolean {
 
   const trimmed = email.trim().toLowerCase();
 
-  // Basic length checks
   if (trimmed.length > MAX_EMAIL_LENGTH) {
     return false;
   }
 
-  // Check local part and domain
   const parts = trimmed.split('@');
   if (parts.length !== 2) {
     return false;
@@ -25,16 +21,24 @@ export function isValidEmail(email: string): boolean {
   const localPart = parts[0];
   const domain = parts[1];
 
-  // Local part must not be empty
   if (localPart.length === 0) {
     return false;
   }
 
-  // Domain must have at least one dot
-  if (domain.indexOf('.') === -1) {
+  const lastDotIndex = domain.lastIndexOf('.');
+  if (lastDotIndex === -1 || lastDotIndex === domain.length - 1) {
     return false;
   }
 
-  // Check with regex
-  return EMAIL_REGEX.test(trimmed);
+  const tld = domain.slice(lastDotIndex + 1);
+  if (tld.length < 2 || tld.includes('.')) {
+    return false;
+  }
+
+  const domainLabels = domain.split('.');
+  if (domainLabels.some(label => label.length === 0)) {
+    return false;
+  }
+
+  return true;
 }
