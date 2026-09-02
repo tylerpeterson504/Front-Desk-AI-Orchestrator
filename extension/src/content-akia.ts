@@ -16,16 +16,33 @@
 //         div.message      "Send a message to our hotel staff."
 //         time.timestamp   "a few seconds ago"
 
+interface ChatMessage {
+  sender: string | null;
+  text: string;
+  time: string | null;
+}
+
+interface ChatContext {
+  messages: ChatMessage[];
+  activeGuest: string;
+  conversationId: string;
+}
+
+interface MessageSelectorResult {
+  type: string;
+  success?: boolean;
+}
+
 (function () {
   'use strict';
 
   let DEBUG = false;
-  let observer = null;
-  let pending = null;
+  let observer: MutationObserver | null = null;
+  let pending: ReturnType<typeof setTimeout> | null = null;
 
   const MUTATION_DEBOUNCE_MS = 300;
 
-  function getLocalStorageValue(keys, callback) {
+  function getLocalStorageValue(keys: string[], callback: (result: Record<string, unknown>) => void): void {
     try {
       if (chrome.storage.local.get.length > 1) {
         chrome.storage.local.get(keys, callback);
@@ -33,16 +50,16 @@
       }
 
       const result = chrome.storage.local.get(keys);
-      if (result && typeof result.then === 'function') {
-        result.then(callback).catch(function () {});
+      if (result && typeof (result as Promise<Record<string, unknown>>).then === 'function') {
+        (result as Promise<Record<string, unknown>>).then(callback).catch(function () {});
         return;
       }
       if (result && typeof result === 'object') callback(result);
     } catch (_) {}
   }
 
-  function initDebugMode() {
-    function applyResult(result) {
+  function initDebugMode(): void {
+    function applyResult(result: Record<string, unknown>): void {
       DEBUG = result['fdao-debug'] === true;
       if (DEBUG) console.log('[FDAO/akia] Debug mode enabled');
     }
@@ -50,21 +67,21 @@
     getLocalStorageValue(['fdao-debug'], applyResult);
   }
 
-  function log(message, data) {
+  function log(message: string, data?: unknown): void {
     if (DEBUG) {
       if (data !== undefined) console.log('[FDAO/akia]', message, data);
       else console.log('[FDAO/akia]', message);
     }
   }
 
-  function warn(message, data) {
+  function warn(message: string, data?: unknown): void {
     if (DEBUG) {
       if (data !== undefined) console.warn('[FDAO/akia]', message, data);
       else console.warn('[FDAO/akia]', message);
     }
   }
 
-  function sanitizeText(text) {
+  function sanitizeText(text: string | null | undefined): string | null | undefined {
     if (!text || typeof text !== 'string') return text;
     return text
       .replace(/&/g, '&amp;')
@@ -74,28 +91,28 @@
       .replace(/'/g, '&#39;');
   }
 
-  function safeSend(payload) {
+  function safeSend(payload: { type: string; data?: unknown }): void {
     try {
       const result = chrome.runtime.sendMessage(payload);
-      if (result && typeof result.catch === 'function') {
-        result.catch(function (e) {
-          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message);
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        (result as Promise<unknown>).catch(function (e) {
+          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
         });
       }
     } catch (e) {
-      warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', e && e.message);
+      warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
     }
   }
 
-  function getRoot() {
+  function getRoot(): Element {
     return document.querySelector(
       '.website-chat-client-body[role="log"], [role="log"], main [role="main"], #app > [data-testid*="chat"], #chat-container, [data-app-root]'
     ) || document.body;
   }
 
-  function firstText(root, selectors) {
+  function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
-      let el = null;
+      let el: Element | null = null;
       try { el = root.querySelector(selectors[i]); } catch (_) {}
       if (el) {
         const t = (el.innerText || el.textContent || '').trim();
@@ -137,9 +154,9 @@
     '[contenteditable="true"]'
   ];
 
-  function extractChatContext() {
+  function extractChatContext(): ChatContext {
     const root = getRoot();
-    const collected = [];
+    const collected: Element[] = [];
     MESSAGE_SELECTORS.forEach(function (sel) {
       try { root.querySelectorAll(sel).forEach(function (n) { collected.push(n); }); }
       catch (_) {}
@@ -152,7 +169,7 @@
       return !collected.some(function (m) { return m !== n && n.contains(m); });
     });
     const messages = nodes.map(function (el) {
-      let sender = firstText(el, SENDER_SELECTORS);
+      let sender: string | null = firstText(el, SENDER_SELECTORS);
       if (!sender) {
         try { if (el.matches('.incoming')) sender = 'hotel'; else if (el.matches('.outgoing')) sender = 'guest'; }
         catch (_) {}
@@ -163,10 +180,10 @@
       }
       const text = firstText(el, TEXT_SELECTORS) || (el.innerText || el.textContent || '').trim();
       const time = firstText(el, TIME_SELECTORS);
-      return { sender: sender || null, text: text, time: time || null };
+      return { sender: sender, text: text, time: time };
     }).filter(function (m) { return !!m.text; });
     const activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name" i]']);
-    let conversationEl = null;
+    let conversationEl: Element | null = null;
     try { conversationEl = root.querySelector('[data-conversation-id]'); } catch (_) {}
     const conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
     if (DEBUG) {
@@ -176,37 +193,38 @@
     return { messages: messages, activeGuest: activeGuest || '', conversationId: conversationId || '' };
   }
 
-  function validateContext(ctx) {
-    if (!ctx || typeof ctx !== 'object') throw new Error('Context must be an object');
-    if (!Array.isArray(ctx.messages)) throw new Error('messages must be an array');
-    ctx.messages.forEach(function(m, index) {
+  function validateContext(ctx: unknown): ChatContext {
+    const validated = ctx as ChatContext;
+    if (!validated || typeof validated !== 'object') throw new Error('Context must be an object');
+    if (!Array.isArray(validated.messages)) throw new Error('messages must be an array');
+    validated.messages.forEach(function(m, index) {
       if (!m || typeof m !== 'object') throw new Error('Message at index ' + index + ' must be an object');
       if (typeof m.text !== 'string') throw new Error('Message at index ' + index + ': text must be a string');
       if (m.sender !== null && typeof m.sender !== 'string') throw new Error('Message at index ' + index + ': sender must be string or null');
       if (m.time !== null && typeof m.time !== 'string') throw new Error('Message at index ' + index + ': time must be string or null');
     });
-    if (typeof ctx.activeGuest !== 'string') throw new Error('activeGuest must be a string');
-    if (typeof ctx.conversationId !== 'string') throw new Error('conversationId must be a string');
-    return ctx;
+    if (typeof validated.activeGuest !== 'string') throw new Error('activeGuest must be a string');
+    if (typeof validated.conversationId !== 'string') throw new Error('conversationId must be a string');
+    return validated;
   }
 
-  function hasContext(ctx) { return ctx.messages.length > 0 || !!ctx.activeGuest; }
+  function hasContext(ctx: ChatContext): boolean { return ctx.messages.length > 0 || !!ctx.activeGuest; }
 
-  function sendChatContext() {
+  function sendChatContext(): void {
     try { const ctx = extractChatContext(); validateContext(ctx); if (hasContext(ctx)) safeSend({ type: 'CHAT_CONTEXT_UPDATED', data: ctx }); }
-    catch (e) { warn('sendChatContext failed:', e && e.message); }
+    catch (e: unknown) { warn('sendChatContext failed:', (e as Error)?.message); }
   }
 
-  function logDiscovery(root) {
+  function logDiscovery(root: Element): void {
     if (!DEBUG) return;
-    const probes = {
+    const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
       'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
       'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
     };
     Object.keys(probes).forEach(function (label) {
-      let total = 0, samples = [];
-      probes[label].forEach(function (sel) {
+      let total = 0; const samples: string[] = [];
+      (probes as Record<string, string[]>)[label].forEach(function (sel) {
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
       });
@@ -214,60 +232,104 @@
     });
   }
 
-  function findComposer() {
+  function findComposer(): Element | null {
     for (let i = 0; i < COMPOSER_SELECTORS.length; i++) {
-      let el = null; try { el = document.querySelector(COMPOSER_SELECTORS[i]); } catch (_) {}
+      let el: Element | null = null; try { el = document.querySelector(COMPOSER_SELECTORS[i]); } catch (_) {}
       if (el) return el;
     }
     return null;
   }
 
-  function injectMessage(text) {
+  function injectMessage(text: string): boolean {
     if (!text || typeof text !== 'string') { warn('inject: invalid text input, must be a non-empty string'); return false; }
     if (text.length > 10000) { warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
     const el = findComposer();
     if (!el) { warn('inject: composer not found'); return false; }
     try {
-      if (el.isContentEditable) {
-        el.focus(); const before = el.textContent; let ok = false;
-        try { const s = document.execCommand('selectAll', false, null); const i = document.execCommand('insertText', false, text); ok = !!(s && i); }
+      if ((el as HTMLElement).isContentEditable) {
+        (el as HTMLElement).focus();
+        const before = el.textContent;
+        let ok = false;
+        try {
+          const s = document.execCommand('selectAll', false, null);
+          const i = document.execCommand('insertText', false, text);
+          ok = !!(s && i);
+        }
         catch (_) { ok = false; }
-        if (!ok || el.textContent === before) el.textContent = text;
-        const InputEventCtor = window.InputEvent;
-        const evt = InputEventCtor ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text }) : new Event('input', { bubbles: true });
-        el.dispatchEvent(evt); el.dispatchEvent(new Event('change', { bubbles: true })); return true;
+        if (!ok || el.textContent === before) (el as HTMLElement).textContent = text;
+        const InputEventCtor = (window as unknown as { InputEvent: typeof InputEvent }).InputEvent;
+        const evt = InputEventCtor 
+          ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
+          : new Event('input', { bubbles: true });
+        el.dispatchEvent(evt);
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
       }
-      const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : el instanceof HTMLInputElement ? HTMLInputElement.prototype : null;
-      if (proto) { const desc = Object.getOwnPropertyDescriptor(proto, 'value'); if (desc && desc.set) desc.set.call(el, text); else el.value = text; }
-      else { el.value = text; }
-      const InputEventCtor2 = window.InputEvent;
-      const evt2 = InputEventCtor2 ? new InputEventCtor2('input', { bubbles: true, inputType: 'insertText', data: text }) : new Event('input', { bubbles: true });
-      el.dispatchEvent(evt2); el.dispatchEvent(new Event('change', { bubbles: true })); el.focus(); return true;
-    } catch (e) { warn('inject failed:', e && e.message); return false; }
+      const proto = (el as HTMLTextAreaElement).constructor.prototype;
+      if (proto && 'value' in proto) {
+        const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+        if (desc && desc.set) desc.set.call(el, text);
+        else (el as HTMLTextAreaElement | HTMLInputElement).value = text;
+      } else {
+        (el as HTMLTextAreaElement | HTMLInputElement).value = text;
+      }
+      const InputEventCtor2 = (window as unknown as { InputEvent: typeof InputEvent }).InputEvent;
+      const evt2 = InputEventCtor2
+        ? new InputEventCtor2('input', { bubbles: true, inputType: 'insertText', data: text })
+        : new Event('input', { bubbles: true });
+      el.dispatchEvent(evt2);
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      (el as HTMLElement).focus();
+      return true;
+    } catch (e: unknown) { warn('inject failed:', (e as Error)?.message); return false; }
   }
 
-  function scheduleCapture() { if (pending) clearTimeout(pending); pending = setTimeout(function () { pending = null; sendChatContext(); }, MUTATION_DEBOUNCE_MS); }
+  function scheduleCapture(): void {
+    if (pending) clearTimeout(pending);
+    pending = setTimeout(function () { pending = null; sendChatContext(); }, MUTATION_DEBOUNCE_MS);
+  }
 
-  function setupObserver() {
+  function setupObserver(): void {
     if (observer) { try { observer.disconnect(); } catch (_) {} }
     observer = new MutationObserver(function () { scheduleCapture(); });
-    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e) { warn('observe failed:', e && e.message); } }
+    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e: unknown) { warn('observe failed:', (e as Error)?.message); } }
   }
 
-  function init() {
-    initDebugMode(); setupObserver();
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sendChatContext);
-    else sendChatContext();
-    if (window.addEventListener) window.addEventListener('beforeunload', function() { if (observer) { try { observer.disconnect(); } catch (_) {} observer = null; } });
+  function init(): void {
+    initDebugMode();
+    setupObserver();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', sendChatContext);
+    } else {
+      sendChatContext();
+    }
+    if (window.addEventListener) {
+      window.addEventListener('beforeunload', function() {
+        if (observer) {
+          try { observer.disconnect(); } catch (_) {}
+          observer = null;
+        }
+      });
+    }
   }
 
-  chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
+  chrome.runtime.onMessage.addListener(function (message: { type: string; data?: unknown; text?: string }, _sender: unknown, sendResponse: (response: MessageSelectorResult) => void) {
     if (message.type === 'GET_CHAT_CONTEXT') {
-      try { const ctx = extractChatContext(); validateContext(ctx); sendResponse({ data: ctx }); }
-      catch (e) { warn('GET_CHAT_CONTEXT failed:', e && e.message); sendResponse({ data: { messages: [], activeGuest: '', conversationId: '' } }); }
+      try {
+        const ctx = extractChatContext();
+        validateContext(ctx);
+        sendResponse({ data: ctx });
+      }
+      catch (e: unknown) {
+        warn('GET_CHAT_CONTEXT failed:', (e as Error)?.message);
+        sendResponse({ data: { messages: [], activeGuest: '', conversationId: '' } });
+      }
       return false;
     }
-    if (message.type === 'INJECT_MESSAGE') { sendResponse({ success: injectMessage(message.text) }); return false; }
+    if (message.type === 'INJECT_MESSAGE') {
+      sendResponse({ success: injectMessage(message.text || '') });
+      return false;
+    }
   });
 
   init();

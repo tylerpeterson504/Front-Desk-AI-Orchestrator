@@ -13,12 +13,12 @@
 // changes are picked up without a reload.
 const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 
-let apiBaseUrlOverride = null;
+let apiBaseUrlOverride: string | null = null;
 
 // Reject anything that is not an http(s) origin so a bad storage value cannot
 // redirect API calls somewhere unexpected, and drop trailing slashes so callers
 // can always append '/api'.
-function normalizeApiBaseUrl(value) {
+function normalizeApiBaseUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
     const url = new URL(value.trim());
@@ -29,18 +29,18 @@ function normalizeApiBaseUrl(value) {
   }
 }
 
-function getApiBaseUrl() {
+function getApiBaseUrl(): string {
   return apiBaseUrlOverride || DEFAULT_API_BASE_URL;
 }
 
-function setApiBaseUrlOverride(value) {
+function setApiBaseUrlOverride(value: unknown): string {
   apiBaseUrlOverride = normalizeApiBaseUrl(value);
   return getApiBaseUrl();
 }
 
 // Read the override once at startup. Safe to call from any context; resolves to
 // the default when storage is unavailable or holds nothing usable.
-async function loadApiBaseUrl() {
+async function loadApiBaseUrl(): Promise<string> {
   try {
     if (!chrome?.storage?.local?.get) return getApiBaseUrl();
     const stored = await chrome.storage.local.get(['apiBaseUrl']);
@@ -61,7 +61,16 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged?.addListener) {
   });
 }
 
-const PROPERTIES = {
+interface PropertyConfig {
+  id: number;
+  name: string;
+  urlPattern: string;
+  toneGuidelines: string;
+  checkoutTime: string;
+  wifiSSID: string;
+}
+
+const PROPERTIES: Record<string, PropertyConfig> = {
   'app.us1.stayntouch.com': {
     id: 1,
     name: 'St.Pierre Hotel',
@@ -81,7 +90,7 @@ const PROPERTIES = {
 };
 
 // Get property config from current URL
-function getPropertyConfig() {
+function getPropertyConfig(): PropertyConfig | null {
   const hostname = window.location.hostname;
 
   for (const config of Object.values(PROPERTIES)) {
@@ -94,20 +103,18 @@ function getPropertyConfig() {
 }
 
 // Get all properties
-function getAllProperties() {
+function getAllProperties(): PropertyConfig[] {
   return Object.values(PROPERTIES);
 }
 
-// Export for use in content scripts
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    PROPERTIES,
-    getPropertyConfig,
-    getAllProperties,
-    getApiBaseUrl,
-    setApiBaseUrlOverride,
-    loadApiBaseUrl,
-    normalizeApiBaseUrl,
-    DEFAULT_API_BASE_URL
-  };
-}
+export {
+  PROPERTIES,
+  getPropertyConfig,
+  getAllProperties,
+  getApiBaseUrl,
+  setApiBaseUrlOverride,
+  loadApiBaseUrl,
+  normalizeApiBaseUrl,
+  DEFAULT_API_BASE_URL,
+  apiBaseUrlOverride
+};

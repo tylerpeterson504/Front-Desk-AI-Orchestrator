@@ -1,3 +1,5 @@
+// Popup event handlers
+
 const openButton = document.getElementById('open-sidepanel');
 
 if (openButton) {
@@ -18,21 +20,21 @@ if (openButton) {
   });
 }
 
-// ─── Backend URL ──────────────────────────────────────────────────────────────
+// ━━━━━━ Backend URL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // The manifest can only grant localhost up front, so an install pointing at a
 // deployed backend has to ask for that origin at runtime. Doing it here, from a
 // click, is what Chrome requires for an optional host permission.
-const urlInput = document.getElementById('api-base-url');
+const urlInput = document.getElementById('api-base-url') as HTMLInputElement | null;
 const saveButton = document.getElementById('save-api-base-url');
 const statusEl = document.getElementById('settings-status');
 
-function setStatus(message, kind) {
+function setStatus(message: string, kind?: string): void {
   if (!statusEl) return;
   statusEl.textContent = message;
   statusEl.className = kind ? `status ${kind}` : 'status';
 }
 
-async function loadCurrentUrl() {
+async function loadCurrentUrl(): Promise<void> {
   if (!urlInput) return;
   try {
     const stored = await chrome.storage.local.get(['apiBaseUrl']);
@@ -45,7 +47,7 @@ async function loadCurrentUrl() {
   }
 }
 
-function requestOrigin(origin) {
+function requestOrigin(origin: string): Promise<boolean> {
   return new Promise((resolve) => {
     if (!chrome.permissions?.request) {
       resolve(true);
@@ -57,8 +59,9 @@ function requestOrigin(origin) {
 
 if (saveButton && urlInput) {
   saveButton.addEventListener('click', async () => {
-    const normalized =
-      typeof normalizeApiBaseUrl === 'function' ? normalizeApiBaseUrl(urlInput.value) : null;
+    const normalized = typeof normalizeApiBaseUrl === 'function'
+      ? normalizeApiBaseUrl(urlInput.value)
+      : null;
 
     if (!urlInput.value.trim()) {
       await chrome.storage.local.remove('apiBaseUrl');
