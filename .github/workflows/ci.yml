@@ -47,7 +47,7 @@ jobs:
       - name: Test
         working-directory: ${{ matrix.package }}
         run: |
-          npm test 2>&1 | tee test-output.log
+          npm test 2>&1 | tee /tmp/test-output.log
           exit ${PIPESTATUS[0]}
         env:
           JWT_SECRET: ci-only-secret-not-for-production
@@ -55,20 +55,26 @@ jobs:
 
       - name: Report test failure
         if: failure()
-        working-directory: ${{ matrix.package }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           {
             echo "Test output for ${{ matrix.package }}:"
             echo ""
             echo "```"
-            tail -c 60000 test-output.log 2>/dev/null || echo "No output captured"
+            tail -c 60000 /tmp/test-output.log 2>/dev/null || echo "No output captured"
             echo "```"
-          } > issue-body.md
+          } > /tmp/issue-body.md
           gh issue create \
+            --repo ${{ github.repository }} \
             --title "CI Test Failure: ${{ matrix.package }}" \
-            --body-file issue-body.md || true
+            --body-file /tmp/issue-body.md 2>&1 || \
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"title\":\"CI Test Failure: ${{ matrix.package }}\",\"body\":$(jq -Rs . < /tmp/issue-body.md)}" \
+            https://api.github.com/repos/${{ github.repository }}/issues || true
 
   build:
     name: Build
