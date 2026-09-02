@@ -39,7 +39,7 @@ describe('Content Script Context Guard', function() {
     });
 
     it('should return non-string values as-is', function() {
-      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''); } };
+      const contentScript = { sanitizeText: function(t) { if (!t || typeof t !== 'string') return t; return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); } };
       expect(contentScript.sanitizeText(123)).toBe(123);
       expect(contentScript.sanitizeText(true)).toBe(true);
     });
