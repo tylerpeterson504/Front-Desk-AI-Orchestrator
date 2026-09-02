@@ -18,11 +18,12 @@
     "set-role": "node db/set-role.js",
     "prune-sessions": "node db/prune-sessions.js",
     "test": "jest --runInBand",
-    "test:api": "jest tests/api.test.js",
-    "test:security": "jest tests/security.test.js",
+    "test:api": "jest tests/api.test.ts",
+    "test:security": "jest tests/security.test.ts",
     "test:coverage": "jest --runInBand --coverage",
     "lint": "eslint src --ext .js,.ts",
-    "lint:fix": "eslint src --ext .js,.ts --fix"
+    "lint:fix": "eslint src --ext .js,.ts --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -36,6 +37,7 @@
     "pg-promise": "^11.9.1",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.20",
+    "uuid": "^9.0.1",
     "winston": "^3.13.1",
     "zod": "^3.23.8"
   },
@@ -46,6 +48,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.5.0",
     "@types/pg": "^8.11.6",
+    "@types/uuid": "^9.0.8",
     "jest": "^29.7.0",
     "nodemon": "^3.1.4",
     "supertest": "^7.0.0",
@@ -67,7 +70,8 @@
       "^@routes/(.*)$": "<rootDir>/src/routes/$1",
       "^@services/(.*)$": "<rootDir>/src/services/$1",
       "^@lib/(.*)$": "<rootDir>/src/lib/$1",
-      "^@middleware/(.*)$": "<rootDir>/src/middleware/$1"
+      "^@middleware/(.*)$": "<rootDir>/src/middleware/$1",
+      "^@entities/(.*)$": "<rootDir>/src/entities/$1"
     }
   }
 }
