@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Qwen3-32B Chat Demo</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #171a23;
+      --border: #2a2f3e;
+      --text: #e8eaf0;
+      --muted: #9aa3b5;
+      --accent: #8b5cf6;
+      --user-bubble: #2d3a5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 16px; margin: 0; }
+    header .sub { color: var(--muted); font-size: 12px; }
+    header a { color: var(--accent); text-decoration: none; }
+    #signin {
+      margin-left: auto;
+      background: var(--accent);
+      color: white;
+      border: 0;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #signin:disabled { opacity: 0.5; cursor: default; }
+    #status { font-size: 12px; color: var(--muted); }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .msg { padding: 10px 14px; border-radius: 12px; max-width: 80%; white-space: pre-wrap; word-wrap: break-word; line-height: 1.5; font-size: 14px; }
+    .user { align-self: flex-end; background: var(--user-bubble); }
+    .assistant { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
+    .assistant.streaming { border-color: var(--accent); }
+    form {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    #input {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+    }
+    #input:focus { outline: none; border-color: var(--accent); }
+    button.send {
+      background: var(--accent);
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.send:disabled { opacity: 0.5; cursor: default; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💬 Qwen3-32B Chat Demo</h1>
+    <span class="sub"><a href="https://huggingface.co/Qwen/Qwen3-32B" target="_blank" rel="noopener">Qwen/Qwen3-32B</a> · via Hugging Face Inference Providers</span>
+    <button id="signin">Sign in with Hugging Face</button>
+    <span id="status"></span>
+  </header>
+
+  <div id="chat"></div>
+
+  <form id="composer">
+    <textarea id="input" rows="1" placeholder="Ask something… (Enter to send, Shift+Enter for a newline)"></textarea>
+    <button type="submit" class="send">Send</button>
+  </form>
+
+  <script>
+    const MODEL_ID = "Qwen/Qwen3-32B";
+    const ROUTER_URL = "https://router.huggingface.co/v1/chat/completions";
+    const SYSTEM_PROMPT = "You are a concise, helpful assistant.";
+    const OAUTH_SCOPES = ["inference-api"];
+
+    // --- Lightweight HF OAuth (implicit flow, PKCE-less) -------------------
+    // Configure these in your HF OAuth app settings; the redirect URL must
+    // match this Space's URL exactly.
+    const CLIENT_ID = new URLSearchParams(location.search).get("client_id") ||
+      localStorage.getItem("hf_oauth_client_id") || "";
+    if (CLIENT_ID) localStorage.setItem("hf_oauth_client_id", CLIENT_ID);
+
+    function base64url(bytes) {
+      return btoa(String.fromCharCode(...new Uint8Array(bytes)))
+        .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    async function oauthLogin() {
+      if (!CLIENT_ID) {
+        setStatus("⚠️ No OAuth client_id configured — paste a token instead (see below).");
+        promptForToken();
+        return;
+      }
+      const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+      sessionStorage.setItem("hf_verifier", verifier);
+      const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: location.origin + location.pathname,
+        response_type: "token",
+        scope: OAUTH_SCOPES.join(" ")
+      });
+      location.href = "https://huggingface.co/oauth/authorize?" + params;
+    }
+
+    function tokenFromFragment() {
+      const frag = new URLSearchParams(location.hash.slice(1));
+      const token = frag.get("access_token");
+      if (token) {
+        sessionStorage.setItem("hf_token", token);
+        history.replaceState(null, "", location.pathname);
+      }
+      return token;
+    }
+
+    function promptForToken() {
+      const token = prompt(
+        "Paste a Hugging Face access token (create one at huggingface.co/settings/tokens,\n" +
+        "scope: 'Make calls to Inference Providers'). It is kept in this tab only."
+      );
+      if (token && token.trim()) {
+        sessionStorage.setItem("hf_token", token.trim());
+        setStatus("Signed in with a pasted token.");
+      }
+    }
+
+    function getToken() {
+      return sessionStorage.getItem("hf_token") || tokenFromFragment();
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    // --- Chat --------------------------------------------------------------
+    const chatEl = document.getElementById("chat");
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.querySelector(".send");
+    const messages = [];
+
+    function addBubble(role, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + role;
+      div.textContent = text;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return div;
+    }
+
+    function renderThinking(delta) {
+      const box = document.createElement("div");
+      box.className = "msg assistant";
+      box.textContent = delta;
+      chatEl.appendChild(box);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return box;
+    }
+
+    async function send() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      const token = getToken();
+      if (!token) {
+        setStatus("Sign in or paste a token first.");
+        return;
+      }
+
+      messages.push({ role: "user", content: text });
+      addBubble("user", text);
+      inputEl.value = "";
+      sendBtn.disabled = true;
+
+      const bubble = addBubble("assistant", "");
+      bubble.classList.add("streaming");
+      let shown = "";
+
+      try {
+        const res = await fetch(ROUTER_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: MODEL_ID,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...messages
+            ],
+            stream: true,
+            chat_template_kwargs: { enable_thinking: false }
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => res.statusText);
+          throw new Error(`HTTP ${res.status}: ${errText.slice(0, 300)}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const payload = line.slice(6).trim();
+            if (payload === "[DONE]") continue;
+            try {
+              const evt = JSON.parse(payload);
+              const delta = evt.choices?.[0]?.delta;
+              if (delta?.content) {
+                shown += delta.content;
+                bubble.textContent = shown;
+                chatEl.scrollTop = chatEl.scrollHeight;
+              }
+            } catch (_) { /* partial JSON line; keep buffering */ }
+          }
+        }
+
+        if (!shown.trim()) {
+          bubble.textContent = "⚠️ Empty response from the provider.";
+        } else {
+          messages.push({ role: "assistant", content: shown });
+        }
+      } catch (err) {
+        bubble.textContent = "⚠️ " + err.message;
+      } finally {
+        bubble.classList.remove("streaming");
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    // --- Wire up -----------------------------------------------------------
+    document.getElementById("signin").addEventListener("click", oauthLogin);
+    document.getElementById("composer").addEventListener("submit", (e) => {
+      e.preventDefault();
+      send();
+    });
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    (async function init() {
+      if (getToken()) {
+        setStatus("Signed in ✓");
+      } else {
+        setStatus("Not signed in — click “Sign in with Hugging Face”.");
+      }
+      addBubble("assistant",
+        "Welcome! This demo streams Qwen/Qwen3-32B from Hugging Face Inference Providers.\n" +
+        "Sign in with your HF account (or paste a token) and start chatting — inference is billed to your own account quota.");
+    })();
+  </script>
+</body>
+</html>

@@ -43,3 +43,9 @@ coverage/
 # Extension
 extension/dist/
 extension/build/
+
+# qwen code settings
+.qwen/telemetry.log
+
+# GitHub App credentials
+gha-creds-*.json
