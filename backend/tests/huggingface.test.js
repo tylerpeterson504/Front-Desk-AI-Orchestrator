@@ -76,4 +76,82 @@ describe('Hugging Face Inference client', () => {
     const client = require('../src/services/huggingface');
     await expect(client.complete([])).rejects.toMatchObject({ code: 'INVALID_MESSAGES' });
   });
+
+  test('disables Qwen3 thinking mode by default', async () => {
+    process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ model: 'Qwen/Qwen3-32B', choices: [{ message: { content: 'Hi there' } }] })
+    });
+    const client = require('../src/services/huggingface');
+    await client.complete([{ role: 'user', content: 'Hi' }]);
+
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+    // vLLM stacks ignore chat_template_kwargs — the /no_think soft switch must
+    // be injected as a system message.
+    expect(body.messages[0]).toEqual({ role: 'system', content: '/no_think' });
+    expect(body.messages[1]).toEqual({ role: 'user', content: 'Hi' });
+  });
+
+  test('appends /no_think to an existing system message instead of adding one', async () => {
+    process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ model: 'Qwen/Qwen3-32B', choices: [{ message: { content: 'Hi there' } }] })
+    });
+    const client = require('../src/services/huggingface');
+    await client.complete([
+      { role: 'system', content: 'You are a hotel front-desk assistant.' },
+      { role: 'user', content: 'Hi' }
+    ]);
+
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body.messages[0].role).toBe('system');
+    expect(body.messages[0].content).toContain('hotel front-desk assistant');
+    expect(body.messages[0].content).toContain('/no_think');
+    expect(body.messages).toHaveLength(2);
+  });
+
+  test('allows opting back into thinking mode', async () => {
+    process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ model: 'Qwen/Qwen3-32B', choices: [{ message: { content: 'Hi there' } }] })
+    });
+    const client = require('../src/services/huggingface');
+    await client.complete([{ role: 'user', content: 'Hi' }], { enableThinking: true });
+
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: true });
+    expect(body.messages[0]).toEqual({ role: 'user', content: 'Hi' });
+  });
+
+  test('falls back to reasoning_content when content is null (thinking channel)', async () => {
+    process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        model: 'Qwen/Qwen3-32B',
+        choices: [{ message: { content: null, reasoning_content: 'The guest asked for a welcome.\n\nWelcome!' } }]
+      })
+    });
+    const client = require('../src/services/huggingface');
+    const result = await client.complete([{ role: 'user', content: 'Hi' }]);
+    expect(result.text).toBe('The guest asked for a welcome.\n\nWelcome!');
+  });
+
+  test('strips residual <think> blocks from content', async () => {
+    process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        model: 'Qwen/Qwen3-32B',
+        choices: [{ message: { content: '<think>Let me draft this.</think>\n\nWelcome to the hotel!' } }]
+      })
+    });
+    const client = require('../src/services/huggingface');
+    const result = await client.complete([{ role: 'user', content: 'Hi' }]);
+    expect(result.text).toBe('Welcome to the hotel!');
+  });
 });
