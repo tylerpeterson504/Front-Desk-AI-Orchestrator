@@ -177,10 +177,11 @@ describe('Service Layer', () => {
 
     describe('updateUser', () => {
       it('should update user', async () => {
-        const mockUser = { id: '1', email: 'test@example.com', name: 'Test', save: jest.fn() };
+        const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
         const mockRepo = {
           findOne: jest.fn().mockResolvedValue(mockUser),
-          find: jest.fn().mockResolvedValue([])
+          find: jest.fn().mockResolvedValue([]),
+          save: jest.fn().mockResolvedValue(mockUser)
         };
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
@@ -189,7 +190,7 @@ describe('Service Layer', () => {
         });
 
         expect(mockUser.name).toBe('Updated Name');
-        expect(mockUser.save).toHaveBeenCalled();
+        expect(mockRepo.save).toHaveBeenCalled();
       });
 
       it('should throw NotFoundError for non-existent user', async () => {
@@ -206,15 +207,16 @@ describe('Service Layer', () => {
 
     describe('deleteUser', () => {
       it('should delete user', async () => {
-        const mockUser = { id: '1', remove: jest.fn() };
+        const mockUser = { id: '1' };
         const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
+          findOne: jest.fn().mockResolvedValue(mockUser),
+          remove: jest.fn().mockResolvedValue(undefined)
         };
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await userService.deleteUser('1');
 
-        expect(mockUser.remove).toHaveBeenCalled();
+        expect(mockRepo.remove).toHaveBeenCalled();
       });
 
       it('should throw NotFoundError for non-existent user', async () => {

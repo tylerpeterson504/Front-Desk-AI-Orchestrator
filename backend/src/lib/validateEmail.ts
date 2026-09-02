@@ -2,6 +2,8 @@
 // This is not exhaustive but catches most invalid emails
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export const MAX_EMAIL_LENGTH = 254;
+
 export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') {
     return false;
@@ -10,7 +12,7 @@ export function isValidEmail(email: string): boolean {
   const trimmed = email.trim().toLowerCase();
 
   // Basic length checks
-  if (trimmed.length > 254) {
+  if (trimmed.length > MAX_EMAIL_LENGTH) {
     return false;
   }
 

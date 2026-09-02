@@ -43,8 +43,9 @@ export class RateLimitError extends AppError {
 }
 
 export class DatabaseError extends AppError {
+  public readonly internalMessage: string;
   constructor(message: string, publicMessage: string = 'Database error') {
     super(500, 'DATABASE_ERROR', publicMessage);
-    this.message = message; // Internal message (not exposed)
+    this.internalMessage = message; // Internal message (kept for logging, never exposed to clients)
   }
 }

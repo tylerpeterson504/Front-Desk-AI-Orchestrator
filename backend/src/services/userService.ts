@@ -35,7 +35,9 @@ function getBcryptRounds(): number {
 }
 
 export class UserService {
-  private userRepository = getRepository<User>(User);
+  private get userRepository() {
+    return getRepository<User>(User);
+  }
 
   async createUser(data: CreateUserDto, requestId?: string): Promise<User> {
     const log = createRequestLogger(requestId || '');

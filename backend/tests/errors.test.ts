@@ -140,7 +140,8 @@ describe('Error Classes', () => {
       
       expect(error.statusCode).toBe(500);
       expect(error.code).toBe('DATABASE_ERROR');
-      expect(error.message).toBe('Connection failed');
+      expect(error.message).toBe('Database error');
+      expect(error.internalMessage).toBe('Connection failed');
     });
   });
 
