@@ -1,4 +1,8 @@
 // Setup file for extension tests
+// Alias jest to vi for Jest compatibility in Vitest
+import { vi } from 'vitest';
+global.jest = vi;
+
 global.chrome = {
   storage: {
     local: {
