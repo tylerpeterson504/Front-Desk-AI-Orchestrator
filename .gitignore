@@ -30,7 +30,6 @@ yarn-error.log*
 
 # OS
 Thumbs.db
-.DS_Store
 
 # Testing
 coverage/
@@ -41,5 +40,20 @@ coverage/
 *.sqlite3
 
 # Extension
-extension/dist/
-extension/build/
+/extension/dist/
+/extension/build/
+
+# Dashboard
+/dashboard/build/
+/dashboard/dist/
+
+# Backend
+/backend/dist/
+/backend/build/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cache
+.cache/
