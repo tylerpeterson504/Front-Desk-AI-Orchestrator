@@ -39,7 +39,19 @@ jobs:
           echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
           echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
 
-      - name: Create or reuse Neon Branch
+      - name: Reset existing Neon Branch
+        if: github.event.action != 'opened'
+        id: reset_neon_branch
+        continue-on-error: true
+        uses: neondatabase/reset-branch-action@v1
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ${{ env.NEON_BRANCH_NAME }}
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Create Neon Branch
+        if: steps.reset_neon_branch.outcome != 'success'
         id: create_neon_branch
         uses: neondatabase/create-branch-action@v6
         with:
@@ -47,16 +59,6 @@ jobs:
           branch_name: ${{ env.NEON_BRANCH_NAME }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
-
-      - name: Reset existing Neon Branch on synchronize
-        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
-        id: reset_neon_branch
-        uses: neondatabase/reset-branch-action@v1
-        with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: ${{ env.NEON_BRANCH_NAME }}
-          parent: true
-          api_key: ${{ secrets.NEON_API_KEY }}
 
       # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
