@@ -56,16 +56,10 @@ jobs:
       - name: Report test failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          {
-            echo "Test output for ${{ matrix.package }}:"
-            echo ""
-            echo "```"
-            tail -c 60000 /tmp/test-output.log 2>/dev/null || echo "No output captured"
-            echo "```"
-          } > /tmp/issue-body.md
+          echo "Test output for ${{ matrix.package }}:" > /tmp/issue-body.md
+          tail -c 60000 /tmp/test-output.log 2>/dev/null >> /tmp/issue-body.md || echo "No test output found" >> /tmp/issue-body.md
           jq -n --arg body "$(cat /tmp/issue-body.md)" --arg title "CI Test Failure: ${{ matrix.package }}" '{title: $title, body: $body}' > /tmp/issue-payload.json
           curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
