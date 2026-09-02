@@ -13,6 +13,11 @@ export function isValidEmail(email: string): boolean {
     return false;
   }
 
+  // Reject internal whitespace (spaces, tabs, etc.)
+  if (/\s/.test(trimmed)) {
+    return false;
+  }
+
   const parts = trimmed.split('@');
   if (parts.length !== 2) {
     return false;
