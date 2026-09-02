@@ -139,11 +139,11 @@
 
   function extractChatContext() {
     const root = getRoot();
-    const collected = [];
+    const collectedSet = new Set();
     MESSAGE_SELECTORS.forEach(function (sel) {
-      try { root.querySelectorAll(sel).forEach(function (n) { collected.push(n); }); }
-      catch (_) {}
+      try { root.querySelectorAll(sel).forEach(function (n) { collectedSet.add(n); }); } catch (_) {}
     });
+    const collected = Array.from(collectedSet);
     const nodes = collected.filter(function (n) {
       const excluded = MESSAGE_EXCLUDE.some(function (sel) {
         try { return n.matches(sel) || n.closest(sel); } catch (_) { return false; }
