@@ -19,7 +19,8 @@
     "https://*/*"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/background.ts",
+    "type": "module"
   },
   "action": {
     "default_popup": "src/popup.html",
@@ -38,8 +39,8 @@
         "https://app.us1.stayntouch.com/*"
       ],
       "js": [
-        "src/config.js",
-        "src/content-stayntouch.js"
+        "src/config.ts",
+        "src/content-stayntouch.ts"
       ],
       "run_at": "document_idle"
     },
@@ -48,8 +49,8 @@
         "https://sys.akia.ai/*"
       ],
       "js": [
-        "src/config.js",
-        "src/content-akia.js"
+        "src/config.ts",
+        "src/content-akia.ts"
       ],
       "run_at": "document_idle"
     }
