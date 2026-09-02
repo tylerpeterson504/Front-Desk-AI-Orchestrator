@@ -62,11 +62,7 @@ jobs:
           echo "Test output for ${{ matrix.package }}:" > /tmp/issue-body.md
           tail -c 60000 /tmp/test-output.log 2>/dev/null >> /tmp/issue-body.md || echo "No test output found" >> /tmp/issue-body.md
           jq -n --arg body "$(cat /tmp/issue-body.md)" --arg title "CI Test Failure: ${{ matrix.package }}" '{title: $title, body: $body}' > /tmp/issue-payload.json
-          curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            -d @/tmp/issue-payload.json \
-            https://api.github.com/repos/${{ github.repository }}/issues || true
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" -d @/tmp/issue-payload.json https://api.github.com/repos/${{ github.repository }}/issues || true
 
   build:
     name: Build
