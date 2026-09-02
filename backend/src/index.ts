@@ -10,6 +10,9 @@ import { requestId, notFound, errorHandler } from './middleware/errorHandler';
 import { getMode } from './config/registration';
 import { initializeDatabase } from './config/database';
 import { config } from './config';
+import { responseCache } from './middleware/cache';
+import { performanceMonitor } from './middleware/performance';
+import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +26,9 @@ app.disable('x-powered-by');
 // rate-limit keys resolve to the proxy instead of the client.
 app.set('trust proxy', 1);
 app.use(helmet());
+app.use(additionalSecurityHeaders);
 app.use(requestId);
+app.use(performanceMonitor());
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
@@ -43,6 +48,10 @@ app.use(cors({
     : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]
 }));
 app.use(express.json({ limit: '256kb' }));
+app.use(sanitizeInput);
+
+// Response cache for idempotent GET endpoints (60s TTL)
+app.use(responseCache(60));
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
@@ -67,7 +76,7 @@ const authLimiter = rateLimit({
   skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout'
 });
 
-// Refresh still needs a ceiling â one client refreshes ~4 times an hour, so this
+// Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
 // is generous for a shared IP and still caps a token-stuffing loop.
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
