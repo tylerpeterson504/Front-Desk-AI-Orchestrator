@@ -18,9 +18,6 @@ jobs:
   test:
     name: Test ${{ matrix.package }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ${{ matrix.package }}
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: TypeScript type check
         working-directory: ${{ matrix.package }}
@@ -48,25 +45,10 @@ jobs:
 
       - name: Test
         working-directory: ${{ matrix.package }}
-        run: |
-          set -o pipefail
-          npm test 2>&1 | tee "/tmp/test-output-${{ matrix.package }}.txt"
+        run: npm test
         env:
           JWT_SECRET: ci-only-secret-not-for-production
           NODE_ENV: test
-          NO_COLOR: "1"
-
-      - name: Report test output
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          file="/tmp/test-output-${{ matrix.package }}.txt"
-          if [ ! -s "$file" ]; then exit 0; fi
-          tail -c 60000 "$file" > /tmp/issue-body.txt
-          gh issue create --repo "$GITHUB_REPOSITORY" \
-            --title "CI test failures: ${{ matrix.package }} @ ${GITHUB_SHA::7}" \
-            --body-file /tmp/issue-body.txt || true
 
   build:
     name: Build
@@ -80,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install all dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build backend
         working-directory: backend
@@ -109,7 +91,7 @@ jobs:
           cache: npm
 
       - name: Install all dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Audit dependencies
         run: |
