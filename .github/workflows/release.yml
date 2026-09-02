@@ -22,11 +22,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build all
+      - name: Build all packages
         run: npm run build
+
+      - name: Run tests
+        run: npm run test
+        env:
+          JWT_SECRET: ci-only-secret-not-for-production
+          NODE_ENV: test
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -36,8 +42,3 @@ jobs:
             backend/build/**
             dashboard/build/**
             extension/build/**
-
-      - name: Publish to npm (if applicable)
-        run: |
-          cd backend && npm publish || true
-          cd dashboard && npm publish || true
