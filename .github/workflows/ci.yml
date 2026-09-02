@@ -66,14 +66,11 @@ jobs:
             tail -c 60000 /tmp/test-output.log 2>/dev/null || echo "No output captured"
             echo "```"
           } > /tmp/issue-body.md
-          gh issue create \
-            --repo ${{ github.repository }} \
-            --title "CI Test Failure: ${{ matrix.package }}" \
-            --body-file /tmp/issue-body.md 2>&1 || \
+          jq -n --arg body "$(cat /tmp/issue-body.md)" --arg title "CI Test Failure: ${{ matrix.package }}" '{title: $title, body: $body}' > /tmp/issue-payload.json
           curl -s -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            -d "{\"title\":\"CI Test Failure: ${{ matrix.package }}\",\"body\":$(jq -Rs . < /tmp/issue-body.md)}" \
+            -d @/tmp/issue-payload.json \
             https://api.github.com/repos/${{ github.repository }}/issues || true
 
   build:
