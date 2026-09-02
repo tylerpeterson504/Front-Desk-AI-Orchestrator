@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
+import { propertyAPI, templateAPI, shiftNoteAPI, auditAPI } from '../src/services/api';
 import { usePropertiesStore } from '../src/stores/propertiesStore';
 import { useTemplatesStore } from '../src/stores/templatesStore';
 import { useShiftNotesStore } from '../src/stores/shiftNotesStore';
@@ -54,7 +55,7 @@ describe('Zustand Stores', () => {
         { id: 2, name: 'Property 2' }
       ];
       
-      (window as any).propertyAPI.getAll.mockResolvedValue(mockProperties);
+      propertyAPI.getAll.mockResolvedValue(mockProperties);
 
       const { result } = renderHook(() => usePropertiesStore());
 
@@ -68,7 +69,7 @@ describe('Zustand Stores', () => {
     });
 
     it('should handle fetch error', async () => {
-      (window as any).propertyAPI.getAll.mockRejectedValue(new Error('Network error'));
+      propertyAPI.getAll.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => usePropertiesStore());
 
@@ -82,7 +83,7 @@ describe('Zustand Stores', () => {
 
     it('should create a property', async () => {
       const mockProperty = { id: 3, name: 'New Property' };
-      (window as any).propertyAPI.create.mockResolvedValue(mockProperty);
+      propertyAPI.create.mockResolvedValue(mockProperty);
 
       const { result } = renderHook(() => usePropertiesStore());
 
@@ -132,7 +133,7 @@ describe('Zustand Stores', () => {
         { id: 2, name: 'Template 2', property_id: 1 }
       ];
       
-      (window as any).templateAPI.getAll.mockResolvedValue(mockTemplates);
+      templateAPI.getAll.mockResolvedValue(mockTemplates);
 
       const { result } = renderHook(() => useTemplatesStore());
 
@@ -171,7 +172,7 @@ describe('Zustand Stores', () => {
         { id: 2, property_id: 1, content: 'Note 2' }
       ];
       
-      (window as any).shiftNoteAPI.getAll.mockResolvedValue(mockShiftNotes);
+      shiftNoteAPI.getAll.mockResolvedValue(mockShiftNotes);
 
       const { result } = renderHook(() => useShiftNotesStore());
 
@@ -200,7 +201,7 @@ describe('Zustand Stores', () => {
         { id: 2, action: 'UPDATE', resource: 'Property' }
       ];
       
-      (window as any).auditAPI.getAll.mockResolvedValue({
+      auditAPI.getAll.mockResolvedValue({
         data: mockAuditLogs,
         total: 2
       });
