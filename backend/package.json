@@ -44,7 +44,6 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.5.0",
@@ -60,9 +59,13 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "preset": "ts-jest",
     "testMatch": [
       "**/tests/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
@@ -74,7 +77,18 @@
       "^@entities/(.*)$": "<rootDir>/src/entities/$1"
     },
     "transform": {
-      "^.+\\.tsx?$": ["ts-jest", { "diagnostics": { "ignoreCodes": [6133, 151002] } }]
+      "^.+\\.(ts|js)$": [
+        "ts-jest",
+        {
+          "diagnostics": {
+            "ignoreCodes": [
+              6133,
+              151002
+            ]
+          },
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
     }
   }
 }
