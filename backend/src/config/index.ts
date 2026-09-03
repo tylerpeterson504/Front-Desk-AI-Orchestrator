@@ -20,7 +20,10 @@ const envSchema = z.object({
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
-  WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
+  WIFI_ENCRYPTION_KEY: z
+    .string()
+    .min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters')
+    .optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
@@ -32,7 +35,8 @@ const envSchema = z.object({
   DATABRICKS_HOST: z.string().optional(),
   DATABRICKS_TOKEN: z.string().optional(),
   DATABRICKS_WAREHOUSE_ID: z.string().optional(),
-  GITHUB_TOKEN: z.string().optional()
+  GITHUB_TOKEN: z.string().optional(),
+  BCRYPT_ROUNDS: z.string().optional(),
 });
 
 // Parse and validate
@@ -54,7 +58,7 @@ export const getDatabaseConfig = () => {
     port: config.DB_PORT,
     user: config.DB_USER,
     password: config.DB_PASSWORD,
-    database: config.DB_NAME
+    database: config.DB_NAME,
   };
 };
 
@@ -67,9 +71,11 @@ export const getCorsOrigins = () => {
     return [
       /^http:\/\/localhost(:\d+)?$/,
       /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-      /^chrome-extension:\/\//
+      /^chrome-extension:\/\//,
     ];
   }
 
-  return config.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean);
+  return config.CORS_ORIGIN.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 };

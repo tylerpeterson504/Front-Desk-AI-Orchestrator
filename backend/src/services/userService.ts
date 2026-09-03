@@ -52,7 +52,11 @@ export class UserService {
     }
 
     if (data.password.length < MIN_PASSWORD_LENGTH) {
-      throw new AppError(400, 'VALIDATION_ERROR', `Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      throw new AppError(
+        400,
+        'VALIDATION_ERROR',
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
+      );
     }
 
     if (!data.name.trim()) {
@@ -74,7 +78,7 @@ export class UserService {
       password_hash: hashedPassword,
       name: data.name.trim(),
       role: data.role || DEFAULT_ROLE,
-      property_id: data.property_id
+      property_id: data.property_id,
     });
 
     await this.userRepository.save(user);
@@ -112,7 +116,7 @@ export class UserService {
     }
 
     if (data.name !== undefined) {
-      user.name = data.name?.trim() || null;
+      user.name = data.name?.trim() || '';
     }
 
     if (data.role !== undefined) {
