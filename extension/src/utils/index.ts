@@ -1,19 +1,3 @@
-export {
-  sendToSidePanel,
-  broadcastToSidePanel,
-  getCurrentProperty,
-  getApiUrl,
-  safeTextContent,
-  safeGetAttribute,
-  debounce,
-  throttle,
-  retryWithBackoff,
-  isVisible,
-  waitForElement,
-  waitForVisible,
-  extractGuestInfo,
-  extractChatContext,
-  injectText,
-  injectTextToSelector,
-  logError
-} from './contentUtils';
+// Centralized exports for extension utilities
+export * from './contentUtils';
+export * from './logger';

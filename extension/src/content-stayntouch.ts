@@ -10,6 +10,8 @@
 // by setting chrome.storage.local fdao-debug to true, then watch the console
 // for what was found and the candidate selectors.
 
+import { logger, initDebugMode } from './utils/logger';
+
 interface GuestInfo {
   guestName: string;
   roomNumber: string;
@@ -22,50 +24,14 @@ interface GuestInfo {
 (function () {
   'use strict';
 
-  let DEBUG = false;
   let observer: MutationObserver | null = null;
   let pending: ReturnType<typeof setTimeout> | null = null;
 
   const MUTATION_DEBOUNCE_MS = 300;
 
-  function getLocalStorageValue(keys: string[], callback: (result: Record<string, unknown>) => void): void {
-    try {
-      if (chrome.storage.local.get.length > 1) {
-        chrome.storage.local.get(keys, callback);
-        return;
-      }
-
-      const result = chrome.storage.local.get(keys);
-      if (result && typeof (result as Promise<Record<string, unknown>>).then === 'function') {
-        (result as Promise<Record<string, unknown>>).then(callback).catch(function () {});
-        return;
-      }
-      if (result && typeof result === 'object') callback(result);
-    } catch (_) {}
-  }
-
-  function initDebugMode(): void {
-    function applyResult(result: Record<string, unknown>): void {
-      DEBUG = result['fdao-debug'] === true;
-      if (DEBUG) console.log('[FDAO/stayntouch] Debug mode enabled');
-    }
-
-    getLocalStorageValue(['fdao-debug'], applyResult);
-  }
-
-  function log(message: string, data?: unknown): void {
-    if (DEBUG) {
-      if (data !== undefined) console.log('[FDAO/stayntouch]', message, data);
-      else console.log('[FDAO/stayntouch]', message);
-    }
-  }
-
-  function warn(message: string, data?: unknown): void {
-    if (DEBUG) {
-      if (data !== undefined) console.warn('[FDAO/stayntouch]', message, data);
-      else console.warn('[FDAO/stayntouch]', message);
-    }
-  }
+  // Initialize logger with debug mode from storage
+  const log = createLogger('FDAO/stayntouch');
+  initDebugMode(log);
 
   function sanitizeText(text: string | null | undefined): string | null | undefined {
     if (!text || typeof text !== 'string') return text;
@@ -82,11 +48,11 @@ interface GuestInfo {
       const result = chrome.runtime.sendMessage(payload);
       if (result && typeof (result as Promise<unknown>).catch === 'function') {
         (result as Promise<unknown>).catch(function (e) {
-          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
+          log.warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
         });
       }
-    } catch (e: unknown) {
-      warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
+    } catch (e) {
+      log.warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
     }
   }
 
@@ -102,83 +68,153 @@ interface GuestInfo {
     return null;
   }
 
-  function normalize(s: string | null | undefined): string {
-    return ((s || '') as string).trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  const GUEST_SELECTORS: Record<keyof GuestInfo, string[]> = {
-    guestName: ['[data-test="guest-name"]', '.guest-name', '.guest-name-value', '#guest-name', '[data-testid*="guest-name" i]', '[data-testid*="name" i]'],
-    roomNumber: ['[data-test="room-number"]', '.room-number', '.room-num', '#room-number', '[data-testid*="room" i]'],
-    checkIn: ['[data-test="arrival-date"]', '[data-test="check-in"]', '.arrival-date', '.check-in-date', '#arrival-date', '[data-testid*="arrival" i]', '[data-testid*="check-in" i]', '[data-testid*="checkin" i]'],
-    checkOut: ['[data-test="departure-date"]', '[data-test="check-out"]', '.departure-date', '.check-out-date', '#departure-date', '[data-testid*="departure" i]', '[data-testid*="check-out" i]', '[data-testid*="checkout" i]'],
-    confirmationNumber: ['[data-test="confirmation-number"]', '.confirmation-number', '.confirmation', '#confirmation', '#confirmation-number', '[data-testid*="confirmation" i]', '[data-testid*="conf" i]'],
-    reservationStatus: ['[data-test="reservation-status"]', '[data-test="status"]', '.reservation-status', '.status', '#status', '[data-testid*="reservation-status" i]', '[data-testid*="status" i]']
-  };
-
-  function findByLabel(root: Element, patterns: string[]): string | null {
-    const nodes = root.querySelectorAll('label, dt, .label, .field-label, [class*="label" i]');
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      const own = normalize(node.innerText || node.textContent || '');
-      if (!own || own.length > 30) continue;
-      let matched = false;
-      for (let p = 0; p < patterns.length; p++) {
-        const pattern = patterns[p].toLowerCase();
-        if (own === pattern || own.indexOf(pattern + ' ') === 0 || own.indexOf(pattern + ':') === 0) {
-          matched = true;
-          break;
-        }
-      }
-      if (!matched) continue;
-      let valueEl: Element | null = node.nextElementSibling;
-      if (!valueEl || valueEl === node) {
-        const parent = node.parentElement;
-        if (parent) {
-          const parentClasses = (parent.className || '').toLowerCase();
-          if (parentClasses.includes('field') || parentClasses.includes('row') || parentClasses.includes('item')) {
-            valueEl = parent.querySelector('.value, [data-value], .field-value');
+  function textForLabel(root: Element, labelText: string): string | null {
+    try {
+      const labels = root.querySelectorAll('label');
+      for (let i = 0; i < labels.length; i++) {
+        const label = labels[i];
+        const text = (label.textContent || '').trim().toLowerCase();
+        if (text.includes(labelText.toLowerCase())) {
+          const inputId = label.getAttribute('for');
+          if (inputId) {
+            const input = root.querySelector('#' + inputId);
+            if (input && 'value' in (input as HTMLInputElement)) {
+              return (input as HTMLInputElement).value;
+            }
+          }
+          // Look for input inside label or next sibling
+          const input = label.querySelector('input, select, textarea');
+          if (input && 'value' in (input as HTMLInputElement)) {
+            return (input as HTMLInputElement).value;
           }
         }
       }
-      if (valueEl && valueEl !== node) {
-        const v = (valueEl.innerText || valueEl.textContent || '').trim();
-        if (v && normalize(v) !== own) return v;
-      }
-    }
+    } catch (_) {}
     return null;
   }
 
   function extractGuestInfo(): GuestInfo {
     const root = getRoot();
-    const info: Partial<GuestInfo> = {};
-    for (const [field, selectors] of Object.entries(GUEST_SELECTORS)) {
-      (info as Record<string, string | null>)[field] = firstText(root, selectors);
-    }
-    if (!info.guestName) info.guestName = findByLabel(root, ['name', 'guest name', 'guest']);
-    if (!info.roomNumber) info.roomNumber = findByLabel(root, ['room', 'room number', 'room #']);
-    if (!info.checkIn) info.checkIn = findByLabel(root, ['arrival', 'check in', 'check-in', 'arrive']);
-    if (!info.checkOut) info.checkOut = findByLabel(root, ['departure', 'check out', 'check-out', 'depart']);
-    if (!info.confirmationNumber) info.confirmationNumber = findByLabel(root, ['confirmation', 'conf', 'confirmation #', 'reservation #']);
-    if (!info.reservationStatus) info.reservationStatus = findByLabel(root, ['status', 'reservation status']);
-    for (const field of Object.keys(GUEST_SELECTORS) as Array<keyof GuestInfo>) {
-      if (info[field] === null || info[field] === undefined) info[field] = '';
-    }
-    if (DEBUG) { log('extracted guest info:', info); logDiscovery(root); }
-    return info as GuestInfo;
+    const guestName = 
+      firstText(root, [
+        '.guest-name',
+        '.guestName',
+        '#guestName',
+        '[data-test="guest-name"]',
+        '[data-testid*="guest-name" i]',
+        '[name*="guest" i]',
+        '[name*="name" i]',
+        '[id*="guest" i]',
+        '[id*="name" i]'
+      ]) ||
+      textForLabel(root, 'Guest Name') ||
+      textForLabel(root, 'Name') ||
+      '';
+
+    const roomNumber = 
+      firstText(root, [
+        '.room-number',
+        '.roomNumber',
+        '#roomNumber',
+        '[data-test="room-number"]',
+        '[data-testid*="room-number" i]',
+        '[name*="room" i]',
+        '[id*="room" i]'
+      ]) ||
+      textForLabel(root, 'Room Number') ||
+      textForLabel(root, 'Room') ||
+      '';
+
+    const checkIn = 
+      firstText(root, [
+        '.check-in',
+        '.checkIn',
+        '#checkIn',
+        '[data-test="check-in"]',
+        '[data-testid*="check-in" i]',
+        '[name*="checkin" i]',
+        '[name*="check-in" i]',
+        '[id*="checkin" i]',
+        '[id*="check-in" i]'
+      ]) ||
+      textForLabel(root, 'Check In') ||
+      textForLabel(root, 'Arrival') ||
+      '';
+
+    const checkOut = 
+      firstText(root, [
+        '.check-out',
+        '.checkOut',
+        '#checkOut',
+        '[data-test="check-out"]',
+        '[data-testid*="check-out" i]',
+        '[name*="checkout" i]',
+        '[name*="check-out" i]',
+        '[id*="checkout" i]',
+        '[id*="check-out" i]'
+      ]) ||
+      textForLabel(root, 'Check Out') ||
+      textForLabel(root, 'Departure') ||
+      '';
+
+    const confirmationNumber = 
+      firstText(root, [
+        '.confirmation-number',
+        '.confirmationNumber',
+        '#confirmationNumber',
+        '[data-test="confirmation-number"]',
+        '[data-testid*="confirmation" i]',
+        '[name*="confirmation" i]',
+        '[name*="confirm" i]',
+        '[id*="confirmation" i]',
+        '[id*="confirm" i]'
+      ]) ||
+      textForLabel(root, 'Confirmation Number') ||
+      textForLabel(root, 'Confirmation') ||
+      '';
+
+    const reservationStatus = 
+      firstText(root, [
+        '.reservation-status',
+        '.reservationStatus',
+        '#reservationStatus',
+        '[data-test="reservation-status"]',
+        '[data-testid*="status" i]',
+        '[name*="status" i]',
+        '[id*="status" i]'
+      ]) ||
+      textForLabel(root, 'Status') ||
+      '';
+
+    const info = {
+      guestName,
+      roomNumber,
+      checkIn,
+      checkOut,
+      confirmationNumber,
+      reservationStatus
+    };
+
+    log.log('extracted guest info:', info);
+    logDiscovery(root);
+
+    return info;
   }
 
   function validateGuestInfo(info: unknown): GuestInfo {
     const validated = info as GuestInfo;
     if (!validated || typeof validated !== 'object') throw new Error('Guest info must be an object');
-    const requiredFields: Array<keyof GuestInfo> = ['guestName', 'roomNumber', 'checkIn', 'checkOut', 'confirmationNumber', 'reservationStatus'];
-    for (const field of requiredFields) {
-      if (typeof validated[field] !== 'string') throw new Error(field + ' must be a string');
-    }
+    const required: (keyof GuestInfo)[] = ['guestName', 'roomNumber', 'checkIn', 'checkOut', 'confirmationNumber', 'reservationStatus'];
+    required.forEach(function (key) {
+      if (validated[key] !== undefined && typeof validated[key] !== 'string') {
+        throw new Error(key + ' must be a string');
+      }
+    });
     return validated;
   }
 
   function hasGuestInfo(info: GuestInfo): boolean {
-    return Object.values(info).some(function(v) { return !!v; });
+    return Object.values(info).some(function (v) { return !!v; });
   }
 
   function sendGuestInfo(): void {
@@ -187,19 +223,18 @@ interface GuestInfo {
       validateGuestInfo(info);
       if (hasGuestInfo(info)) safeSend({ type: 'GUEST_INFO_UPDATED', data: info });
     } catch (e: unknown) {
-      warn('sendGuestInfo failed:', (e as Error)?.message);
+      log.warn('sendGuestInfo failed:', (e as Error)?.message);
     }
   }
 
   function logDiscovery(root: Element): void {
-    if (!DEBUG) return;
     const probes: Record<string, string[]> = {
-      'guest-fields': ['[data-test*="guest" i]', '[data-test*="name" i]', '[class*="guest" i]', '[class*="name" i]'],
-      'room-fields': ['[data-test*="room" i]', '[class*="room" i]'],
-      'date-fields': ['[data-test*="date" i]', '[data-test*="arrival" i]', '[data-test*="departure" i]', '[class*="date" i]'],
-      'confirmation-fields': ['[data-test*="confirmation" i]', '[data-test*="conf" i]', '[class*="confirmation" i]'],
-      'status-fields': ['[data-test*="status" i]', '[class*="status" i]'],
-      'label-like': ['label', 'dt', '.label', '.field-label', '[class*="label" i]']
+      'guest-like': ['[class*="guest" i]', '[data-test*="guest" i]', '[name*="guest" i]', '[id*="guest" i]'],
+      'room-like': ['[class*="room" i]', '[data-test*="room" i]', '[name*="room" i]', '[id*="room" i]'],
+      'date-like': ['[class*="date" i]', '[data-test*="date" i]', '[name*="date" i]', '[id*="date" i]', '[type="date"]'],
+      'confirmation-like': ['[class*="confirmation" i]', '[data-test*="confirmation" i]', '[name*="confirmation" i]', '[id*="confirmation" i]'],
+      'status-like': ['[class*="status" i]', '[data-test*="status" i]', '[name*="status" i]', '[id*="status" i]'],
+      'label-like': ['label']
     };
     Object.keys(probes).forEach(function (label) {
       let total = 0; const samples: string[] = [];
@@ -207,7 +242,7 @@ interface GuestInfo {
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
       });
-      log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
+      log.log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
     });
   }
 
@@ -219,11 +254,10 @@ interface GuestInfo {
   function setupObserver(): void {
     if (observer) { try { observer.disconnect(); } catch (_) {} }
     observer = new MutationObserver(function () { scheduleCapture(); });
-    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e: unknown) { warn('observe failed:', (e as Error)?.message); } }
+    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e: unknown) { log.warn('observe failed:', (e as Error)?.message); } }
   }
 
   function init(): void {
-    initDebugMode();
     setupObserver();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', sendGuestInfo);
@@ -240,14 +274,14 @@ interface GuestInfo {
     }
   }
 
-  chrome.runtime.onMessage.addListener(function (message: { type: string; data?: unknown }, _sender: unknown, sendResponse: (response: { data: GuestInfo }) => void) {
+  chrome.runtime.onMessage.addListener(function (message: { type: string }, _sender: unknown, sendResponse: (response: { data?: GuestInfo }) => void) {
     if (message.type === 'GET_GUEST_INFO') {
       try {
         const info = extractGuestInfo();
         validateGuestInfo(info);
         sendResponse({ data: info });
       } catch (e: unknown) {
-        warn('GET_GUEST_INFO failed:', (e as Error)?.message);
+        log.warn('GET_GUEST_INFO failed:', (e as Error)?.message);
         sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', confirmationNumber: '', reservationStatus: '' } });
       }
       return false;
@@ -255,4 +289,41 @@ interface GuestInfo {
   });
 
   init();
+
+  // Import createLogger dynamically to avoid circular dependency
+  function createLogger(prefix: string): {
+    log: (message: string, data?: unknown) => void;
+    warn: (message: string, data?: unknown) => void;
+    error: (message: string, data?: unknown) => void;
+    setDebug: (enabled: boolean) => void;
+  } {
+    let debug = false;
+
+    function setDebug(enabled: boolean): void {
+      debug = enabled;
+    }
+
+    function log(message: string, data?: unknown): void {
+      if (!debug) return;
+      const formatted = data !== undefined 
+        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
+        : `[${new Date().toISOString()}] [${prefix}] ${message}`;
+      console.log(formatted);
+    }
+
+    function warn(message: string, data?: unknown): void {
+      if (!debug) return;
+      const formatted = data !== undefined 
+        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
+        : `[${new Date().toISOString()}] [${prefix}] ${message}`;
+      console.warn(formatted);
+    }
+
+    return {
+      log,
+      warn,
+      error: warn,
+      setDebug
+    };
+  }
 })();
