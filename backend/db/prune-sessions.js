@@ -6,9 +6,9 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env.local') });
 
-const { deleteExpired } = require('../src/services/refreshTokens');
+const { refreshTokenService } = require('../src/services/refreshTokenService');
 
-deleteExpired()
+refreshTokenService.cleanupExpired()
   .then((count) => {
     console.log(`removed ${count} expired refresh token${count === 1 ? '' : 's'}`);
     process.exit(0);

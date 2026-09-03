@@ -17,9 +17,9 @@ calls the LLM → draft rendered in the side panel for review → copy or inject
 
 ## AI Copilot (Gemini)
 
-Draft generation runs **server-side only** via `backend/src/services/llm.js`
-using Perplexity Sonar when `PERPLEXITY_API_KEY` is configured, with the official
-`@google/generative-ai` SDK (Gemini) as fallback. API keys are never shipped to
+Draft generation runs **server-side only** via `backend/src/services/copilotService.ts`
+using the configured LLM provider. API keys are never shipped to
+the extension or dashboard. API keys are never shipped to
 the extension or dashboard.
 
 ### Configuration
