@@ -9,7 +9,7 @@ let runtimeListener = null;
 
 function loadSidepanel() {
   jest.isolateModules(() => {
-    require('../src/sidepanel.js');
+    require('../src/sidepanel');
   });
   runtimeListener = chrome.runtime.onMessage.addListener.mock.calls[0]?.[0] || null;
 }
@@ -53,7 +53,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Restore promise-returning runtime.sendMessage (background relay contract)
   chrome.runtime.sendMessage.mockReset();
-  chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
+  chrom
+e.runtime.sendMessage.mockReturnValue(Promise.resolve());
   setupDom();
   chrome.storage.local.get.mockResolvedValue({});
   chrome.tabs.query.mockImplementation((_q, cb) => cb([{ id: 1, url: 'https://app.akia.io/chat' }]));
@@ -104,7 +105,8 @@ describe('init and auth flow', () => {
     await flush();
     await flush();
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
-      token: 'jwt-abc',
+     
+ token: 'jwt-abc',
       refreshToken: 'refresh-abc'
     });
     expect(document.getElementById('main-panel').classList.contains('hidden')).toBe(false);
@@ -148,7 +150,8 @@ describe('init and auth flow', () => {
     chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
     global.fetch = jest.fn().mockImplementation((url) => {
       if (String(url).endsWith('/auth/logout')) return Promise.reject(new Error('offline'));
-      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+      return Promise.resolve({ ok: true, st
+atus: 200, json: async () => [] });
     });
     loadSidepanel();
     await flush();
@@ -205,7 +208,8 @@ describe('access token refresh', () => {
       String(url).endsWith('/auth/refresh')
     );
     // Several requests fire on open; they must share a single refresh, because
-    // refresh tokens are single-use and a superseded one revokes the family.
+    // refresh tokens are 
+single-use and a superseded one revokes the family.
     expect(refreshCalls).toHaveLength(1);
     expect(JSON.parse(refreshCalls[0][1].body)).toEqual({ refresh_token: 'refresh-1' });
 
@@ -254,7 +258,8 @@ describe('access token refresh', () => {
 describe('guest info and chat context', () => {
   test('updateGuestInfo renders guest fields and lights the dot', async () => {
     loadSidepanel();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane', roomNumber: '204' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', data:
+ { guestName: 'Jane', roomNumber: '204' } });
     expect(document.getElementById('label-guest').textContent).toBe('Jane');
     expect(document.getElementById('dot-guest').classList.contains('active')).toBe(true);
     expect(document.getElementById('guest-info-block').textContent).toContain('Jane');
@@ -303,7 +308,8 @@ describe('property detection', () => {
     loadSidepanel();
     await flush();
     await flush();
-    expect(document.getElementById('label-property').textContent).toBe('St.Pierre Hotel');
+    expect(
+document.getElementById('label-property').textContent).toBe('St.Pierre Hotel');
     expect(document.getElementById('dot-property').classList.contains('active')).toBe(true);
   });
 
@@ -352,6 +358,7 @@ describe('templates', () => {
     expect(chip.querySelector('img')).toBeNull();
     expect(window.__xss).toBeUndefined();
     // The remove control still works.
+
     chip.querySelector('.remove-btn').click();
     expect(document.querySelectorAll('#selected-list .selected-item')).toHaveLength(0);
   });
@@ -397,7 +404,8 @@ describe('response generation', () => {
           ok: true,
           status: 200,
           json: async () => [
-            { id: 1, name: 'Checkout', content: 'Checkout is at 11:00 AM. We sincerely hope you enjoyed your stay.', tags: [] }
+            { id: 1, name: 'Checkout', content: 'Checkout is at 11:00 AM.
+ We sincerely hope you enjoyed your stay.', tags: [] }
           ]
         });
       }
@@ -452,7 +460,8 @@ describe('response generation', () => {
     runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane Doe' } });
     document.getElementById('btn-generate').click();
     await flush();
-    await flush();
+    await f
+lush();
     expect(document.getElementById('response-box').textContent).toMatch(/^Dear Jane Doe/);
   });
 
@@ -496,7 +505,8 @@ describe('copy and inject', () => {
     document.getElementById('btn-inject').click();
     await flush();
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
-      1,
+      
+1,
       { type: 'INJECT_MESSAGE', text: 'Reply text' },
       expect.any(Function)
     );

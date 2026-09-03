@@ -6,7 +6,7 @@
 // mock and direct DOM inspection.
 
 describe('config.js shared module', () => {
-  const CONFIG_PATH = '../src/config.js';
+  const CONFIG_PATH = '../src/config';
 
   beforeEach(() => {
     jest.resetModules();
@@ -52,7 +52,8 @@ describe('config.js shared module', () => {
     const config = loadConfig('app.us1.stayntouch.com');
 
     await expect(config.loadApiBaseUrl()).resolves.toBe('https://api.example.com');
-    expect(config.getApiBaseUrl()).toBe('https://api.example.com');
+    expect(config.getApiBaseUrl()).toBe('https://api.ex
+ample.com');
   });
 
   test('loadApiBaseUrl falls back to the default when storage is empty', async () => {
@@ -89,7 +90,7 @@ describe('config.js shared module', () => {
 });
 
 describe('content-stayntouch.js extraction', () => {
-  const SCRIPT_PATH = '../src/content-stayntouch.js';
+  const SCRIPT_PATH = '../src/content-stayntouch';
 
   beforeEach(() => {
     jest.resetModules();
@@ -104,7 +105,8 @@ describe('content-stayntouch.js extraction', () => {
 
   test('broadcasts GUEST_INFO_UPDATED with extracted fields', () => {
     document.body.innerHTML = `
-      <div class="guest-name">Jane Doe</div>
+      <div class="gues
+t-name">Jane Doe</div>
       <div class="room-number">204</div>
       <div class="check-in-date">2026-08-28</div>
       <div class="check-out-date">2026-08-30</div>
@@ -154,7 +156,7 @@ describe('content-stayntouch.js extraction', () => {
 });
 
 describe('content-akia.js extraction and injection', () => {
-  const SCRIPT_PATH = '../src/content-akia.js';
+  const SCRIPT_PATH = '../src/content-akia';
 
   beforeEach(() => {
     jest.resetModules();
@@ -168,7 +170,8 @@ describe('content-akia.js extraction and injection', () => {
   }
 
   function listener() {
-    return chrome.runtime.onMessage.addListener.mock.calls[0][0];
+  
+  return chrome.runtime.onMessage.addListener.mock.calls[0][0];
   }
 
   test('broadcasts CHAT_CONTEXT_UPDATED with messages and guest', () => {
@@ -219,7 +222,8 @@ describe('content-akia.js extraction and injection', () => {
   });
 
   test('injectMessage sets the textarea via the native setter + input event', () => {
-    document.body.innerHTML = '<textarea class="message-input"></textarea>';
+    document.body.innerHTML = '<textarea class="message-inpu
+t"></textarea>';
     const input = document.querySelector('textarea.message-input');
     const events = [];
     input.addEventListener('input', (e) => events.push(e));
@@ -253,7 +257,7 @@ describe('content-akia.js extraction and injection', () => {
 });
 
 describe('background.js relay', () => {
-  const SCRIPT_PATH = '../src/background.js';
+  const SCRIPT_PATH = '../src/background';
 
   beforeEach(() => {
     jest.resetModules();
@@ -273,7 +277,8 @@ describe('background.js relay', () => {
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
     listener({ type: 'GUEST_INFO_UPDATED', data: {} }, {}, jest.fn());
     listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, {}, jest.fn());
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+    expect(chrome.runtime.
+sendMessage).toHaveBeenCalledTimes(2);
   });
 
   test('ignores unrelated messages', () => {
@@ -286,8 +291,8 @@ describe('background.js relay', () => {
 
 describe('exception-safe broadcast path (safeSend)', () => {
   const CASES = [
-    { path: '../src/content-stayntouch.js', fixture: '<div class="guest-name">Jane</div>', type: 'GUEST_INFO_UPDATED' },
-    { path: '../src/content-akia.js', fixture: '<div class="message-item"><span class="message-text">hi</span></div>', type: 'CHAT_CONTEXT_UPDATED' }
+    { path: '../src/content-stayntouch', fixture: '<div class="guest-name">Jane</div>', type: 'GUEST_INFO_UPDATED' },
+    { path: '../src/content-akia', fixture: '<div class="message-item"><span class="message-text">hi</span></div>', type: 'CHAT_CONTEXT_UPDATED' }
   ];
 
   for (const { path: scriptPath, fixture, type } of CASES) {
@@ -327,7 +332,8 @@ describe('exception-safe broadcast path (safeSend)', () => {
         document.body.innerHTML = fixture;
         const rejections = [];
         const handler = (err) => rejections.push(err);
-        process.on('unhandledRejection', handler);
+        process.on('unhandledRejection', handl
+er);
         chrome.runtime.sendMessage.mockImplementation(() => Promise.reject(new Error('no receiver')));
 
         try {

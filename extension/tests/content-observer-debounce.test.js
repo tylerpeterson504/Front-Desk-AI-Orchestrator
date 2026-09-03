@@ -19,8 +19,8 @@ describe('content-stayntouch.js mutation debouncing', () => {
       const sent = [];
       chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
 
-      require('../src/config.js');
-      require('../src/content-stayntouch.js');
+      require('../src/config');
+      require('../src/content-stayntouch');
 
       expect(sent).toHaveLength(1); // the load-time send
 

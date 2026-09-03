@@ -72,8 +72,7 @@ describe('Service Layer', () => {
       it('should create a user with valid data', async () => {
         const mockRepo = {
           findOne: jest.fn().mockResolvedValue(null),
-          create: jest.fn()
-.mockReturnValue({ id: '1', email: 'test@example.com' }),
+          create: jest.fn().mockReturnValue({ id: '1', email: 'test@example.com' }),
           save: jest.fn().mockResolvedValue({ id: '1', email: 'test@example.com' })
         };
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
@@ -132,8 +131,7 @@ describe('Service Layer', () => {
         };
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
-      
-  const user = await userService.findByEmail('test@example.com');
+      const user = await userService.findByEmail('test@example.com');
 
         expect(mockRepo.findOne).toHaveBeenCalledWith({
           where: { email: 'test@example.com' }
@@ -187,7 +185,7 @@ describe('Service Layer', () => {
         const mockRepo = {
           findOne: jest.fn().mockResolvedValue(mockUser),
           find: jest.fn().mockResolvedValue([]),
-          save: jest.fn().mockResolvedValue(mockUser)
+      save: jest.fn().mockResolvedValue(mockUser)
         };
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
@@ -195,8 +193,7 @@ describe('Service Layer', () => {
           name: 'Updated Name'
         });
 
-        expect(mockUser.name).toBe('Upda
-ted Name');
+        expect(mockUser.name).toBe('Updated Name');
         expect(mockRepo.save).toHaveBeenCalled();
       });
 
@@ -257,8 +254,7 @@ ted Name');
     });
   });
 
-  describe('AuthService', () =
-> {
+  describe('AuthService', () => {
     describe('generateToken', () => {
       it('should generate a JWT token', () => {
         const user = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
@@ -315,8 +311,7 @@ ted Name');
     });
 
     describe('login', () => {
-      it('should login with va
-lid credentials', async () => {
+      it('should login with valid credentials', async () => {
         const mockUser = { 
           id: '1', 
           email: 'test@example.com', 
@@ -377,8 +372,7 @@ lid credentials', async () => {
         const mockRepo = {
           findOne: jest.fn().mockResolvedValue(mockUser)
         };
-        (getRepository as je
-st.Mock).mockReturnValue(mockRepo);
+        (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const result = await authService.refresh('valid_refresh_token');
 
