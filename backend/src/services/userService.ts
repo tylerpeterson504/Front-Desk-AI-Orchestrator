@@ -74,7 +74,7 @@ export class UserService {
       password_hash: hashedPassword,
       name: data.name.trim(),
       role: data.role || DEFAULT_ROLE,
-      property_id: data.property_id
+      property_id: data.property_id ?? null
     });
 
     await this.userRepository.save(user);
@@ -112,7 +112,7 @@ export class UserService {
     }
 
     if (data.name !== undefined) {
-      user.name = data.name?.trim() || null;
+      user.name = data.name?.trim() ?? null;
     }
 
     if (data.role !== undefined) {

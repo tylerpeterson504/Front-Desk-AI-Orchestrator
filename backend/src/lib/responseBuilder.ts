@@ -1,5 +1,14 @@
 import { Request } from 'express';
 
+// Extend Request type to include requestId
+declare global {
+  namespace Express {
+    interface Request {
+      requestId: string;
+    }
+  }
+}
+
 // Standard response shape
 export interface ApiResponse<T> {
   success: boolean;
@@ -38,16 +47,17 @@ export function successResponse<T>(
   req: Request,
   pagination?: PaginationMeta
 ): ApiResponse<T> {
+  const requestId = (req as unknown as { requestId?: string }).requestId || 'unknown';
   const response: ApiResponse<T> = {
     success: true,
     data,
     meta: {
-      requestId: req.requestId,
+      requestId,
       timestamp: new Date().toISOString()
     }
   };
 
-  if (pagination) {
+  if (pagination && response.meta) {
     response.meta.pagination = pagination;
   }
 
@@ -64,7 +74,7 @@ export function errorResponse(
   details?: Record<string, unknown>,
   statusCode?: number
 ): { status: number; body: ApiResponse<never> } {
-  const requestId = req.requestId || 'unknown';
+  const requestId = (req as unknown as { requestId?: string }).requestId || 'unknown';
   const response: ApiResponse<never> = {
     success: false,
     error: {

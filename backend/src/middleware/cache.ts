@@ -49,7 +49,8 @@ export function responseCache(ttlSeconds: number = DEFAULT_TTL_SECONDS) {
     if (entry && entry.expiresAt > Date.now()) {
       res.set("X-Cache", "HIT");
       res.set("X-Cache-Age", `${Math.floor((Date.now() - entry.cachedAt) / 1000)}s`);
-      return res.status(entry.statusCode).json(entry.body);
+      res.status(entry.statusCode).json(entry.body);
+      return;
     }
 
     res.set("X-Cache", "MISS");

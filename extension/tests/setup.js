@@ -31,8 +31,16 @@ global.chrome = {
   },
   runtime: {
     onMessage: {
+      addListener: jest.fn(),
+      hasListeners: false
+    },
+    onInstalled: {
       addListener: jest.fn()
     },
+    onSuspend: {
+      addListener: jest.fn()
+    },
+    lastError: null,
     sendMessage: jest.fn().mockReturnValue(Promise.resolve())
   },
   tabs: {

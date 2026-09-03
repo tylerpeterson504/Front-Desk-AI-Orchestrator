@@ -27,9 +27,10 @@ export interface AuthResponse {
 }
 
 function generateToken(user: User): string {
-  return jsonwebtoken.sign(
+  const jwt = jsonwebtoken as unknown as { sign: (payload: any, secret: string, options: any) => string };
+  return jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
-    config.JWT_SECRET,
+    config.JWT_SECRET as string,
     { expiresIn: config.JWT_TTL }
   );
 }
