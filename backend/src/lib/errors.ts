@@ -9,7 +9,7 @@
  * - Type-safe error handling
  */
 
-import { Request } from 'express';
+
 
 /**
  * Error severity levels for prioritization and logging
@@ -65,7 +65,7 @@ export class AppError extends Error {
   public readonly requestId?: string;
   public readonly context?: ErrorContext;
   public readonly isOperational: boolean;
-  public readonly cause?: Error;
+  public override readonly cause?: Error;
 
   constructor(
     statusCode: number,
@@ -330,7 +330,7 @@ export class DatabaseError extends AppError {
       category: ErrorCategory.DATABASE,
       context: options.context,
       isOperational: false,
-      cause: options.context?.metadata as Error
+      cause: options.context?.metadata as unknown as Error
     });
     this.internalMessage = internalMessage;
     this.query = options.query;
@@ -497,15 +497,15 @@ export class InternalServerError extends AppError {
 /**
  * Create error context from Express request
  */
-export function createErrorContext(req: Request): ErrorContext {
+export function createErrorContext(req: any): ErrorContext {
   return {
-    requestId: (req as unknown as { requestId: string }).requestId,
+    requestId: req.requestId,
     timestamp: new Date(),
     path: req.path,
     method: req.method,
-    userId: (req as unknown as { user?: { userId: string } }).user?.userId,
-    ipAddress: req.ip,
-    userAgent: req.headers['user-agent'],
+    userId: req.user?.userId,
+    ipAddress: req.ipAddress || "0.0.0.0" ,
+    userAgent: req.headers?.['user-agent'],
     metadata: {
       headers: req.headers,
       query: req.query,
@@ -557,8 +557,19 @@ export function wrapError(
 ): AppError {
   if (error instanceof AppError) {
     // Preserve existing error but add context
-    error.context = { ...error.context, ...context };
-    return error;
+    const mergedContext = { ...error.context, ...context };
+    return new (error.constructor as any)(
+      error.message,
+      {
+        severity: error.severity,
+        category: error.category,
+        details: error.details,
+        requestId: error.requestId,
+        context: mergedContext,
+        isOperational: error.isOperational,
+        cause: error.cause
+      }
+    );
   }
 
   // Wrap unknown errors
@@ -604,11 +615,11 @@ export function detectError(
 
   // Error object
   if (source instanceof Error) {
-    return wrapError(source, context || createErrorContext({} as Request));
+    return wrapError(source, context || createErrorContext({} as any));
   }
 
-  // String error message
-  if (typeof source === 'string') {
+  // String error message (non-empty)
+  if (typeof source === 'string' && source.length > 0) {
     return new InternalServerError(source, { context });
   }
 
@@ -618,12 +629,12 @@ export function detectError(
     
     if (obj.message && typeof obj.message === 'string') {
       const error = new Error(obj.message as string);
-      return wrapError(error, context || createErrorContext({} as Request));
+      return wrapError(error, context || createErrorContext({} as any));
     }
     
     if (obj.error && typeof obj.error === 'string') {
       const error = new Error(obj.error as string);
-      return wrapError(error, context || createErrorContext({} as Request));
+      return wrapError(error, context || createErrorContext({} as any));
     }
   }
 

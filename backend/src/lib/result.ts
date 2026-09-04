@@ -354,8 +354,7 @@ export function fromObject<T, E = Error>(
   if (!obj.success && obj.error !== undefined) {
     return err(obj.error);
   }
-  // Fallback - this shouldn't happen with valid input
-  return err(new Error('Invalid result object'));
+  return err(new Error('Invalid result object') as unknown as E);
 }
 
 /**
@@ -440,7 +439,6 @@ export async function withTimeout<T, E = Error>(
 
 export default {
   // Types
-  Result,
   Ok,
   Err,
   

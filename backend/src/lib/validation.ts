@@ -10,7 +10,7 @@
  */
 
 import { z, ZodSchema, ZodError, ZodTypeAny } from 'zod';
-import { ValidationResult, ValidationErrorDetails } from './dataUtils';
+import { validate, ValidationResult, ValidationErrorDetails, isObject } from './dataUtils';
 
 /**
  * Validation rule interface
@@ -52,6 +52,10 @@ export class ValidationPipeline<T = unknown> {
               path: field ? [field] : []
             }
           };
+        }
+        // Preserve the original value's extra fields by merging with the parsed result
+        if (isObject(value) && isObject(result.data)) {
+          return { success: true, data: { ...result.data, ...value } as T };
         }
         return result;
       },
@@ -182,7 +186,7 @@ export class ValidationPipeline<T = unknown> {
   ): this {
     this.rules.push({
       validator: (value) => {
-        const actualLength = value?.length;
+        const actualLength = (value as any)?.length;
         
         if (options.min !== undefined && actualLength < options.min) {
           return {
@@ -380,7 +384,7 @@ export class ValidationPipeline<T = unknown> {
     const errors: ValidationErrorDetails[] = [];
     
     for (let i = 0; i < values.length; i++) {
-      const result = this.validate(values[i], context);
+      const result = this.validate(values[i] as any, context);
       results.push(result);
       
       if (!result.success) {
@@ -401,7 +405,7 @@ export class ValidationPipeline<T = unknown> {
     
     return {
       success: true,
-      data: results.map(r => r.data)
+      data: results.map(r => r.data) as any
     };
   }
 }
@@ -610,6 +614,4 @@ export default {
   validateAny,
   
   // Re-export types
-  ValidationResult,
-  ValidationErrorDetails
 };
