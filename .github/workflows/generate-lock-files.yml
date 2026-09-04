@@ -1,0 +1,59 @@
+name: Generate Lock Files
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'backend/package.json'
+      - 'dashboard/package.json'
+      - 'extension/package.json'
+
+concurrency:
+  group: generate-lock-files
+  cancel-in-progress: true
+
+jobs:
+  generate-lock-files:
+    name: Generate and commit lock files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Install dependencies and generate lock files
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd ../extension && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd ..
+
+      - name: Check for changes
+        id: verify_changes
+        run: |
+          git add package-lock.json backend/package-lock.json dashboard/package-lock.json extension/package-lock.json
+          if [ -n "$(git diff --cached --name-only)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit lock files
+        if: steps.verify_changes.outputs.changes == 'true'
+        run: |
+          git commit -m "chore: update lock files [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
