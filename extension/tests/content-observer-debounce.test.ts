@@ -16,11 +16,12 @@ describe('content-stayntouch.js mutation debouncing', () => {
       });
       document.body.innerHTML = '<div class="guest-name">First</div>';
 
-      const sent = [];
+      const sent: any[] = [];
       chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
 
-      require('../src/config');
-      require('../src/content-stayntouch');
+      // Use dynamic import for ESM
+      await import('../src/config.ts');
+      await import('../src/content-stayntouch.ts');
 
       expect(sent).toHaveLength(1); // the load-time send
 
@@ -38,7 +39,7 @@ describe('content-stayntouch.js mutation debouncing', () => {
       expect(sent[1].type).toBe('GUEST_INFO_UPDATED');
 
       // A later, separate change gets its own broadcast.
-      document.querySelector('.guest-name').textContent = 'Second';
+      document.querySelector('.guest-name')!.textContent = 'Second';
       document.body.appendChild(document.createElement('span'));
       await Promise.resolve();
       jest.advanceTimersByTime(DEBOUNCE_MS);

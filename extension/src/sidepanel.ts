@@ -6,6 +6,8 @@
 // if something calls out before then.
 let API_BASE = (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
 
+export {};
+
 // ━━━━━━ State ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let authToken: string | null = null;
 // Single-use: every refresh returns a replacement that must be written back.
