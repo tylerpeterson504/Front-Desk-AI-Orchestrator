@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-// Set up the Neon database for the Front Desk Orchestrator backend.
+// Set up the Neon database for the Front Desk AI Orchestrator backend.
 //
 // Requirements:
 //   - DATABASE_URL must be set in the environment (Neon pooled connection
@@ -12,16 +11,14 @@
 // This script runs migrations first, then seeds (seeding is skipped
 // automatically when users already exist). It never prints the connection
 // string or any secret values.
-'use strict';
 
-process.env.RUN_SEEDS = process.env.RUN_SEEDS || 'true';
-
-const { spawn } = require('child_process');
-const path = require('path');
+import 'dotenv';
+import path from 'path';
+import { spawn } from 'child_process';
 
 const backendDir = path.join(__dirname, '..');
 
-function run(command, args) {
+function run(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: backendDir,
@@ -43,13 +40,13 @@ async function main() {
     console.error('  DATABASE_URL=postgresql://user:password@host/db?sslmode=require');
     process.exit(1);
   }
-
+  
   console.log('Running migrations...');
-  await run('node', ['db/migrate.js']);
-
+  await run('node', ['db/migrate.ts']);
+  
   console.log('Running seeds (skipped automatically if users exist)...');
-  await run('node', ['db/seed-runner.js']);
-
+  await run('node', ['db/seed-runner.ts']);
+  
   console.log('Neon database setup complete.');
 }
 

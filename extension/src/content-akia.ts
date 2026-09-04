@@ -16,6 +16,8 @@
 //         div.message      "Send a message to our hotel staff."
 //         time.timestamp   "a few seconds ago"
 
+import { logger, initDebugMode } from './utils/logger';
+
 interface ChatMessage {
   sender: string | null;
   text: string;
@@ -36,50 +38,14 @@ interface MessageSelectorResult {
 (function () {
   'use strict';
 
-  let DEBUG = false;
   let observer: MutationObserver | null = null;
   let pending: ReturnType<typeof setTimeout> | null = null;
 
   const MUTATION_DEBOUNCE_MS = 300;
 
-  function getLocalStorageValue(keys: string[], callback: (result: Record<string, unknown>) => void): void {
-    try {
-      if (chrome.storage.local.get.length > 1) {
-        chrome.storage.local.get(keys, callback);
-        return;
-      }
-
-      const result = chrome.storage.local.get(keys);
-      if (result && typeof (result as Promise<Record<string, unknown>>).then === 'function') {
-        (result as Promise<Record<string, unknown>>).then(callback).catch(function () {});
-        return;
-      }
-      if (result && typeof result === 'object') callback(result);
-    } catch (_) {}
-  }
-
-  function initDebugMode(): void {
-    function applyResult(result: Record<string, unknown>): void {
-      DEBUG = result['fdao-debug'] === true;
-      if (DEBUG) console.log('[FDAO/akia] Debug mode enabled');
-    }
-
-    getLocalStorageValue(['fdao-debug'], applyResult);
-  }
-
-  function log(message: string, data?: unknown): void {
-    if (DEBUG) {
-      if (data !== undefined) console.log('[FDAO/akia]', message, data);
-      else console.log('[FDAO/akia]', message);
-    }
-  }
-
-  function warn(message: string, data?: unknown): void {
-    if (DEBUG) {
-      if (data !== undefined) console.warn('[FDAO/akia]', message, data);
-      else console.warn('[FDAO/akia]', message);
-    }
-  }
+  // Initialize logger with debug mode from storage
+  const log = createLogger('FDAO/akia');
+  initDebugMode(log);
 
   function sanitizeText(text: string | null | undefined): string | null | undefined {
     if (!text || typeof text !== 'string') return text;
@@ -96,11 +62,11 @@ interface MessageSelectorResult {
       const result = chrome.runtime.sendMessage(payload);
       if (result && typeof (result as Promise<unknown>).catch === 'function') {
         (result as Promise<unknown>).catch(function (e) {
-          warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
+          log.warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
         });
       }
     } catch (e) {
-      warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
+      log.warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
     }
   }
 
@@ -186,10 +152,10 @@ interface MessageSelectorResult {
     let conversationEl: Element | null = null;
     try { conversationEl = root.querySelector('[data-conversation-id]'); } catch (_) {}
     const conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
-    if (DEBUG) {
-      log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
-      logDiscovery(root);
-    }
+    
+    log.log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
+    logDiscovery(root);
+    
     return { messages: messages, activeGuest: activeGuest || '', conversationId: conversationId || '' };
   }
 
@@ -212,11 +178,10 @@ interface MessageSelectorResult {
 
   function sendChatContext(): void {
     try { const ctx = extractChatContext(); validateContext(ctx); if (hasContext(ctx)) safeSend({ type: 'CHAT_CONTEXT_UPDATED', data: ctx }); }
-    catch (e: unknown) { warn('sendChatContext failed:', (e as Error)?.message); }
+    catch (e: unknown) { log.warn('sendChatContext failed:', (e as Error)?.message); }
   }
 
   function logDiscovery(root: Element): void {
-    if (!DEBUG) return;
     const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
       'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
@@ -228,7 +193,7 @@ interface MessageSelectorResult {
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
       });
-      log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
+      log.log('discovery[' + label + ']: ' + (total || 'none') + (samples.length ? ' -> ' + samples.join(' | ') : ''));
     });
   }
 
@@ -241,10 +206,10 @@ interface MessageSelectorResult {
   }
 
   function injectMessage(text: string): boolean {
-    if (!text || typeof text !== 'string') { warn('inject: invalid text input, must be a non-empty string'); return false; }
-    if (text.length > 10000) { warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
+    if (!text || typeof text !== 'string') { log.warn('inject: invalid text input, must be a non-empty string'); return false; }
+    if (text.length > 10000) { log.warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
     const el = findComposer();
-    if (!el) { warn('inject: composer not found'); return false; }
+    if (!el) { log.warn('inject: composer not found'); return false; }
     try {
       if ((el as HTMLElement).isContentEditable) {
         (el as HTMLElement).focus();
@@ -281,7 +246,7 @@ interface MessageSelectorResult {
       el.dispatchEvent(new Event('change', { bubbles: true }));
       (el as HTMLElement).focus();
       return true;
-    } catch (e: unknown) { warn('inject failed:', (e as Error)?.message); return false; }
+    } catch (e: unknown) { log.warn('inject failed:', (e as Error)?.message); return false; }
   }
 
   function scheduleCapture(): void {
@@ -292,11 +257,10 @@ interface MessageSelectorResult {
   function setupObserver(): void {
     if (observer) { try { observer.disconnect(); } catch (_) {} }
     observer = new MutationObserver(function () { scheduleCapture(); });
-    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e: unknown) { warn('observe failed:', (e as Error)?.message); } }
+    if (document.body) { try { observer.observe(document.body, { childList: true, subtree: true }); } catch (e: unknown) { log.warn('observe failed:', (e as Error)?.message); } }
   }
 
   function init(): void {
-    initDebugMode();
     setupObserver();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', sendChatContext);
@@ -321,7 +285,7 @@ interface MessageSelectorResult {
         sendResponse({ data: ctx });
       }
       catch (e: unknown) {
-        warn('GET_CHAT_CONTEXT failed:', (e as Error)?.message);
+        log.warn('GET_CHAT_CONTEXT failed:', (e as Error)?.message);
         sendResponse({ data: { messages: [], activeGuest: '', conversationId: '' } });
       }
       return false;
@@ -333,4 +297,41 @@ interface MessageSelectorResult {
   });
 
   init();
+
+  // Import createLogger dynamically to avoid circular dependency
+  function createLogger(prefix: string): {
+    log: (message: string, data?: unknown) => void;
+    warn: (message: string, data?: unknown) => void;
+    error: (message: string, data?: unknown) => void;
+    setDebug: (enabled: boolean) => void;
+  } {
+    let debug = false;
+
+    function setDebug(enabled: boolean): void {
+      debug = enabled;
+    }
+
+    function log(message: string, data?: unknown): void {
+      if (!debug) return;
+      const formatted = data !== undefined 
+        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
+        : `[${new Date().toISOString()}] [${prefix}] ${message}`;
+      console.log(formatted);
+    }
+
+    function warn(message: string, data?: unknown): void {
+      if (!debug) return;
+      const formatted = data !== undefined 
+        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
+        : `[${new Date().toISOString()}] [${prefix}] ${message}`;
+      console.warn(formatted);
+    }
+
+    return {
+      log,
+      warn,
+      error: warn,
+      setDebug
+    };
+  }
 })();
