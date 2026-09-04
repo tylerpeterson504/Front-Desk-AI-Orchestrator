@@ -1,9 +1,11 @@
 import bcrypt from 'bcrypt';
 import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
+import { Property } from '../src/entities/Property';
 import { userService } from '../src/services/userService';
 import { authService, generateToken, accessTokenTtlSeconds, verifyToken } from '../src/services/authService';
 import { NotFoundError, ConflictError, AuthenticationError, AppError } from '../src/lib/errors';
+import { createMockRepository, createMockUser, createMockProperty } from './utils';
 
 // Mock bcrypt
 jest.mock('bcrypt', () => ({
@@ -13,13 +15,7 @@ jest.mock('bcrypt', () => ({
 
 // Mock database
 jest.mock('../src/config/database', () => ({
-  getRepository: jest.fn(() => ({
-    findOne: jest.fn(),
-    find: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    remove: jest.fn()
-  }))
+  getRepository: jest.fn((entity: any) => createMockRepository())
 }));
 
 // Mock config
@@ -61,8 +57,6 @@ jest.mock('../src/services/refreshTokenService', () => ({
 describe('Service Layer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-establish default mock implementations (clearAllMocks only clears
-    // call history, not implementations set by individual tests)
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
   });
@@ -70,11 +64,10 @@ describe('Service Layer', () => {
   describe('UserService', () => {
     describe('createUser', () => {
       it('should create a user with valid data', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null),
-          create: jest.fn().mockReturnValue({ id: '1', email: 'test@example.com' }),
-          save: jest.fn().mockResolvedValue({ id: '1', email: 'test@example.com' })
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
+        mockRepo.create.mockReturnValue({ id: '1', email: 'test@example.com' });
+        mockRepo.save.mockResolvedValue({ id: '1', email: 'test@example.com' });
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const user = await userService.createUser({
@@ -96,11 +89,8 @@ describe('Service Layer', () => {
       });
 
       it('should throw ConflictError for duplicate email', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue({ id: '1', email: 'test@example.com' }),
-          create: jest.fn(),
-          save: jest.fn()
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue({ id: '1', email: 'test@example.com' });
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -126,13 +116,11 @@ describe('Service Layer', () => {
     describe('findByEmail', () => {
       it('should find user by email', async () => {
         const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
-      const user = await userService.findByEmail('test@example.com');
-
+        const user = await userService.findByEmail('test@example.com');
         expect(mockRepo.findOne).toHaveBeenCalledWith({
           where: { email: 'test@example.com' }
         });
@@ -140,13 +128,11 @@ describe('Service Layer', () => {
       });
 
       it('should return null for non-existent email', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const user = await userService.findByEmail('nonexistent@example.com');
-
         expect(user).toBeNull();
       });
     });
@@ -154,13 +140,11 @@ describe('Service Layer', () => {
     describe('findById', () => {
       it('should find user by ID', async () => {
         const mockUser = { id: '1', email: 'test@example.com' };
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const user = await userService.findById('1');
-
         expect(mockRepo.findOne).toHaveBeenCalledWith({
           where: { id: '1' }
         });
@@ -168,13 +152,11 @@ describe('Service Layer', () => {
       });
 
       it('should return null for non-existent ID', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const user = await userService.findById('999');
-
         expect(user).toBeNull();
       });
     });
@@ -182,11 +164,9 @@ describe('Service Layer', () => {
     describe('updateUser', () => {
       it('should update user', async () => {
         const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser),
-          find: jest.fn().mockResolvedValue([]),
-      save: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
+        mockRepo.save.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const updatedUser = await userService.updateUser('1', {
@@ -198,9 +178,8 @@ describe('Service Layer', () => {
       });
 
       it('should throw NotFoundError for non-existent user', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -212,21 +191,18 @@ describe('Service Layer', () => {
     describe('deleteUser', () => {
       it('should delete user', async () => {
         const mockUser = { id: '1' };
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser),
-          remove: jest.fn().mockResolvedValue(undefined)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
+        mockRepo.remove.mockResolvedValue(undefined);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await userService.deleteUser('1');
-
         expect(mockRepo.remove).toHaveBeenCalled();
       });
 
       it('should throw NotFoundError for non-existent user', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -239,7 +215,6 @@ describe('Service Layer', () => {
       it('should validate password', async () => {
         const user = { password_hash: 'hashed_password' } as User;
         const isValid = await userService.validatePassword(user, 'password123');
-
         expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashed_password');
         expect(isValid).toBe(true);
       });
@@ -248,7 +223,6 @@ describe('Service Layer', () => {
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
         const user = { password_hash: 'hashed_password' } as User;
         const isValid = await userService.validatePassword(user, 'wrong_password');
-
         expect(isValid).toBe(false);
       });
     });
@@ -259,7 +233,6 @@ describe('Service Layer', () => {
       it('should generate a JWT token', () => {
         const user = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
         const token = generateToken(user);
-
         expect(typeof token).toBe('string');
         expect(token.length).toBeGreaterThan(0);
       });
@@ -268,7 +241,7 @@ describe('Service Layer', () => {
     describe('accessTokenTtlSeconds', () => {
       it('should parse minutes', () => {
         const ttl = accessTokenTtlSeconds();
-        expect(ttl).toBe(15 * 60); // 15 minutes
+        expect(ttl).toBe(15 * 60);
       });
     });
 
@@ -277,7 +250,6 @@ describe('Service Layer', () => {
         const user = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
         const token = generateToken(user);
         const decoded = verifyToken(token);
-
         expect(decoded.userId).toBe('1');
         expect(decoded.email).toBe('test@example.com');
         expect(decoded.role).toBe('agent');
@@ -290,11 +262,10 @@ describe('Service Layer', () => {
 
     describe('register', () => {
       it('should register a new user', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null),
-          create: jest.fn().mockReturnValue({ id: '1', email: 'test@example.com' }),
-          save: jest.fn().mockResolvedValue({ id: '1', email: 'test@example.com' })
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
+        mockRepo.create.mockReturnValue({ id: '1', email: 'test@example.com' });
+        mockRepo.save.mockResolvedValue({ id: '1', email: 'test@example.com' });
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const result = await authService.register({
@@ -312,14 +283,9 @@ describe('Service Layer', () => {
 
     describe('login', () => {
       it('should login with valid credentials', async () => {
-        const mockUser = { 
-          id: '1', 
-          email: 'test@example.com', 
-          password_hash: 'hashed_password' 
-        } as User;
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockUser = { id: '1', email: 'test@example.com', password_hash: 'hashed_password' } as User;
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const result = await authService.login({
@@ -332,9 +298,8 @@ describe('Service Layer', () => {
       });
 
       it('should throw AuthenticationError for invalid email', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -347,14 +312,9 @@ describe('Service Layer', () => {
 
       it('should throw AuthenticationError for invalid password', async () => {
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-        const mockUser = { 
-          id: '1', 
-          email: 'test@example.com', 
-          password_hash: 'hashed_password' 
-        } as User;
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockUser = { id: '1', email: 'test@example.com', password_hash: 'hashed_password' } as User;
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -369,21 +329,18 @@ describe('Service Layer', () => {
     describe('refresh', () => {
       it('should refresh token', async () => {
         const mockUser = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(mockUser)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const result = await authService.refresh('valid_refresh_token');
-
         expect(result.token).toBeDefined();
         expect(result.refreshToken).toBeDefined();
       });
 
       it('should throw NotFoundError for non-existent user', async () => {
-        const mockRepo = {
-          findOne: jest.fn().mockResolvedValue(null)
-        };
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue(null);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         await expect(
@@ -395,7 +352,6 @@ describe('Service Layer', () => {
     describe('logout', () => {
       it('should logout successfully', async () => {
         await authService.logout('valid_refresh_token');
-        // Should not throw
       });
     });
 
@@ -404,7 +360,6 @@ describe('Service Layer', () => {
         const user = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
         const token = generateToken(user);
         const decoded = authService.getCurrentUser(token);
-
         expect(decoded.userId).toBe('1');
         expect(decoded.email).toBe('test@example.com');
         expect(decoded.role).toBe('agent');
