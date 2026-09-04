@@ -39,7 +39,8 @@
     "typecheck:extension": "npx tsc --noEmit --project extension/tsconfig.json",
     "clean": "npm run clean --workspaces",
     "clean:all": "rm -rf node_modules backend/node_modules dashboard/node_modules extension/node_modules backend/dist dashboard/build extension/dist",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run start --prefix dashboard\""
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.69.0",
