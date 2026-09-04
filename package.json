@@ -3,58 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Front Desk AI Orchestrator: backend API + Vite dashboard + Chrome extension",
-  "workspaces": [
-    "backend",
-    "dashboard",
-    "extension"
-  ],
-  "scripts": {
-    "install:all": "npm install && npm run install --workspaces",
-    "build": "npm run build --workspaces",
-    "build:all": "npm run build --workspaces",
-    "build:backend": "npm run build --prefix backend",
-    "build:dashboard": "npm run build --prefix dashboard",
-    "build:extension": "npm run build --prefix extension",
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run start --prefix dashboard\"",
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:dashboard": "npm run start --prefix dashboard",
-    "dev:extension": "npm run dev --prefix extension",
-    "test": "npm run test --workspaces",
-    "test:all": "npm run test --workspaces",
-    "test:backend": "npm run test --prefix backend",
-    "test:dashboard": "npm run test --prefix dashboard",
-    "test:extension": "npm run test --prefix extension",
-    "test:coverage": "npm run test:coverage --prefix backend",
-    "lint": "npm run lint --workspaces",
-    "lint:all": "npm run lint --workspaces",
-    "lint:backend": "npm run lint --prefix backend",
-    "lint:dashboard": "npm run lint --prefix dashboard",
-    "lint:extension": "npm run lint --prefix extension",
-    "lint:check": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "typecheck": "npm run typecheck --workspaces",
-    "typecheck:backend": "npx tsc --noEmit --project backend/tsconfig.json",
-    "typecheck:dashboard": "npx tsc --noEmit --project dashboard/tsconfig.json",
-    "typecheck:extension": "npx tsc --noEmit --project extension/tsconfig.json",
-    "clean": "npm run clean --workspaces",
-    "clean:all": "rm -rf node_modules backend/node_mod
-ules dashboard/node_modules extension/node_modules backend/dist dashboard/build extension/dist",
-    "prepare": "husky install"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.69.0",
-    "@typescript-eslint/parser": "^8.69.0",
-    "concurrently": "^8.2.2",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.1.3",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
-  },
+  "workspaces": ["backend", "dashboard", "extension"],
   "engines": {
     "node": ">=24"
-  },}
+  }
+}
