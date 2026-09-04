@@ -39,8 +39,7 @@
     "typecheck:dashboard": "npx tsc --noEmit --project dashboard/tsconfig.json",
     "typecheck:extension": "npx tsc --noEmit --project extension/tsconfig.json",
     "clean": "npm run clean --workspaces",
-    "clean:all": "rm -rf node_modules backend/node_mod
-ules dashboard/node_modules extension/node_modules backend/dist dashboard/build extension/dist",
+    "clean:all": "rm -rf node_modules backend/node_modules dashboard/node_modules extension/node_modules backend/dist dashboard/build extension/dist",
     "prepare": "husky install"
   },
   "devDependencies": {
@@ -56,5 +55,6 @@ ules dashboard/node_modules extension/node_modules backend/dist dashboard/build 
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=22"
-  },}
+    "node": ">=24"
+  }
+}
