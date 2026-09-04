@@ -20,7 +20,10 @@ export class AuditLogService {
   private auditLogRepository = getRepository<AuditLog>(AuditLog);
   private propertyRepository = getRepository<Property>(Property);
 
-  async getAll(userId: string, options?: { limit?: number; offset?: number }): Promise<AuditLogWithProperty[]> {
+  async getAll(
+    userId: string,
+    options?: { limit?: number; offset?: number }
+  ): Promise<AuditLogWithProperty[]> {
     const limit = Math.min(options?.limit || 100, 500);
     const offset = options?.offset || 0;
 
@@ -33,9 +36,9 @@ export class AuditLogService {
       .offset(offset)
       .getMany();
 
-    return logs.map(log => ({
+    return logs.map((log) => ({
       ...log,
-      property_name: log.property?.name
+      property_name: log.property?.name,
     }));
   }
 
@@ -48,7 +51,7 @@ export class AuditLogService {
       metadata: data.metadata || null,
       property_id: data.property_id || null,
       ip_address: null,
-      user_agent: null
+      user_agent: null,
     });
 
     await this.auditLogRepository.save(auditLog);
@@ -74,7 +77,7 @@ export class AuditLogService {
         resource,
         resource_id: options?.resourceId,
         metadata: options?.metadata,
-        property_id: options?.propertyId
+        property_id: options?.propertyId,
       },
       userId
     );

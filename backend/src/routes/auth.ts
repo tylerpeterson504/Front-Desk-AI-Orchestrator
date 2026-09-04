@@ -23,7 +23,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Email, password, and name are required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -31,7 +31,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'A valid email address is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -39,7 +39,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -47,16 +47,17 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'A name is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
-    const response = await authService.register(
-      { email, password, name },
-      req.requestId
-    );
+    const response = await authService.register({ email, password, name }, req.requestId);
 
-    logger.info('user registered', { user_id: response.user.id, role: response.user.role, request_id: req.requestId });
+    logger.info('user registered', {
+      user_id: response.user.id,
+      role: response.user.role,
+      request_id: req.requestId,
+    });
 
     res.status(201).json(response);
   } catch (err) {
@@ -73,14 +74,11 @@ router.post('/login', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Email and password are required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
-    const response = await authService.login(
-      { email, password },
-      req.requestId
-    );
+    const response = await authService.login({ email, password }, req.requestId);
 
     logger.info('user logged in', { user_id: response.user.id, request_id: req.requestId });
 
@@ -99,7 +97,7 @@ router.post('/refresh', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Refresh token is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -109,7 +107,7 @@ router.post('/refresh', requestId, async (req, res, next) => {
       token: tokens.token,
       expires_in: tokens.expiresIn,
       refresh_token: tokens.refreshToken,
-      refresh_expires_at: tokens.refreshExpiresAt
+      refresh_expires_at: tokens.refreshExpiresAt,
     });
   } catch (err) {
     next(err);
@@ -139,7 +137,7 @@ router.post('/logout-all', requestId, async (req, res, next) => {
       return res.status(401).json({
         error: 'Authentication required',
         code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -162,7 +160,7 @@ router.get('/me', requestId, async (req, res, next) => {
       return res.status(401).json({
         error: 'Authentication required',
         code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -174,7 +172,7 @@ router.get('/me', requestId, async (req, res, next) => {
       return res.status(404).json({
         error: 'User not found',
         code: 'NOT_FOUND',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -183,7 +181,7 @@ router.get('/me', requestId, async (req, res, next) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      property_id: user.property_id
+      property_id: user.property_id,
     });
   } catch (err) {
     next(err);
@@ -203,7 +201,7 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
       return res.status(401).json({
         error: 'Authentication required',
         code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -214,7 +212,7 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
       return res.status(403).json({
         error: 'Admin access required',
         code: 'AUTHORIZATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -225,19 +223,23 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid role',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
     const user = await userService.setUserRole(id, role as 'admin' | 'agent');
 
-    logger.info('user role updated', { user_id: user.id, new_role: user.role, updated_by: req.requestId });
+    logger.info('user role updated', {
+      user_id: user.id,
+      new_role: user.role,
+      updated_by: req.requestId,
+    });
 
     res.json({
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
     });
   } catch (err) {
     next(err);

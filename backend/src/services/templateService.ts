@@ -41,8 +41,13 @@ export class TemplateService {
       throw new ValidationError(`content must be at most ${MAX_CONTENT_LENGTH} characters`);
     }
 
-    if (category != null && (typeof category !== 'string' || category.length > MAX_CATEGORY_LENGTH)) {
-      throw new ValidationError(`category must be a string of at most ${MAX_CATEGORY_LENGTH} characters`);
+    if (
+      category != null &&
+      (typeof category !== 'string' || category.length > MAX_CATEGORY_LENGTH)
+    ) {
+      throw new ValidationError(
+        `category must be a string of at most ${MAX_CATEGORY_LENGTH} characters`
+      );
     }
 
     if (tags != null && !Array.isArray(tags)) {
@@ -54,7 +59,9 @@ export class TemplateService {
         throw new ValidationError(`tags must contain at most ${MAX_TAGS} entries`);
       }
       if (tags.some((tag) => typeof tag !== 'string' || tag.length > MAX_TAG_LENGTH)) {
-        throw new ValidationError(`each tag must be a string of at most ${MAX_TAG_LENGTH} characters`);
+        throw new ValidationError(
+          `each tag must be a string of at most ${MAX_TAG_LENGTH} characters`
+        );
       }
     }
 
@@ -64,11 +71,14 @@ export class TemplateService {
       content,
       tags: tags || [],
       property_id: property_id ? Number(property_id) : undefined,
-      is_global: is_global ?? false
+      is_global: is_global ?? false,
     };
   }
 
-  async getAll(userId: string, options?: { category?: string; search?: string }): Promise<Template[]> {
+  async getAll(
+    userId: string,
+    options?: { category?: string; search?: string }
+  ): Promise<Template[]> {
     const queryBuilder = this.templateRepository
       .createQueryBuilder('template')
       .where('template.user_id = :userId', { userId });
@@ -79,7 +89,9 @@ export class TemplateService {
 
     if (options?.search) {
       const search = `%${options.search}%`;
-      queryBuilder.andWhere('(template.name ILIKE :search OR :search = ANY(template.tags))', { search });
+      queryBuilder.andWhere('(template.name ILIKE :search OR :search = ANY(template.tags))', {
+        search,
+      });
     }
 
     queryBuilder.orderBy('template.name', 'ASC');
@@ -89,7 +101,7 @@ export class TemplateService {
 
   async getById(id: number, userId: string): Promise<Template> {
     const template = await this.templateRepository.findOne({
-      where: { id, user_id: userId }
+      where: { id, user_id: userId },
     });
 
     if (!template) {
@@ -109,7 +121,7 @@ export class TemplateService {
       tags: templateData.tags,
       user_id: userId,
       property_id: templateData.property_id,
-      is_global: templateData.is_global
+      is_global: templateData.is_global,
     });
 
     await this.templateRepository.save(template);

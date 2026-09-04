@@ -46,16 +46,16 @@ export class ShiftNoteService {
     return this.shiftNoteRepository.find({
       where: {
         user_id: userId,
-        created_at: { $gte: today, $lt: tomorrow }
+        created_at: { $gte: today, $lt: tomorrow },
       },
       order: { created_at: 'DESC' },
-      relations: ['property']
+      relations: ['property'],
     });
   }
 
   async getById(id: number, userId: string): Promise<ShiftNote> {
     const shiftNote = await this.shiftNoteRepository.findOne({
-      where: { id, user_id: userId }
+      where: { id, user_id: userId },
     });
 
     if (!shiftNote) {
@@ -68,7 +68,7 @@ export class ShiftNoteService {
   async create(data: CreateShiftNoteDto, userId: string): Promise<ShiftNote> {
     // Validate property access
     const property = await this.propertyRepository.findOne({
-      where: { id: data.property_id }
+      where: { id: data.property_id },
     });
 
     if (!property) {
@@ -81,7 +81,7 @@ export class ShiftNoteService {
       user_id: userId,
       property_id: data.property_id,
       content,
-      shift_date: new Date()
+      shift_date: new Date(),
     });
 
     await this.shiftNoteRepository.save(shiftNote);

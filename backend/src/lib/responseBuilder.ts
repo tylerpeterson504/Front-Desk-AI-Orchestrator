@@ -38,18 +38,16 @@ export function successResponse<T>(
   req: Request,
   pagination?: PaginationMeta
 ): ApiResponse<T> {
+  const baseMeta: ApiResponse<T>['meta'] = {
+    requestId: req.requestId ?? 'unknown',
+    timestamp: new Date().toISOString(),
+  };
+
   const response: ApiResponse<T> = {
     success: true,
     data,
-    meta: {
-      requestId: req.requestId,
-      timestamp: new Date().toISOString()
-    }
+    meta: pagination ? { ...baseMeta, pagination } : baseMeta,
   };
-
-  if (pagination) {
-    response.meta.pagination = pagination;
-  }
 
   return response;
 }
@@ -64,19 +62,19 @@ export function errorResponse(
   details?: Record<string, unknown>,
   statusCode?: number
 ): { status: number; body: ApiResponse<never> } {
-  const requestId = req.requestId || 'unknown';
+  const requestId = req.requestId ?? 'unknown';
   const response: ApiResponse<never> = {
     success: false,
     error: {
       message,
       code,
       requestId,
-      ...(details && { details })
+      ...(details && { details }),
     },
     meta: {
       requestId,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 
   // Map error codes to HTTP status codes
@@ -87,12 +85,12 @@ export function errorResponse(
     NOT_FOUND: 404,
     RATE_LIMIT_ERROR: 429,
     DATABASE_ERROR: 500,
-    INTERNAL_ERROR: 500
+    INTERNAL_ERROR: 500,
   };
 
   return {
-    status: statusCode || statusMap[code] || 500,
-    body: response
+    status: statusCode ?? statusMap[code] ?? 500,
+    body: response,
   };
 }
 
@@ -112,7 +110,7 @@ export function paginatedResponse<T>(
     page,
     limit,
     total,
-    totalPages
+    totalPages,
   });
 }
 
@@ -125,7 +123,7 @@ export function createdResponse<T>(
 ): { status: number; body: ApiResponse<T> } {
   return {
     status: 201,
-    body: successResponse(data, req)
+    body: successResponse(data, req),
   };
 }
 
@@ -134,6 +132,6 @@ export function createdResponse<T>(
  */
 export function noContentResponse(req: Request): { status: number; body?: ApiResponse<never> } {
   return {
-    status: 204
+    status: 204,
   };
 }

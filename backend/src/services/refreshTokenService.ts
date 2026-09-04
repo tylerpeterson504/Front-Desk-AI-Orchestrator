@@ -32,7 +32,7 @@ export class RefreshTokenService {
       token,
       user_id: user.id,
       expires_at: expiresAt,
-      is_revoked: false
+      is_revoked: false,
     });
 
     await this.refreshTokenRepository.save(refreshToken);
@@ -41,13 +41,13 @@ export class RefreshTokenService {
       id: refreshToken.id,
       token: refreshToken.token,
       user_id: refreshToken.user_id,
-      expiresAt: refreshToken.expires_at
+      expiresAt: refreshToken.expires_at,
     };
   }
 
   async validateSession(token: string): Promise<Session> {
     const refreshToken = await this.refreshTokenRepository.findOne({
-      where: { token, is_revoked: false }
+      where: { token, is_revoked: false },
     });
 
     if (!refreshToken) {
@@ -62,7 +62,7 @@ export class RefreshTokenService {
       id: refreshToken.id,
       token: refreshToken.token,
       user_id: refreshToken.user_id,
-      expiresAt: refreshToken.expires_at
+      expiresAt: refreshToken.expires_at,
     };
   }
 
@@ -71,22 +71,16 @@ export class RefreshTokenService {
   }
 
   async revokeSessionByToken(token: string): Promise<void> {
-    await this.refreshTokenRepository.update(
-      { token },
-      { is_revoked: true }
-    );
+    await this.refreshTokenRepository.update({ token }, { is_revoked: true });
   }
 
   async revokeAllSessions(userId: string): Promise<void> {
-    await this.refreshTokenRepository.update(
-      { user_id: userId },
-      { is_revoked: true }
-    );
+    await this.refreshTokenRepository.update({ user_id: userId }, { is_revoked: true });
   }
 
   async cleanupExpired(): Promise<number> {
     const result = await this.refreshTokenRepository.delete({
-      expires_at: new Date()
+      expires_at: new Date(),
     });
     return result.affected || 0;
   }

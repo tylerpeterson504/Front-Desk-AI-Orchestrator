@@ -25,8 +25,8 @@ export class ResponseBuilder {
     success: true,
     meta: {
       requestId: '',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 
   constructor(private requestId: string) {
@@ -37,7 +37,7 @@ export class ResponseBuilder {
     return {
       ...this.response,
       data,
-      success: true
+      success: true,
     };
   }
 
@@ -45,7 +45,7 @@ export class ResponseBuilder {
     return {
       ...this.response,
       data,
-      success: true
+      success: true,
     };
   }
 
@@ -56,25 +56,28 @@ export class ResponseBuilder {
       error: {
         code,
         message,
-        ...(details && { details })
-      }
+        ...(details && { details }),
+      },
     };
   }
 
-  paginated<T>(data: T[], pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  }): ApiResponse<T[]> {
+  paginated<T>(
+    data: T[],
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    }
+  ): ApiResponse<T[]> {
     return {
       ...this.response,
       data,
       meta: {
         ...this.response.meta,
-        pagination
+        pagination,
       },
-      success: true
+      success: true,
     };
   }
 }

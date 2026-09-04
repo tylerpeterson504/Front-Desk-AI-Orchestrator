@@ -11,16 +11,11 @@ export function requestId(req: Request, res: Response, next: NextFunction) {
 export function notFound(req: Request, res: Response) {
   res.status(404).json({
     error: 'Not found',
-    requestId: req.requestId
+    requestId: req.requestId,
   });
 }
 
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
   const requestId = req.requestId || crypto.randomUUID();
 
   // Log full error details internally
@@ -30,7 +25,7 @@ export function errorHandler(
     requestId,
     path: req.path,
     method: req.method,
-    userId: (req as any).user?.id
+    userId: (req as any).user?.id,
   });
 
   // Handle AppError
@@ -39,7 +34,7 @@ export function errorHandler(
       error: err.message,
       code: err.code,
       requestId: err.requestId || requestId,
-      ...(err.details && { details: err.details })
+      ...(err.details && { details: err.details }),
     });
   }
 
@@ -48,7 +43,7 @@ export function errorHandler(
     return res.status(401).json({
       error: 'Invalid token',
       code: 'INVALID_TOKEN',
-      requestId
+      requestId,
     });
   }
 
@@ -56,7 +51,7 @@ export function errorHandler(
     return res.status(401).json({
       error: 'Token expired',
       code: 'TOKEN_EXPIRED',
-      requestId
+      requestId,
     });
   }
 
@@ -66,7 +61,7 @@ export function errorHandler(
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
       requestId,
-      details: (err as any).details
+      details: (err as any).details,
     });
   }
 
@@ -74,6 +69,6 @@ export function errorHandler(
   res.status(500).json({
     error: 'Internal server error',
     code: 'INTERNAL_ERROR',
-    requestId
+    requestId,
   });
 }

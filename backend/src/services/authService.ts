@@ -1,8 +1,8 @@
-import jsonwebtoken from 'jsonwebtoken';
+import * as jsonwebtoken from 'jsonwebtoken';
 import { User } from '../entities/User';
 import { userService } from './userService';
 import { refreshTokenService } from './refreshTokenService';
-import { config } from '../config';
+import { config, JWT_SECRET } from '../config';
 import { AppError, AuthenticationError, NotFoundError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 
@@ -29,8 +29,8 @@ export interface AuthResponse {
 function generateToken(user: User): string {
   return jsonwebtoken.sign(
     { userId: user.id, email: user.email, role: user.role },
-    config.JWT_SECRET,
-    { expiresIn: config.JWT_TTL }
+    JWT_SECRET as any,
+    { expiresIn: config.JWT_TTL as any }
   );
 }
 
@@ -43,34 +43,49 @@ function accessTokenTtlSeconds(): number {
   const unit = match[2].toLowerCase();
 
   switch (unit) {
-    case 's': return value;
-    case 'm': return value * 60;
-    case 'h': return value * 60 * 60;
-    case 'd': return value * 60 * 60 * 24;
-    default: return value * 60; // Assume minutes
+    case 's':
+      return value;
+    case 'm':
+      return value * 60;
+    case 'h':
+      return value * 60 * 60;
+    case 'd':
+      return value * 60 * 60 * 24;
+    default:
+      return value * 60; // Assume minutes
   }
 }
 
 function verifyToken(token: string): { userId: string; email: string; role: string } {
   try {
-    return jsonwebtoken.verify(token, config.JWT_SECRET) as { userId: string; email: string; role: string };
+    return jsonwebtoken.verify(token, JWT_SECRET as any) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
   } catch (err) {
     throw new AuthenticationError('Invalid token');
   }
 }
 
 export class AuthService {
-  async register(data: { email: string; password: string; name: string }, requestId?: string): Promise<AuthResponse> {
+  async register(
+    data: { email: string; password: string; name: string },
+    requestId?: string
+  ): Promise<AuthResponse> {
     const log = createRequestLogger(requestId || '');
 
-    const user = await userService.createUser({
-      email: data.email,
-      password: data.password,
-      name: data.name
-    }, requestId);
+    const user = await userService.createUser(
+      {
+        email: data.email,
+        password: data.password,
+        name: data.name,
+      },
+      requestId
+    );
 
     const session = await refreshTokenService.issueSession(user, {
-      client: 'unknown'
+      client: 'unknown',
     });
 
     log.info('User registered', { user_id: user.id, role: user.role });
@@ -80,11 +95,14 @@ export class AuthService {
       expires_in: accessTokenTtlSeconds(),
       refresh_token: session.token,
       refresh_expires_at: session.expiresAt,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
     };
   }
 
-  async login(data: { email: string; password: string }, requestId?: string): Promise<AuthResponse> {
+  async login(
+    data: { email: string; password: string },
+    requestId?: string
+  ): Promise<AuthResponse> {
     const log = createRequestLogger(requestId || '');
 
     const user = await userService.findByEmail(data.email);
@@ -98,7 +116,7 @@ export class AuthService {
     }
 
     const session = await refreshTokenService.issueSession(user, {
-      client: 'unknown'
+      client: 'unknown',
     });
 
     log.info('User logged in', { user_id: user.id });
@@ -108,7 +126,7 @@ export class AuthService {
       expires_in: accessTokenTtlSeconds(),
       refresh_token: session.token,
       refresh_expires_at: session.expiresAt,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
     };
   }
 
@@ -123,7 +141,7 @@ export class AuthService {
     }
 
     const newSession = await refreshTokenService.issueSession(user, {
-      client: 'unknown'
+      client: 'unknown',
     });
 
     log.info('Token refreshed', { user_id: user.id });
@@ -132,7 +150,7 @@ export class AuthService {
       token: generateToken(user),
       refreshToken: newSession.token,
       expiresIn: accessTokenTtlSeconds(),
-      refreshExpiresAt: newSession.expiresAt
+      refreshExpiresAt: newSession.expiresAt,
     };
   }
 

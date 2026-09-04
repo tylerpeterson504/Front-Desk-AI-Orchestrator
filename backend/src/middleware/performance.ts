@@ -12,13 +12,13 @@ export function performanceMonitor(thresholdMs: number = SLOW_REQUEST_THRESHOLD_
   return (req: Request, res: Response, next: NextFunction): void => {
     const start = process.hrtime.bigint();
 
-    res.on("finish", () => {
+    res.on('finish', () => {
       const elapsedNs = process.hrtime.bigint() - start;
       const elapsedMs = Number(elapsedNs) / 1e6;
-      res.set("Server-Timing", `app;dur=${elapsedMs.toFixed(1)}`);
+      res.set('Server-Timing', `app;dur=${elapsedMs.toFixed(1)}`);
 
       if (elapsedMs > thresholdMs) {
-        logger.warn("Slow request detected", {
+        logger.warn('Slow request detected', {
           method: req.method,
           path: req.path,
           statusCode: res.statusCode,
@@ -42,7 +42,7 @@ export function trackQueryTime<T>(
   return queryFn().finally(() => {
     const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
     if (elapsedMs > thresholdMs) {
-      logger.warn("Slow database query", {
+      logger.warn('Slow database query', {
         label,
         durationMs: Math.round(elapsedMs),
       });

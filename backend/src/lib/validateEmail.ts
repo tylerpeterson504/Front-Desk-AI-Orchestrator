@@ -41,7 +41,7 @@ export function isValidEmail(email: string): boolean {
   }
 
   const domainLabels = domain.split('.');
-  if (domainLabels.some(label => label.length === 0)) {
+  if (domainLabels.some((label) => label.length === 0)) {
     return false;
   }
 

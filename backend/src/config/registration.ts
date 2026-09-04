@@ -1,9 +1,9 @@
-import { config } from './index';
+import { config, Config } from './index';
 import { Request } from 'express';
 import { AppError } from '../lib/errors';
 
 export function getMode(): 'open' | 'invite' | 'closed' {
-  return config.REGISTRATION_MODE as 'open' | 'invite' | 'closed';
+  return (config as Config).REGISTRATION_MODE;
 }
 
 export function assertRegistrationAllowed(req: Request): void {
@@ -14,8 +14,8 @@ export function assertRegistrationAllowed(req: Request): void {
   }
 
   if (mode === 'invite') {
-    const inviteToken = req.headers['x-invite-token'] || req.body.invite_token;
-    if (inviteToken !== config.REGISTRATION_INVITE_TOKEN) {
+    const inviteToken = req.headers['x-invite-token'] ?? req.body.invite_token;
+    if (inviteToken !== (config as Config).REGISTRATION_INVITE_TOKEN) {
       throw new AppError(403, 'AUTHORIZATION_ERROR', 'Invalid or missing invite token');
     }
   }

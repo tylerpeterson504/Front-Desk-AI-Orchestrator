@@ -28,7 +28,8 @@ jest.mock('../src/config', () => ({
     JWT_SECRET: 'test-secret-key-at-least-32-characters-long',
     JWT_TTL: '15m',
     BCRYPT_ROUNDS: '12'
-  }
+  },
+  JWT_SECRET: 'test-secret-key-at-least-32-characters-long'
 }));
 
 // Mock logger

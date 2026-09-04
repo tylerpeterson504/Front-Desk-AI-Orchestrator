@@ -23,7 +23,11 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
     const userId = (req as any).user.userId;
     const shiftNote = await shiftNoteService.create(req.body, userId);
 
-    logger.info('Shift note created', { shift_note_id: shiftNote.id, user_id: userId, request_id: req.requestId });
+    logger.info('Shift note created', {
+      shift_note_id: shiftNote.id,
+      user_id: userId,
+      request_id: req.requestId,
+    });
     res.status(201).json(shiftNote);
   } catch (err) {
     next(err);
@@ -40,13 +44,17 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid shift note ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
     const shiftNote = await shiftNoteService.update(id, req.body, userId);
 
-    logger.info('Shift note updated', { shift_note_id: shiftNote.id, user_id: userId, request_id: req.requestId });
+    logger.info('Shift note updated', {
+      shift_note_id: shiftNote.id,
+      user_id: userId,
+      request_id: req.requestId,
+    });
     res.json(shiftNote);
   } catch (err) {
     next(err);
@@ -63,13 +71,17 @@ router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid shift note ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
     await shiftNoteService.delete(id, userId);
 
-    logger.info('Shift note deleted', { shift_note_id: id, user_id: userId, request_id: req.requestId });
+    logger.info('Shift note deleted', {
+      shift_note_id: id,
+      user_id: userId,
+      request_id: req.requestId,
+    });
     res.status(204).send();
   } catch (err) {
     next(err);

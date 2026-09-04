@@ -9,46 +9,35 @@ const requestFormat = printf(({ level, message, timestamp, requestId, ...meta })
     level,
     requestId: requestId || 'N/A',
     message,
-    ...meta
+    ...meta,
   });
 });
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    json()
-  ),
+  format: combine(timestamp(), errors({ stack: true }), json()),
   defaultMeta: {
     service: 'front-desk-ai-backend',
-    version: process.env.npm_package_version
+    version: process.env.npm_package_version,
   },
   transports: [
     new winston.transports.Console({
-      format: combine(
-        colorize(),
-        requestFormat
-      )
+      format: combine(colorize(), requestFormat),
     }),
     new winston.transports.File({
       filename: 'logs/error.log',
       level: 'error',
       maxsize: 10 * 1024 * 1024, // 10MB
-      maxFiles: 5
+      maxFiles: 5,
     }),
     new winston.transports.File({
       filename: 'logs/combined.log',
       maxsize: 10 * 1024 * 1024, // 10MB
-      maxFiles: 5
-    })
+      maxFiles: 5,
+    }),
   ],
-  exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/exceptions.log' })
-  ],
-  rejectionHandlers: [
-    new winston.transports.File({ filename: 'logs/rejections.log' })
-  ]
+  exceptionHandlers: [new winston.transports.File({ filename: 'logs/exceptions.log' })],
+  rejectionHandlers: [new winston.transports.File({ filename: 'logs/rejections.log' })],
 });
 
 // Add request context
@@ -65,7 +54,7 @@ export const createRequestLogger = (requestId: string) => {
     },
     debug: (message: string, meta?: Record<string, unknown>) => {
       logger.debug(message, { requestId, ...meta });
-    }
+    },
   };
 };
 

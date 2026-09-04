@@ -14,7 +14,10 @@ const PBKDF2_ITERATIONS = 100000;
 // Derive encryption key from the WIFI_ENCRYPTION_KEY
 function getEncryptionKey(): Buffer {
   const password = config.WIFI_ENCRYPTION_KEY || config.JWT_SECRET;
-  const salt = Buffer.from(config.WIFI_ENCRYPTION_KEY?.substring(0, 32) || config.JWT_SECRET.substring(0, 32), 'utf8');
+  const salt = Buffer.from(
+    config.WIFI_ENCRYPTION_KEY?.substring(0, 32) || config.JWT_SECRET.substring(0, 32),
+    'utf8'
+  );
   return crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
 }
 
@@ -23,7 +26,7 @@ export function encryptSecret(plaintext: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
 
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv, {
-    authTagLength: AUTH_TAG_LENGTH
+    authTagLength: AUTH_TAG_LENGTH,
   });
 
   let encrypted = cipher.update(plaintext, 'utf8', 'base64');
@@ -47,7 +50,7 @@ export function decryptSecret(encrypted: string): string {
   const encryptedData = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
 
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, {
-    authTagLength: AUTH_TAG_LENGTH
+    authTagLength: AUTH_TAG_LENGTH,
   });
 
   decipher.setAuthTag(authTag);

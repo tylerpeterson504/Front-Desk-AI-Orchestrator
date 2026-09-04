@@ -13,9 +13,9 @@ const DANGEROUS_PATTERNS = [
 ];
 
 export function sanitizeInput(req: Request, _res: Response, next: NextFunction): void {
-  if (req.body && typeof req.body === "object") {
+  if (req.body && typeof req.body === 'object') {
     for (const key of Object.keys(req.body)) {
-      if (typeof req.body[key] === "string") {
+      if (typeof req.body[key] === 'string') {
         let sanitized = req.body[key];
         for (const pattern of DANGEROUS_PATTERNS) {
           sanitized = sanitized.replace(pattern, '');
@@ -28,9 +28,9 @@ export function sanitizeInput(req: Request, _res: Response, next: NextFunction):
 }
 
 export function additionalSecurityHeaders(_req: Request, res: Response, next: NextFunction): void {
-  res.set("X-Content-Type-Options", "nosniff");
-  res.set("X-Frame-Options", "DENY");
-  res.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   next();
 }

@@ -10,7 +10,7 @@ const GUEST_INFO_FIELDS = [
   'checkIn',
   'checkOut',
   'reservationStatus',
-  'confirmationNumber'
+  'confirmationNumber',
 ];
 
 const MAX_FIELD_LENGTH = 200;
@@ -82,7 +82,7 @@ function sanitizeChatContext(raw: unknown): ChatContext | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
 
   const messages: ChatMessage[] = Array.isArray((raw as Record<string, unknown>).messages)
-    ? (raw as { messages: unknown[] }).messages
+    ? ((raw as { messages: unknown[] }).messages
         .slice(-MAX_MESSAGES)
         .map((message) => {
           if (!message || typeof message !== 'object') return null;
@@ -90,10 +90,10 @@ function sanitizeChatContext(raw: unknown): ChatContext | null {
           if (!text) return null;
           return {
             sender: scrubText((message as Record<string, unknown>).sender, 80) || 'Guest',
-            text
+            text,
           };
         })
-        .filter(Boolean) as ChatMessage[]
+        .filter(Boolean) as ChatMessage[])
     : [];
 
   const activeGuest = scrubText((raw as Record<string, unknown>).activeGuest, MAX_FIELD_LENGTH);
@@ -117,7 +117,7 @@ export class CopilotService {
     if (property_id != null) {
       property = await this.propertyRepository.findOne({
         where: { id: property_id, user_id: userId },
-        select: ['id', 'name', 'checkout_time', 'tone_guidelines', 'wifi_ssid']
+        select: ['id', 'name', 'checkout_time', 'tone_guidelines', 'wifi_ssid'],
       });
       if (!property) {
         throw new AuthorizationError('Property not found or access denied');
@@ -132,13 +132,19 @@ export class CopilotService {
     if (ids.length) {
       templates = await this.templateRepository.find({
         where: { user_id: userId, id: { $in: ids } },
-        order: { name: 'ASC' }
+        order: { name: 'ASC' },
       });
     }
 
     // TODO: Implement actual LLM drafting
     // For now, return a placeholder response
-    const draft = this.generatePlaceholderDraft(property, templates, guestInfo, chatContext, toneSafe);
+    const draft = this.generatePlaceholderDraft(
+      property,
+      templates,
+      guestInfo,
+      chatContext,
+      toneSafe
+    );
 
     return {
       draft,
@@ -146,8 +152,8 @@ export class CopilotService {
         provider: 'placeholder',
         template_count: templates.length,
         property: property ? { id: property.id, name: property.name } : undefined,
-        tone: toneSafe
-      }
+        tone: toneSafe,
+      },
     };
   }
 
@@ -182,7 +188,7 @@ Our checkout time is ${property.checkout_time}.`);
     if (templates.length > 0) {
       lines.push(`
 Based on our templates, here's what we can help you with:`);
-      templates.forEach(t => {
+      templates.forEach((t) => {
         lines.push(`
 - ${t.name}: ${t.content.slice(0, 100)}...`);
       });
@@ -191,7 +197,7 @@ Based on our templates, here's what we can help you with:`);
     if (chatContext?.messages?.length) {
       lines.push(`
 Following up on your previous messages:`);
-      chatContext.messages.slice(-3).forEach(msg => {
+      chatContext.messages.slice(-3).forEach((msg) => {
         lines.push(`
   [${msg.sender}]: ${msg.text.slice(0, 50)}...`);
       });

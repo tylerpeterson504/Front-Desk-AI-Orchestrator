@@ -31,7 +31,11 @@ export class PropertyService {
     return value.trim();
   }
 
-  private optionalString(value: unknown, field: string, maxLength: number = MAX_LENGTH): string | null {
+  private optionalString(
+    value: unknown,
+    field: string,
+    maxLength: number = MAX_LENGTH
+  ): string | null {
     if (value == null || value === '') return null;
     if (typeof value !== 'string') {
       throw new ValidationError(`${field} must be a string`);
@@ -51,7 +55,10 @@ export class PropertyService {
     return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
   }
 
-  private readPropertyBody(body: Record<string, unknown>, checkoutFallback: string = '11:00:00'): CreatePropertyDto {
+  private readPropertyBody(
+    body: Record<string, unknown>,
+    checkoutFallback: string = '11:00:00'
+  ): CreatePropertyDto {
     const name = this.requireString(body.name, 'name');
     const address = this.optionalString(body.address, 'address');
     const checkout_time = this.normalizeCheckoutTime(body.checkout_time, checkoutFallback);
@@ -73,7 +80,7 @@ export class PropertyService {
       checkout_time,
       wifi_ssid,
       wifi_password,
-      tone_guidelines
+      tone_guidelines,
     };
   }
 
@@ -94,7 +101,7 @@ export class PropertyService {
       checkout_time: propertyData.checkout_time,
       wifi_ssid: propertyData.wifi_ssid,
       wifi_password: encryptedWifiPassword,
-      tone_guidelines: propertyData.tone_guidelines
+      tone_guidelines: propertyData.tone_guidelines,
     });
 
     await this.propertyRepository.save(property);
@@ -106,14 +113,32 @@ export class PropertyService {
 
   async getAll(): Promise<Property[]> {
     return this.propertyRepository.find({
-      select: ['id', 'name', 'address', 'checkout_time', 'wifi_ssid', 'tone_guidelines', 'created_at', 'updated_at']
+      select: [
+        'id',
+        'name',
+        'address',
+        'checkout_time',
+        'wifi_ssid',
+        'tone_guidelines',
+        'created_at',
+        'updated_at',
+      ],
     });
   }
 
   async getById(id: number): Promise<Property> {
     const property = await this.propertyRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'address', 'checkout_time', 'wifi_ssid', 'tone_guidelines', 'created_at', 'updated_at']
+      select: [
+        'id',
+        'name',
+        'address',
+        'checkout_time',
+        'wifi_ssid',
+        'tone_guidelines',
+        'created_at',
+        'updated_at',
+      ],
     });
 
     if (!property) {
@@ -156,12 +181,15 @@ export class PropertyService {
     await this.propertyRepository.remove(property);
   }
 
-  async getWifiPassword(id: number, requestId?: string): Promise<{ ssid: string | null; password: string | null }> {
+  async getWifiPassword(
+    id: number,
+    requestId?: string
+  ): Promise<{ ssid: string | null; password: string | null }> {
     const log = createRequestLogger(requestId || '');
 
     const property = await this.propertyRepository.findOne({
       where: { id },
-      select: ['wifi_ssid', 'wifi_password']
+      select: ['wifi_ssid', 'wifi_password'],
     });
 
     if (!property) {
@@ -177,7 +205,7 @@ export class PropertyService {
 
     return {
       ssid: property.wifi_ssid,
-      password
+      password,
     };
   }
 }

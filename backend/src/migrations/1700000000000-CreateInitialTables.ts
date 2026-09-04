@@ -82,15 +82,33 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
 
     // Create indexes
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_templates_property_id ON templates(property_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_shift_notes_property_id ON shift_notes(property_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_shift_notes_user_id ON shift_notes(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_templates_property_id ON templates(property_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_shift_notes_property_id ON shift_notes(property_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_shift_notes_user_id ON shift_notes(user_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

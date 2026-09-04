@@ -29,7 +29,7 @@ const MIN_PASSWORD_LENGTH = 12;
 const DEFAULT_ROLE = 'agent';
 
 function getBcryptRounds(): number {
-  const parsed = parseInt(config.BCRYPT_ROUNDS || '', 10);
+  const parsed = parseInt(config.BCRYPT_ROUNDS ?? '', 10);
   if (!Number.isInteger(parsed) || parsed < 10 || parsed > 15) return 12;
   return parsed;
 }
@@ -40,7 +40,7 @@ export class UserService {
   }
 
   async createUser(data: CreateUserDto, requestId?: string): Promise<User> {
-    const log = createRequestLogger(requestId || '');
+    const log = createRequestLogger(requestId ?? '');
 
     // Validate input
     if (!data.email || !data.password || !data.name) {
@@ -66,7 +66,9 @@ export class UserService {
     const normalizedEmail = data.email.trim().toLowerCase();
 
     // Check if email already exists
-    const existingUser = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    const existingUser: User | null = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
+    });
     if (existingUser) {
       throw new ConflictError('Email already in use');
     }
@@ -77,8 +79,8 @@ export class UserService {
       email: normalizedEmail,
       password_hash: hashedPassword,
       name: data.name.trim(),
-      role: data.role || DEFAULT_ROLE,
-      property_id: data.property_id,
+      role: data.role ?? DEFAULT_ROLE,
+      property_id: data.property_id ?? null,
     });
 
     await this.userRepository.save(user);

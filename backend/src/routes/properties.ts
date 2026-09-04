@@ -24,7 +24,7 @@ router.get('/:id', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid property ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -54,7 +54,7 @@ router.put('/:id', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid property ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -74,7 +74,7 @@ router.delete('/:id', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Invalid property ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -94,12 +94,16 @@ router.get('/:id/wifi', requestId, authenticateToken, async (req, res, next) => 
       return res.status(400).json({
         error: 'Invalid property ID',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
     const wifi = await propertyService.getWifiPassword(id, req.requestId);
-    logger.info('WiFi password retrieved', { property_id: id, user_id: (req as any).user?.id, request_id: req.requestId });
+    logger.info('WiFi password retrieved', {
+      property_id: id,
+      user_id: (req as any).user?.id,
+      request_id: req.requestId,
+    });
     res.json(wifi);
   } catch (err) {
     next(err);

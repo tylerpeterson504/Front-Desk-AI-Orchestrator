@@ -9,7 +9,7 @@ import logger from './lib/logger';
 import { requestId, notFound, errorHandler } from './middleware/errorHandler';
 import { getMode } from './config/registration';
 import { initializeDatabase } from './config/database';
-import { config } from './config';
+import { config, Config } from './config';
 import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
 import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
@@ -31,22 +31,25 @@ app.use(requestId);
 app.use(performanceMonitor());
 
 // CORS configuration
-const corsOrigins = config.CORS_ORIGIN
-  ? config.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : [];
+const corsOrigins = (config as Config).CORS_ORIGIN?.split(',')
+  .map((origin: string) => origin.trim())
+  .filter(Boolean) ??
+  [];
 
 if (!corsOrigins.length) {
-  if (config.NODE_ENV === 'production') {
+  if ((config as Config).NODE_ENV === 'production') {
     throw new Error('CORS_ORIGIN must list the allowed browser origins in production');
   }
-  logger.warn('CORS_ORIGIN is not set; allowing localhost origins for development only');
+  (logger as { warn: (msg: string, ...args: unknown[]) => void }).warn('CORS_ORIGIN is not set; allowing localhost origins for development only');
 }
 
-app.use(cors({
-  origin: corsOrigins.length
-    ? corsOrigins
-    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]
-}));
+app.use(
+  cors({
+    origin: corsOrigins.length
+      ? corsOrigins
+      : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//],
+  })
+);
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
 
@@ -59,7 +62,7 @@ const apiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Rate limit credential-guessing endpoints to mitigate brute-force attacks.
@@ -73,7 +76,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout'
+  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -83,7 +86,7 @@ const refreshLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // The dashboard shell is a single static file read from disk. Give it a high
@@ -94,7 +97,7 @@ const appShellLimiter = rateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Database is initialized only when the server starts (see isMainModule below),
@@ -138,7 +141,7 @@ app.get('*', appShellLimiter, (req, res, next) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = config.PORT || 3001;
+const PORT = (config as Config).PORT || 3001;
 
 // Start server only if this file is run directly. Importing this module
 // (e.g. in tests) must NOT connect to the database; only connect when the
@@ -151,8 +154,8 @@ if (isMainModule) {
       app.listen(PORT, () => {
         logger.info('backend started', {
           port: PORT,
-          env: config.NODE_ENV || 'development',
-          registration_mode: getMode()
+          env: (config as Config).NODE_ENV || 'development',
+          registration_mode: getMode(),
         });
       });
     })

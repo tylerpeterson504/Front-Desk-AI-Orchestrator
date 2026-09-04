@@ -3,9 +3,7 @@ import { config } from '../config';
 export class DatabricksService {
   isConfigured(): boolean {
     return Boolean(
-      config.DATABRICKS_HOST &&
-      config.DATABRICKS_TOKEN &&
-      config.DATABRICKS_WORKSPACE_ID
+      config.DATABRICKS_HOST && config.DATABRICKS_TOKEN && config.DATABRICKS_WORKSPACE_ID
     );
   }
 
