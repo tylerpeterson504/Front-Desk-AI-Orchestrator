@@ -83,7 +83,7 @@ function scrubText(value: unknown, maxLength: number): string | null {
   return text.length > maxLength ? `${text.slice(0, maxLength)}\u2026` : text;
 }
 
-function sanitizeGuestInfo(raw: unknown): GuestInfo | null {
+protected sanitizeGuestInfo(raw: unknown): GuestInfo | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const out: GuestInfo = {};
   for (const field of GUEST_INFO_FIELDS) {
@@ -93,7 +93,7 @@ function sanitizeGuestInfo(raw: unknown): GuestInfo | null {
   return Object.keys(out).length ? out : null;
 }
 
-function sanitizeChatContext(raw: unknown): ChatContext | null {
+protected sanitizeChatContext(raw: unknown): ChatContext | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
 
   const messages: ChatMessage[] = Array.isArray((raw as Record<string, unknown>).messages)
@@ -124,8 +124,8 @@ export class CopilotService {
     const { property_id, tone, template_ids } = request;
 
     const toneSafe = tone === 'friendly' ? 'friendly' : 'professional';
-    const guestInfo = sanitizeGuestInfo(request.guest_info);
-    const chatContext = sanitizeChatContext(request.chat_context);
+    const guestInfo = this.sanitizeGuestInfo(request.guest_info);
+    const chatContext = this.sanitizeChatContext(request.chat_context);
 
     // Resolve property (must belong to caller). Never send wifi_password to the LLM.
     let property: Property | null = null;
@@ -155,8 +155,6 @@ export class CopilotService {
     const prompt = this.buildPrompt({ property, guestInfo, chatContext, templates, tone: toneSafe });
 
     // Provider chain: Perplexity -> Mistral -> Hugging Face -> Gemini.
-    // The first configured provider wins; a configured provider that fails at
-    // request time propagates so callers see real errors instead of silent fallbacks.
     let result: { text: string; provider: string };
 
     if (perplexity.isConfigured()) {
@@ -201,7 +199,7 @@ export class CopilotService {
    * Neutralize fences so a guest cannot close the fence early and escape into
    * the instruction context.
    */
-  private neutralizeFences(value: string): string {
+  protected neutralizeFences(value: string): string {
     return String(value ?? '')
       .split(FENCE_OPEN).join('<untrusted')
       .split(FENCE_CLOSE).join('untrusted>');
@@ -210,10 +208,10 @@ export class CopilotService {
   /**
    * Wrap content in data fences that the model is instructed never to treat as instructions.
    */
-  private fenced(label: string, lines: string[]): string[] {
+  protected fenced(label: string, lines: string[]): string[] {
     return [
       `${FENCE_OPEN} ${label}`,
-      ...lines.map(this.neutralizeFences),
+      ...lines.map((line) => this.neutralizeFences(line)),
       `${FENCE_CLOSE} ${label}`
     ];
   }
@@ -222,13 +220,14 @@ export class CopilotService {
    * Build the prompt for the LLM with proper security fencing for untrusted data.
    * wifi_password is never included, even if a caller hands one in.
    */
-  private buildPrompt(params: {
+  protected buildPrompt(params: {
     property: Property | null;
     guestInfo: GuestInfo | null;
     chatContext: ChatContext | null;
     templates: Template[];
     tone: string;
   }): string {
+
     const { property, guestInfo, chatContext, templates, tone } = params;
     const lines: string[] = [];
 
@@ -293,7 +292,7 @@ export class CopilotService {
   /**
    * Fallback method for when no LLM is configured. Generates a placeholder response.
    */
-  private generatePlaceholderDraft(
+  protected generatePlaceholderDraft(
     property: Property | null,
     templates: Template[],
     guestInfo: GuestInfo | null,
@@ -320,20 +319,20 @@ export class CopilotService {
     }
 
     if (templates.length > 0) {
-      lines.push(`\nBased on our templates, here's what we can help you with:`);
+      lines.push('\nBased on our templates, here's what we can help you with:');
       templates.forEach(t => {
         lines.push(`\n- ${t.name}: ${t.content.slice(0, 100)}...`);
       });
     }
 
     if (chatContext?.messages?.length) {
-      lines.push(`\nFollowing up on your previous messages:`);
+      lines.push('\nFollowing up on your previous messages:');
       chatContext.messages.slice(-3).forEach(msg => {
         lines.push(`\n  [${msg.sender}]: ${msg.text.slice(0, 50)}...`);
       });
     }
 
-    lines.push(`\n\nHow can we assist you further?`);
+    lines.push('\n\nHow can we assist you further?');
 
     return lines.join('\n');
   }
