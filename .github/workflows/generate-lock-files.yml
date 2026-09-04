@@ -27,24 +27,7 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Install dependencies in backend
-        working-directory: backend
-        env:
-          HUSKY: "0"
-        run: |
-          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-        timeout-minutes: 15
-
-      - name: Install dependencies in dashboard
-        working-directory: dashboard
-        env:
-          HUSKY: "0"
-        run: |
-          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-        timeout-minutes: 15
-
-      - name: Install dependencies in extension
-        working-directory: extension
+      - name: Install all workspace dependencies
         env:
           HUSKY: "0"
         run: |
