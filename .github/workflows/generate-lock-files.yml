@@ -27,17 +27,34 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Install all workspace dependencies
+      - name: Install backend dependencies
+        working-directory: backend
         env:
           HUSKY: "0"
         run: |
           npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-        timeout-minutes: 15
+        timeout-minutes: 10
+
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        env:
+          HUSKY: "0"
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        timeout-minutes: 10
+
+      - name: Install extension dependencies
+        working-directory: extension
+        env:
+          HUSKY: "0"
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        timeout-minutes: 10
 
       - name: Check for changes
         id: verify_changes
         run: |
-          git add package-lock.json
+          git add backend/package-lock.json dashboard/package-lock.json extension/package-lock.json
           if [ -n "$(git diff --cached --name-only)" ]; then
             echo "changes=true" >> $GITHUB_OUTPUT
           else
