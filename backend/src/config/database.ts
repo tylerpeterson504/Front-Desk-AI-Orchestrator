@@ -42,25 +42,3 @@ export const getDatabase = () => AppDataSource;
 export const getRepository = <T>(entity: any) => {
   return AppDataSource.getRepository<T>(entity);
 };
-
-// Legacy pg-promise export for backward compatibility
-// This will be removed in future versions
-export const db = {
-  one: async (query: string, params?: unknown[]) => {
-    const connection = await AppDataSource.createQueryRunner('master');
-    try {
-      const result = await connection.manager.query(query, params);
-      return result[0] || null;
-    } finally {
-      await connection.release();
-    }
-  },
-  any: async (query: string, params?: unknown[]) => {
-    const connection = await AppDataSource.createQueryRunner('master');
-    try {
-      return await connection.manager.query(query, params);
-    } finally {
-      await connection.release();
-    }
-  }
-};
