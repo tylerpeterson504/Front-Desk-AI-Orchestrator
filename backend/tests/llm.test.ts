@@ -1,6 +1,4 @@
 // LLM Client Tests
-// Tests for all LLM provider clients
-
 import * as perplexity from '../src/services/llm/perplexityClient';
 import * as mistral from '../src/services/llm/mistralClient';
 import * as huggingface from '../src/services/llm/huggingfaceClient';
@@ -17,7 +15,6 @@ describe('LLM Clients Configuration', () => {
   describe('Perplexity Client', () => {
     it('should report configured when API key is set', () => {
       process.env.PERPLEXITY_API_KEY = 'test-key';
-      // Need to re-require to pick up the env var
       jest.resetModules();
       const p = require('../src/services/llm/perplexityClient');
       expect(p.isConfigured()).toBe(true);
@@ -58,7 +55,6 @@ describe('LLM Clients Configuration', () => {
       process.env.MISTRAL_BASE_URL = 'https://custom.mistral.ai';
       jest.resetModules();
       const m = require('../src/services/llm/mistralClient');
-      // The MODEL_NAME should still be set
       expect(m.MODEL_NAME).toBeDefined();
     });
   });
