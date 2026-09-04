@@ -37,7 +37,7 @@ jobs:
       - name: Check for changes
         id: verify_changes
         run: |
-          git add backend/package-lock.json dashboard/package-lock.json extension/package-lock.json
+          git add package-lock.json
           if [ -n "$(git diff --cached --name-only)" ]; then
             echo "changes=true" >> $GITHUB_OUTPUT
           else
