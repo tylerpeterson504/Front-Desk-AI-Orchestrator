@@ -29,17 +29,18 @@ export interface AuthResponse {
 function generateToken(user: User): string {
   return jsonwebtoken.sign(
     { userId: user.id, email: user.email, role: user.role },
-    config.JWT_SECRET,
+    config.JWT_SECRET as string,
     { expiresIn: config.JWT_TTL }
   );
 }
 
 function accessTokenTtlSeconds(): number {
   const ttl = config.JWT_TTL || '15m';
-  const match = ttl.match(/^(\d+)([smhd]?)$/i);
-  if (!match) return 15 * 60; // 15 minutes default
+  const match = ttl.match(/^(d+)([smhd]?)$/i);
+  if (!match) return 15 * 60;
 
   const value = parseInt(match[1], 10);
+  if (isNaN(value)) return 15 * 60;
   const unit = match[2].toLowerCase();
 
   switch (unit) {
@@ -47,13 +48,13 @@ function accessTokenTtlSeconds(): number {
     case 'm': return value * 60;
     case 'h': return value * 60 * 60;
     case 'd': return value * 60 * 60 * 24;
-    default: return value * 60; // Assume minutes
+    default: return value * 60;
   }
 }
 
 function verifyToken(token: string): { userId: string; email: string; role: string } {
   try {
-    return jsonwebtoken.verify(token, config.JWT_SECRET) as { userId: string; email: string; role: string };
+    return jsonwebtoken.verify(token, config.JWT_SECRET as string) as { userId: string; email: string; role: string };
   } catch (err) {
     throw new AuthenticationError('Invalid token');
   }
@@ -144,7 +145,6 @@ export class AuthService {
       await refreshTokenService.revokeSession(session.id);
       log.info('User logged out', { user_id: session.user_id });
     } catch (err) {
-      // If token is invalid, that's fine - we still return success
       log.warn('Logout with invalid token', { error: (err as Error).message });
     }
   }
