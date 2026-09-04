@@ -82,7 +82,7 @@
       "^@entities/(.*)$": "<rootDir>/src/entities/$1"
     },
     "transform": {
-      "^.+\.(ts|js)$": [
+      "^.+\\.(ts|js)$": [
         "ts-jest",
         {
           "diagnostics": {
