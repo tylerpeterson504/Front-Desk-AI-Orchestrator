@@ -15,7 +15,6 @@
     "build:backend": "npm run build --prefix backend",
     "build:dashboard": "npm run build --prefix dashboard",
     "build:extension": "npm run build --prefix extension",
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run start --prefix dashboard\"",
     "dev:backend": "npm run dev --prefix backend",
     "dev:dashboard": "npm run start --prefix dashboard",
     "dev:extension": "npm run dev --prefix extension",
