@@ -5,12 +5,14 @@
 // dynamic import, and asserts the extraction/injection behavior through the chrome
 // mock and direct DOM inspection.
 
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 describe('config.js shared module', () => {
   const CONFIG_PATH = '../src/config.ts';
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   async function loadConfig(hostname?: string) {
@@ -24,7 +26,7 @@ describe('config.js shared module', () => {
     return mod;
   }
 
-  test('matches a property by urlPattern substring', async () => {
+  it('matches a property by urlPattern substring', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
     const property = config.getPropertyConfig();
     expect(property).not.toBeNull();
@@ -32,23 +34,23 @@ describe('config.js shared module', () => {
     expect(property.id).toBe(1);
   });
 
-  test('matches the second property', async () => {
+  it('matches the second property', async () => {
     const config = await loadConfig('sys.akia.ai');
     expect(config.getPropertyConfig()?.name).toBe('Andrew Jackson Hotel');
   });
 
-  test('returns null on an unknown host', async () => {
+  it('returns null on an unknown host', async () => {
     const config = await loadConfig('unknown.pms.example');
     expect(config.getPropertyConfig()).toBeNull();
   });
 
-  test('getApiBaseUrl is centralized and defaults to local dev', async () => {
+  it('getApiBaseUrl is centralized and defaults to local dev', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
     expect(config.getApiBaseUrl()).toBe('http://localhost:3001');
     expect(config.getAllProperties()).toHaveLength(2);
   });
 
-  test('loadApiBaseUrl applies the chrome.storage.local override', async () => {
+  it('loadApiBaseUrl applies the chrome.storage.local override', async () => {
     chrome.storage.local.get.mockResolvedValue({ apiBaseUrl: 'https://api.example.com/' });
     const config = await loadConfig('app.us1.stayntouch.com');
 
@@ -56,19 +58,19 @@ describe('config.js shared module', () => {
     expect(config.getApiBaseUrl()).toBe('https://api.example.com');
   });
 
-  test('loadApiBaseUrl falls back to the default when storage is empty', async () => {
+  it('loadApiBaseUrl falls back to the default when storage is empty', async () => {
     chrome.storage.local.get.mockResolvedValue({});
     const config = await loadConfig('app.us1.stayntouch.com');
     await expect(config.loadApiBaseUrl()).resolves.toBe('http://localhost:3001');
   });
 
-  test('loadApiBaseUrl survives a storage failure', async () => {
+  it('loadApiBaseUrl survives a storage failure', async () => {
     chrome.storage.local.get.mockRejectedValue(new Error('storage unavailable'));
     const config = await loadConfig('app.us1.stayntouch.com');
     await expect(config.loadApiBaseUrl()).resolves.toBe('http://localhost:3001');
   });
 
-  test('rejects overrides that are not http(s) URLs', async () => {
+  it('rejects overrides that are not http(s) URLs', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
     for (const bad of ['javascript:alert(1)', 'file:///etc/passwd', 'not a url', '', null]) {
       expect(config.setApiBaseUrlOverride(bad)).toBe('http://localhost:3001');
@@ -76,7 +78,7 @@ describe('config.js shared module', () => {
     expect(config.normalizeApiBaseUrl('https://api.example.com//')).toBe('https://api.example.com');
   });
 
-  test('a storage change updates the cached override without a reload', async () => {
+  it('a storage change updates the cached override without a reload', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
     const listener = chrome.storage.onChanged.addListener.mock.calls.at(-1)[0];
 
@@ -93,15 +95,15 @@ describe('content-stayntouch.js extraction', () => {
   const SCRIPT_PATH = '../src/content-stayntouch.ts';
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   async function loadScript() {
     await import(SCRIPT_PATH);
   }
 
-  test('broadcasts GUEST_INFO_UPDATED with extracted fields', async () => {
+  it('broadcasts GUEST_INFO_UPDATED with extracted fields', async () => {
     document.body.innerHTML = `
       <div class="guest-name">Jane Doe</div>
       <div class="room-number">204</div>
@@ -125,7 +127,7 @@ describe('content-stayntouch.js extraction', () => {
     });
   });
 
-  test('does not broadcast when the page has no guest data', async () => {
+  it('does not broadcast when the page has no guest data', async () => {
     document.body.innerHTML = '<div>empty lobby page</div>';
     const sent: any[] = [];
     chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
@@ -133,7 +135,7 @@ describe('content-stayntouch.js extraction', () => {
     expect(sent).toHaveLength(0);
   });
 
-  test('answers GET_GUEST_INFO pull requests', async () => {
+  it('answers GET_GUEST_INFO pull requests', async () => {
     document.body.innerHTML = `
       <div class="guest-name">Bob</div>
       <div class="room-number">101</div>
@@ -156,8 +158,8 @@ describe('content-akia.js extraction and injection', () => {
   const SCRIPT_PATH = '../src/content-akia.ts';
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   async function loadScript() {
@@ -168,7 +170,7 @@ describe('content-akia.js extraction and injection', () => {
     return chrome.runtime.onMessage.addListener.mock.calls[0][0];
   }
 
-  test('broadcasts CHAT_CONTEXT_UPDATED with messages and guest', async () => {
+  it('broadcasts CHAT_CONTEXT_UPDATED with messages and guest', async () => {
     document.body.innerHTML = `
       <div class="message-item">
         <span class="sender-name">Jane</span>
@@ -195,7 +197,7 @@ describe('content-akia.js extraction and injection', () => {
     ]);
   });
 
-  test('skips broadcast when the chat is empty', async () => {
+  it('skips broadcast when the chat is empty', async () => {
     document.body.innerHTML = '<div class="chat-shell"></div>';
     const sent: any[] = [];
     chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
@@ -203,26 +205,24 @@ describe('content-akia.js extraction and injection', () => {
     expect(sent).toHaveLength(0);
   });
 
-  test('answers GET_CHAT_CONTEXT', async () => {
-    document.body.innerHTML = `
-      <div class="message-item"><span class="message-text">hello</span></div>
-    `;
+  it('answers GET_CHAT_CONTEXT', async () => {
+    document.body.innerHTML = `<div class="message-item"><span class="message-text">hello</span></div>`;
     chrome.runtime.sendMessage.mockImplementation(() => undefined);
     await loadScript();
-    const respond = jest.fn();
+    const respond = vi.fn();
     listener()({ type: 'GET_CHAT_CONTEXT' }, {}, respond);
     expect(respond).toHaveBeenCalled();
     expect(respond.mock.calls[0][0].data.messages[0].text).toBe('hello');
   });
 
-  test('injectMessage sets the textarea via the native setter + input event', async () => {
+  it('injectMessage sets the textarea via the native setter + input event', async () => {
     document.body.innerHTML = '<textarea class="message-input"></textarea>';
     const input = document.querySelector('textarea.message-input')!;
     const events: any[] = [];
     input.addEventListener('input', (e) => events.push(e));
     chrome.runtime.sendMessage.mockImplementation(() => undefined);
     await loadScript();
-    const respond = jest.fn();
+    const respond = vi.fn();
     listener()({ type: 'INJECT_MESSAGE', text: 'Dear guest...' }, {}, respond);
     expect(respond.mock.calls[0][0].success).toBe(true);
     expect(input.value).toBe('Dear guest...');
@@ -230,20 +230,20 @@ describe('content-akia.js extraction and injection', () => {
     expect(input === document.activeElement).toBe(true);
   });
 
-  test('INJECT_MESSAGE reports failure when no input exists', async () => {
+  it('INJECT_MESSAGE reports failure when no input exists', async () => {
     document.body.innerHTML = '<div>no composer here</div>';
     chrome.runtime.sendMessage.mockImplementation(() => undefined);
     await loadScript();
-    const respond = jest.fn();
+    const respond = vi.fn();
     listener()({ type: 'INJECT_MESSAGE', text: 'x' }, {}, respond);
     expect(respond.mock.calls[0][0].success).toBe(false);
   });
 
-  test('ignores unrelated message types', async () => {
+  it('ignores unrelated message types', async () => {
     document.body.innerHTML = '<textarea class="message-input"></textarea>';
     chrome.runtime.sendMessage.mockImplementation(() => undefined);
     await loadScript();
-    const respond = jest.fn();
+    const respond = vi.fn();
     listener()({ type: 'SOMETHING_ELSE' }, {}, respond);
     expect(respond).not.toHaveBeenCalled();
   });
@@ -253,8 +253,8 @@ describe('background.js relay', () => {
   const SCRIPT_PATH = '../src/background.ts';
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     chrome.runtime.sendMessage.mockReset();
     chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
   });
@@ -263,19 +263,19 @@ describe('background.js relay', () => {
     await import(SCRIPT_PATH);
   }
 
-  test('forwards context updates to the runtime', async () => {
+  it('forwards context updates to the runtime', async () => {
     await loadScript();
     // Background script registers its listener on chrome.runtime.onMessage
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
-    listener({ type: 'GUEST_INFO_UPDATED', data: {} }, {}, jest.fn());
-    listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, {}, jest.fn());
+    listener({ type: 'GUEST_INFO_UPDATED', data: {} }, {}, vi.fn());
+    listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, {}, vi.fn());
     expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
   });
 
-  test('ignores unrelated messages', async () => {
+  it('ignores unrelated messages', async () => {
     await loadScript();
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
-    listener({ type: 'OTHER' }, {}, jest.fn());
+    listener({ type: 'OTHER' }, {}, vi.fn());
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
 });
@@ -289,8 +289,8 @@ describe('exception-safe broadcast path (safeSend)', () => {
   for (const { path: scriptPath, fixture, type } of CASES) {
     describe(scriptPath, () => {
       beforeEach(() => {
-        jest.resetModules();
-        jest.clearAllMocks();
+        vi.resetModules();
+        vi.clearAllMocks();
         chrome.runtime.sendMessage.mockReset();
         chrome.runtime.sendMessage.mockReturnValue(Promise.resolve());
       });
@@ -299,7 +299,7 @@ describe('exception-safe broadcast path (safeSend)', () => {
         await import(scriptPath);
       }
 
-      test('a synchronous throw from sendMessage does not kill the observer', async () => {
+      it('a synchronous throw from sendMessage does not kill the observer', async () => {
         document.body.innerHTML = fixture;
         let calls = 0;
         chrome.runtime.sendMessage.mockImplementation(() => {
@@ -317,7 +317,7 @@ describe('exception-safe broadcast path (safeSend)', () => {
         expect(calls).toBeGreaterThan(callsBeforeMutation);
       });
 
-      test('a rejected sendMessage promise does not surface an unhandled rejection', async () => {
+      it('a rejected sendMessage promise does not surface an unhandled rejection', async () => {
         document.body.innerHTML = fixture;
         const rejections: any[] = [];
         const handler = (err: any) => rejections.push(err);
@@ -336,7 +336,7 @@ describe('exception-safe broadcast path (safeSend)', () => {
         }
       });
 
-      test(`successful broadcasts still carry ${type}`, async () => {
+      it(`successful broadcasts still carry ${type}`, async () => {
         document.body.innerHTML = fixture;
         const sent: any[] = [];
         chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
@@ -348,32 +348,32 @@ describe('exception-safe broadcast path (safeSend)', () => {
   }
 });
 
-describe('Content Scripts Edge Cases', function() {
+describe('Content Scripts Edge Cases', () => {
   let originalBody: string;
 
-  beforeEach(function() {
+  beforeEach(() => {
     originalBody = document.body.innerHTML;
     document.body.innerHTML = '';
   });
 
-  afterEach(function() {
+  afterEach(() => {
     document.body.innerHTML = originalBody;
   });
 
-  describe('Empty DOM', function() {
-    it('should handle empty DOM without errors', function() {
+  describe('Empty DOM', () => {
+    it('should handle empty DOM without errors', () => {
       document.body.innerHTML = '';
     });
   });
 
-  describe('Malformed HTML', function() {
-    it('should handle unclosed tags', function() {
+  describe('Malformed HTML', () => {
+    it('should handle unclosed tags', () => {
       document.body.innerHTML = '<div><p>Unclosed tag';
     });
   });
 
-  describe('Rapid DOM Mutations', function() {
-    it('should handle rapid DOM mutations with debouncing', function(done) {
+  describe('Rapid DOM Mutations', () => {
+    it('should handle rapid DOM mutations with debouncing', (done) => {
       document.body.innerHTML = '<div id="container"></div>';
       const container = document.getElementById('container');
       for (let i = 0; i < 50; i++) {
