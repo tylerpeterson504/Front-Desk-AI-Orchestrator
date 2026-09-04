@@ -1,1 +1,1 @@
-Trigger lock file generation with fixed workflow - 1788540493701
+Trigger lock file generation with workspace-level installs - 1788540615236
