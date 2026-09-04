@@ -30,10 +30,6 @@ jobs:
       - name: Install dependencies and generate lock files
         run: |
           npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd ../extension && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd ..
 
       - name: Check for changes
         id: verify_changes
