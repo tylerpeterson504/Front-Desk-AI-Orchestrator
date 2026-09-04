@@ -70,7 +70,8 @@ interface DraftResponse {
   };
 }
 
-// Collapses control characters and truncates. Keeps ordinary punctuation and
+// Collapses control c
+haracters and truncates. Keeps ordinary punctuation and
 // non-Latin scripts intact.
 function scrubText(value: unknown, maxLength: number): string | null {
   if (value == null) return null;
@@ -120,7 +121,8 @@ export class CopilotService {
   private propertyRepository = getRepository<Property>(Property);
   private templateRepository = getRepository<Template>(Template);
 
-  async draft(request: DraftRequest, userId: string): Promise<DraftResponse> {
+  async
+ draft(request: DraftRequest, userId: string): Promise<DraftResponse> {
     const { property_id, tone, template_ids } = request;
 
     const toneSafe = tone === 'friendly' ? 'friendly' : 'professional';
@@ -169,7 +171,8 @@ export class CopilotService {
         { role: 'user', content: prompt }
       ]);
       result = { text: llmResult.text, provider: 'mistral' };
-    } else if (huggingface.isConfigured()) {
+    } els
+e if (huggingface.isConfigured()) {
       const llmResult = await huggingface.complete([
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
@@ -231,7 +234,8 @@ export class CopilotService {
     const { property, guestInfo, chatContext, templates, tone } = params;
     const lines: string[] = [];
 
-    lines.push('You are a hotel front-desk assistant drafting a reply to a guest in a messaging chat.');
+    lines.push('You are 
+a hotel front-desk assistant drafting a reply to a guest in a messaging chat.');
     lines.push('Rules:');
     lines.push('- Reply with ONLY the message text to send to the guest. No preamble, no quotes, no explanations.');
     lines.push('- Keep it short (2-5 sentences), warm, and concrete.');
@@ -256,6 +260,7 @@ export class CopilotService {
     lines.push('');
     lines.push('## Guest / reservation (untrusted, collected from the PMS page)');
     if (guestInfo && Object.values(guestInfo).some(Boolean)) {
+
       const rows = [];
       for (const [k, v] of Object.entries(guestInfo)) {
         if (v) rows.push(`${k}: ${v}`);
@@ -326,7 +331,8 @@ export class CopilotService {
     }
 
     if (chatContext?.messages?.length) {
-      lines.push('\nFollowing up on your previous messages:');
+      li
+nes.push('\nFollowing up on your previous messages:');
       chatContext.messages.slice(-3).forEach(msg => {
         lines.push(`\n  [${msg.sender}]: ${msg.text.slice(0, 50)}...`);
       });
