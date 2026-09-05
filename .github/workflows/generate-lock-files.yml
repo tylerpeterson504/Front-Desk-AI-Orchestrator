@@ -27,11 +27,10 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Install all workspace dependencies
+      - name: Install dependencies
         env:
           HUSKY: "0"
-        run: |
-          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: Check for changes

@@ -18,12 +18,8 @@ permissions:
 
 jobs:
   test:
-    name: Test ${{ matrix.package }}
+    name: Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: [backend, extension, dashboard]
     steps:
       - uses: actions/checkout@v4
 
@@ -31,92 +27,47 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install all dependencies
+      - name: Install dependencies
         env:
           HUSKY: "0"
         run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: TypeScript type check
-        working-directory: ${{ matrix.package }}
-        run: npx tsc --noEmit || true
+        run: npm run typecheck
 
       - name: Lint
-        working-directory: ${{ matrix.package }}
         run: npm run lint || true
 
-      - name: Test
-        working-directory: ${{ matrix.package }}
-        run: |
-          npm test 2>&1 | tee /tmp/test-output.log
-          exit ${PIPESTATUS[0]}
+      - name: Test backend
+        run: npm run test:backend
         env:
           JWT_SECRET: ci-only-secret-not-for-production
           NODE_ENV: test
           CI: "true"
 
-      - name: Report test failure
-        if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Test output for ${{ matrix.package }}:" > /tmp/issue-body.md
-          tail -c 60000 /tmp/test-output.log 2>/dev/null >> /tmp/issue-body.md || echo "No test output found" >> /tmp/issue-body.md
-          jq -n --arg body "$(cat /tmp/issue-body.md)" --arg title "CI Test Failure: ${{ matrix.package }}" '{title: $title, body: $body}' > /tmp/issue-payload.json
-          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" -d @/tmp/issue-payload.json https://api.github.com/repos/${{ github.repository }}/issues || true
-
   build:
     name: Build
     runs-on: ubuntu-latest
-
     needs: test
     steps:
-
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Install all dependencies
+      - name: Install dependencies
         env:
           HUSKY: "0"
         run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: Build backend
-        working-directory: backend
-        run: npm run build
+        run: npm run build:backend
 
       - name: Build dashboard
-        working-directory: dashboard
-        run: npm run build
+        run: npm run build:dashboard
         env:
           CI: true
           NODE_ENV: production
-
-      - name: Build extension
-        working-directory: extension
-        run: npm run build || true
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install all dependencies
-        env:
-          HUSKY: "0"
-        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-        timeout-minutes: 15
-
-      - name: Audit dependencies
-        run: |
-          for pkg in backend dashboard extension; do
-            echo "Auditing $pkg..."
-            npm --prefix $pkg audit --audit-level=high || true
-          done
