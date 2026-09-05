@@ -69,9 +69,9 @@ export const getCorsOrigins = () => {
       throw new Error('CORS_ORIGIN must be set in production');
     }
     return [
-      /^http:\/\/localhost(:\d+)?$/,
-      /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-      /^chrome-extension:\/\//,
+      /^http://localhost(:d+)?$/,
+      /^http://127.0.0.1(:d+)?$/,
+      /^chrome-extension:///,
     ];
   }
 
