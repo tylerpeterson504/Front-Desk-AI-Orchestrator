@@ -1,4 +1,3 @@
-
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
