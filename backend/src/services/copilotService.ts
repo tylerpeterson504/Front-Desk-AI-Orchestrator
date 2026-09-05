@@ -1,9 +1,4 @@
----
-name: copilotService-fixed
-title: CopilotService Fixed
-type: code
-language: typescript
----
+
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
