@@ -20,10 +20,7 @@ const envSchema = z.object({
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
-  WIFI_ENCRYPTION_KEY: z
-    .string()
-    .min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters')
-    .optional(),
+  WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
@@ -75,5 +72,7 @@ export const getCorsOrigins = () => {
     ];
   }
 
-  return config.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+  return config.CORS_ORIGIN.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 };
