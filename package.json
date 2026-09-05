@@ -10,24 +10,22 @@
   },
   "scripts": {
     "build": "npm run build:backend && npm run build:dashboard",
-    "build:backend": "cd src/backend && tsc",
-    "build:dashboard": "cd src/dashboard && tsc -b && vite build",
-    "build:extension": "cd src/extension && vite build",
+    "build:backend": "tsc -p backend/tsconfig.json",
+    "build:dashboard": "tsc -p dashboard/tsconfig.json && vite build --config dashboard/vite.config.ts",
+    "build:extension": "vite build --config extension/vite.config.ts",
     "start": "node dist/backend/index.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\"",
-    "dev:backend": "cd src/backend && ts-node-dev index.ts",
-    "dev:dashboard": "cd src/dashboard && vite",
+    "dev:backend": "ts-node-dev --respawn --transpile-only backend/src/index.ts",
+    "dev:dashboard": "vite --config dashboard/vite.config.ts",
     "test": "npm run test:backend",
-    "test:backend": "cd src/backend && jest --runInBand",
-    "test:dashboard": "cd src/dashboard && vitest run",
-    "typecheck": "npm run typecheck:backend && npm run typecheck:dashboard",
-    "typecheck:backend": "cd src/backend && tsc --noEmit",
-    "typecheck:dashboard": "cd src/dashboard && tsc --noEmit",
+    "test:backend": "jest --config backend/jest.config.js",
+    "test:dashboard": "vitest run --config dashboard/vitest.config.ts",
+    "typecheck": "tsc --noEmit -p backend/tsconfig.json && tsc --noEmit -p dashboard/tsconfig.json",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "rm -rf dist node_modules src/backend/dist src/dashboard/build src/extension/dist",
+    "clean": "rm -rf dist node_modules backend/dist dashboard/build extension/dist",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -97,7 +95,7 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
-      "**/src/backend/tests/**/*.test.ts"
+      "**/backend/tests/**/*.test.ts"
     ],
     "moduleFileExtensions": [
       "ts",
@@ -105,16 +103,16 @@
       "json"
     ],
     "setupFiles": [
-      "<rootDir>/src/backend/tests/setup.ts"
+      "<rootDir>/backend/tests/setup.ts"
     ],
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/backend/src/$1",
-      "^@config/(.*)$": "<rootDir>/src/backend/src/config/$1",
-      "^@routes/(.*)$": "<rootDir>/src/backend/src/routes/$1",
-      "^@services/(.*)$": "<rootDir>/src/backend/src/services/$1",
-      "^@lib/(.*)$": "<rootDir>/src/backend/src/lib/$1",
-      "^@middleware/(.*)$": "<rootDir>/src/backend/src/middleware/$1",
-      "^@entities/(.*)$": "<rootDir>/src/backend/src/entities/$1"
+      "^@/(.*)$": "<rootDir>/backend/src/$1",
+      "^@config/(.*)$": "<rootDir>/backend/src/config/$1",
+      "^@routes/(.*)$": "<rootDir>/backend/src/routes/$1",
+      "^@services/(.*)$": "<rootDir>/backend/src/services/$1",
+      "^@lib/(.*)$": "<rootDir>/backend/src/lib/$1",
+      "^@middleware/(.*)$": "<rootDir>/backend/src/middleware/$1",
+      "^@entities/(.*)$": "<rootDir>/backend/src/entities/$1"
     },
     "transform": {
       "^.+\\\\.(ts|js)$": [
@@ -126,7 +124,7 @@
               151002
             ]
           },
-          "tsconfig": "src/backend/tsconfig.test.json"
+          "tsconfig": "backend/tsconfig.test.json"
         }
       ]
     }
