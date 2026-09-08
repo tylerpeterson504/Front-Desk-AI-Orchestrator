@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 # Root-level lockfile only; sub-project lockfiles (backend/, dashboard/, extension/) are committed for CI.
+/package-lock.json
 
 # Environment variables
 .env
@@ -29,6 +30,7 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+.DS_Store
 
 # Testing
 coverage/
@@ -39,20 +41,11 @@ coverage/
 *.sqlite3
 
 # Extension
-/extension/dist/
-/extension/build/
+extension/dist/
+extension/build/
 
-# Dashboard
-/dashboard/build/
-/dashboard/dist/
+# qwen code settings
+.qwen/telemetry.log
 
-# Backend
-/backend/dist/
-/backend/build/
-
-# Temporary files
-*.tmp
-*.temp
-
-# Cache
-.cache/
+# GitHub App credentials
+gha-creds-*.json
