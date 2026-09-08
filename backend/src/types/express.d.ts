@@ -1,7 +1,1 @@
-import 'express';
-
-declare module 'express' {
-  interface Request {
-    requestId?: string;
-  }
-}
+Too many requests to this site right now. Wait before retrying, or open a different source.

@@ -20,7 +20,10 @@ const envSchema = z.object({
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
-  WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
+  WIFI_ENCRYPTION_KEY: z
+    .string()
+    .min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters')
+    .optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
@@ -36,16 +39,29 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.string().optional(),
 });
 
+// Parsed config type
+export type Config = z.infer<typeof envSchema>;
+
 // Parse and validate
-export const config = envSchema.parse(process.env);
+export const config: Config = envSchema.parse(process.env);
+
+// Type assertion for JWT_SECRET to satisfy jsonwebtoken type requirements
+export const JWT_SECRET: string = config.JWT_SECRET;
 
 // Helper functions
-export const isProduction = () => config.NODE_ENV === 'production';
-export const isTest = () => config.NODE_ENV === 'test';
-export const isDevelopment = () => config.NODE_ENV === 'development';
+export const isProduction = (): boolean => config.NODE_ENV === 'production';
+export const isTest = (): boolean => config.NODE_ENV === 'test';
+export const isDevelopment = (): boolean => config.NODE_ENV === 'development';
 
 // Database configuration
-export const getDatabaseConfig = () => {
+export const getDatabaseConfig = (): {
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database?: string;
+} => {
   if (config.DATABASE_URL) {
     return { connectionString: config.DATABASE_URL };
   }
@@ -60,19 +76,21 @@ export const getDatabaseConfig = () => {
 };
 
 // CORS configuration
-export const getCorsOrigins = () => {
+export const getCorsOrigins = (): (string | RegExp)[] => {
   if (!config.CORS_ORIGIN) {
     if (isProduction()) {
       throw new Error('CORS_ORIGIN must be set in production');
     }
     return [
-      /^http://localhost(:d+)?$/,
-      /^http://127.0.0.1(:d+)?$/,
-      /^chrome-extension:///,
+      /^http:\/\/localhost(:\d+)?$/,
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+      /^chrome-extension:\/\//,
     ];
   }
 
-  return config.CORS_ORIGIN.split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  return (
+    config.CORS_ORIGIN?.split(',')
+      .map((o: string) => o.trim())
+      .filter(Boolean) ?? []
+  );
 };
