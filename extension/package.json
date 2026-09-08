@@ -1,0 +1,18 @@
+{
+  "name": "front-desk-ai-extension",
+  "version": "1.0.0",
+  "description": "Tests for the Front Desk AI Chrome Extension",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFiles": ["./tests/setup.js"],
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "front-desk-ai-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Front Desk AI Orchestrator",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seed-runner.js",
+    "db-setup": "node db/db-setup.js",
+    "encrypt-wifi": "node db/encrypt-wifi.js",
+    "set-role": "node db/set-role.js",
+    "prune-sessions": "node db/prune-sessions.js",
+    "create-admin": "node db/create-admin.js",
+    "create-users": "node db/create-admin-user.js",
+    "test": "jest --runInBand",
+    "test:api": "jest tests/api.test.js",
+    "test:security": "jest tests/security.test.js",
+    "test:coverage": "jest --runInBand --coverage"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg-promise": "^11.9.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}

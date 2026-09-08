@@ -1,0 +1,46 @@
+{
+  "name": "front-desk-ai-orchestrator",
+  "version": "1.0.0",
+  "description": "Front Desk AI Orchestrator - Complete hotel front desk AI assistance system",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "dashboard",
+    "extension"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../dashboard && npm install && cd ../extension && npm install",
+    "start:backend": "cd backend && npm start",
+    "start:dashboard": "cd dashboard && npm start",
+    "start:dev": "concurrently \"npm run start:backend\" \"npm run start:dashboard\"",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd dashboard && npm start\"",
+    "test:backend": "cd backend && npm test",
+    "test:dashboard": "cd dashboard && npm test",
+    "test:extension": "cd extension && npm test",
+    "test:all": "npm run test:backend && npm run test:extension",
+    "build:dashboard": "cd dashboard && npm run build",
+    "db:migrate": "cd backend && npm run migrate",
+    "db:seed": "cd backend && npm run seed",
+    "db:setup": "cd backend && npm run db-setup",
+    "lint": "npm run lint:backend && npm run lint:dashboard",
+    "lint:backend": "cd backend && npm run lint 2>/dev/null || echo 'No lint script in backend'",
+    "lint:dashboard": "cd dashboard && npm run lint 2>/dev/null || echo 'No lint script in dashboard'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "hotel",
+    "front-desk",
+    "ai",
+    "orchestrator",
+    "chrome-extension",
+    "react",
+    "nodejs"
+  ],
+  "author": "Front Desk Team",
+  "license": "MIT"
+}
