@@ -46,3 +46,9 @@ extension/build/
 .nodejs/
 
 .databricks
+
+# Security: Files containing API keys/tokens (removed from repo)
+test-application.sh
+FINAL_SUMMARY.md
+IMPROVEMENTS_2026.md
+test-mistral-ai.js
