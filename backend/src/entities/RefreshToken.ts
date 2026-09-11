@@ -4,24 +4,24 @@ import { User } from './User';
 @Entity('refresh_tokens')
 export class RefreshToken {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  id!: number;
 
   @Column()
-  token: string;
+  token!: string;
 
   @Column()
-  user_id: string;
+  user_id!: string;
 
   @Column({ type: 'timestamp' })
-  expires_at: Date;
+  expires_at!: Date;
 
   @Column({ default: false })
-  is_revoked: boolean;
+  is_revoked!: boolean;
 
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 }

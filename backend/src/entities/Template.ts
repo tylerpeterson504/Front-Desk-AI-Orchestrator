@@ -4,27 +4,27 @@ import { Property } from './Property';
 @Entity('templates')
 export class Template {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ type: 'text' })
-  content: string;
+  content!: string;
 
   @Column({ nullable: true })
-  property_id: number;
+  property_id!: number;
 
   @Column({ default: false })
-  is_global: boolean;
+  is_global!: boolean;
 
   @ManyToOne(() => Property, (property) => property.id)
   @JoinColumn({ name: 'property_id' })
-  property: Property;
+  property!: Property;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

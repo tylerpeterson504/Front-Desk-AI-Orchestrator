@@ -4,29 +4,29 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 @Index(['name'])
 export class Property {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ nullable: true })
-  address: string;
+  address!: string;
 
   @Column({ nullable: true })
-  checkout_time: string;
+  checkout_time!: string;
 
   @Column({ nullable: true })
-  wifi_ssid: string;
+  wifi_ssid!: string;
 
   @Column({ nullable: true })
-  wifi_password: string;
+  wifi_password!: string;
 
   @Column({ nullable: true, type: 'text' })
-  tone_guidelines: string;
+  tone_guidelines!: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

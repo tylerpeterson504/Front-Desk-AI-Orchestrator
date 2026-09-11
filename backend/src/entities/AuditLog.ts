@@ -7,29 +7,29 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 @Index(['created_at'])
 export class AuditLog {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  id!: number;
 
   @Column({ nullable: true })
-  user_id: string;
+  user_id!: string;
 
   @Column()
-  action: string;
+  action!: string;
 
   @Column()
-  resource: string;
+  resource!: string;
 
   @Column({ nullable: true })
-  resource_id: string;
+  resource_id!: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, unknown>;
+  metadata!: Record<string, unknown>;
 
   @Column({ nullable: true })
-  ip_address: string;
+  ip_address!: string;
 
   @Column({ nullable: true, length: 500 })
-  user_agent: string;
+  user_agent!: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 }

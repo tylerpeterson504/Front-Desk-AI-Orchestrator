@@ -5,31 +5,31 @@ import { User } from './User';
 @Entity('shift_notes')
 export class ShiftNote {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  id!: number;
 
   @Column()
-  property_id: number;
+  property_id!: number;
 
   @Column()
-  user_id: string;
+  user_id!: string;
 
   @Column({ type: 'text' })
-  content: string;
+  content!: string;
 
   @Column({ type: 'date' })
-  shift_date: Date;
+  shift_date!: Date;
 
   @ManyToOne(() => Property, (property) => property.id)
   @JoinColumn({ name: 'property_id' })
-  property: Property;
+  property!: Property;
 
   @ManyToOne(() => User, (user) => user.id)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user!: User;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }
