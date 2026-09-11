@@ -46,8 +46,7 @@ function fenced(label, lines) {
   return [
     `${FENCE_OPEN} ${label}`,
     ...lines.map(neutralizeFences),
-    `${FENCE_CLOSE} ${lab
-el}`
+    `${FENCE_CLOSE} ${label}`
   ];
 }
 
@@ -76,8 +75,7 @@ function buildPrompt({ property, guestInfo, chatContext, templates, tone }) {
   }
 
   lines.push('');
-  lines.push('## Guest / reservation (untrusted, coll
-ected from the PMS page)');
+  lines.push('## Guest / reservation (untrusted, collected from the PMS page)');
   if (guestInfo && Object.values(guestInfo).some(Boolean)) {
     const rows = [];
     for (const [k, v] of Object.entries(guestInfo)) {

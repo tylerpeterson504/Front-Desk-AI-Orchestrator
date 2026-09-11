@@ -20,7 +20,7 @@ export class User {
   password_hash!: string;
 
   @Column({ nullable: true })
-  name!: string;
+  name: string | null = null;
 
   @Column({ default: 'agent' })
   role: 'admin' | 'agent' = 'agent';

@@ -43,8 +43,7 @@ async function complete(messages, options = {}) {
     // vLLM-based serving stacks ignore chat_template_kwargs; the /no_think
     // soft switch embedded in the system (or first) message is the reliable
     // way to suppress Qwen3's reasoning pass there.
-    const disableThinking = !(options.enableThinki
-ng ?? false);
+    const disableThinking = !(options.enableThinking ?? false);
     const effectiveMessages = disableThinking && messages.length && messages[0].role === 'system'
       ? [{ ...messages[0], content: `${messages[0].content}\n\n/no_think`.trim() }, ...messages.slice(1)]
       : disableThinking && messages.length
@@ -87,8 +86,7 @@ ng ?? false);
       throw new Error('Empty Hugging Face response');
     }
     return { text, model: payload.model || options.model || MODEL_NAME };
-  } fi
-nally {
+  } finally {
     clearTimeout(timeout);
   }
 }
