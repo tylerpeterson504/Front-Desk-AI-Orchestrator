@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
-# Root-level lockfile only; sub-project lockfiles (backend/, dashboard/, extension/) are committed for CI.
-/package-lock.json
+# Lockfiles are not committed; CI uses `npm install` (not `npm ci`),
+# which regenerates them at install time.
+package-lock.json
 
 # Environment variables
 .env
@@ -46,6 +47,13 @@ extension/build/
 
 # qwen code settings
 .qwen/telemetry.log
+
+# IDE/Databricks session files
+*.session.sql
+
+# Local agent working directories
+.vibe/
+.agents/
 
 # GitHub App credentials
 gha-creds-*.json
