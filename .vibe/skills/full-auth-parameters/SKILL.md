@@ -39,7 +39,7 @@ Use for: Code generation, refactoring, test writing, debugging
 | GLM-5.3 | ✅ YES | Advanced reasoning |
 | DeepSeek-V4 | ✅ YES | Deep analysis |
 | Perplexity Sonar | ✅ YES | Web-grounded research |
-| Gemini-1.5-Flash | ✅ YES | Reasoning, docs |
+| Gemini-3.8-Flash | ✅ YES | Reasoning, docs |
 | Mistral AI | ✅ YES | Alternative coding |
 | ALL OTHERS | ✅ YES | As needed |
 
