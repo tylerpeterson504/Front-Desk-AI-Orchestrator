@@ -1,8 +1,7 @@
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
-import { AppError, ValidationError, AuthorizationError } from '../lib/errors';
-import logger from '../lib/logger';
+import { AuthorizationError } from '../lib/errors';
 import * as perplexity from './llm/perplexityClient';
 import * as mistral from './llm/mistralClient';
 import * as huggingface from './llm/huggingfaceClient';

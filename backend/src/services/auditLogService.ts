@@ -1,8 +1,5 @@
 import { getRepository } from '../config/database';
 import { AuditLog } from '../entities/AuditLog';
-import { Property } from '../entities/Property';
-import { AppError, ValidationError } from '../lib/errors';
-import { createRequestLogger } from '../lib/logger';
 
 export interface CreateAuditLogDto {
   action: string;
@@ -18,7 +15,6 @@ export interface AuditLogWithProperty extends AuditLog {
 
 export class AuditLogService {
   private auditLogRepository = getRepository<AuditLog>(AuditLog);
-  private propertyRepository = getRepository<Property>(Property);
 
   async getAll(userId: string, options?: { limit?: number; offset?: number }): Promise<AuditLogWithProperty[]> {
     const limit = Math.min(options?.limit || 100, 500);
@@ -35,7 +31,7 @@ export class AuditLogService {
 
     return logs.map(log => ({
       ...log,
-      property_name: log.property?.name
+      property_name: undefined
     }));
   }
 

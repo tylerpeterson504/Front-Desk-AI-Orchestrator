@@ -15,9 +15,9 @@ router.post('/draft', requestId, authenticateToken, async (req, res, next) => {
     const response = await copilotService.draft(req.body, userId);
 
     logger.info('Copilot draft generated', { user_id: userId, request_id: req.requestId });
-    res.json(response);
+    return res.json(response);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

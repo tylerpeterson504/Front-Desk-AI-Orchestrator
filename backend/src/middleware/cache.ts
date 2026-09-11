@@ -65,7 +65,7 @@ function isExpired(entry: CacheEntry): boolean {
  * Clean up expired entries periodically
  */
 function cleanupExpired() {
-  const now = Date.now();
+  
   const keysToDelete: string[] = [];
   
   for (const [key, entry] of cache.entries()) {
@@ -196,7 +196,7 @@ export function clearAllCache(): number {
  */
 export function getCacheStats() {
   let expiredCount = 0;
-  const now = Date.now();
+  
   
   for (const entry of cache.values()) {
     if (isExpired(entry)) {

@@ -17,9 +17,9 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
       search: search as string | undefined
     });
 
-    res.json(templates);
+    return res.json(templates);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -38,9 +38,9 @@ router.get('/:id', requestId, authenticateToken, async (req, res, next) => {
     }
 
     const template = await templateService.getById(id, userId);
-    res.json(template);
+    return res.json(template);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -51,9 +51,9 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
     const template = await templateService.create(req.body, userId);
 
     logger.info('Template created', { template_id: template.id, user_id: userId, request_id: req.requestId });
-    res.status(201).json(template);
+    return res.status(201).json(template);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -74,9 +74,9 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
     const template = await templateService.update(id, req.body, userId);
 
     logger.info('Template updated', { template_id: template.id, user_id: userId, request_id: req.requestId });
-    res.json(template);
+    return res.json(template);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -97,9 +97,9 @@ router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
     await templateService.delete(id, userId);
 
     logger.info('Template deleted', { template_id: id, user_id: userId, request_id: req.requestId });
-    res.status(204).send();
+    return res.status(204).send();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

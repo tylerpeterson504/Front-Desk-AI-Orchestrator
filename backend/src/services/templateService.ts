@@ -1,8 +1,6 @@
 import { getRepository } from '../config/database';
 import { Template } from '../entities/Template';
-import { User } from '../entities/User';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
-import { createRequestLogger } from '../lib/logger';
+import { NotFoundError, ValidationError } from '../lib/errors';
 
 export interface CreateTemplateDto {
   name: string;

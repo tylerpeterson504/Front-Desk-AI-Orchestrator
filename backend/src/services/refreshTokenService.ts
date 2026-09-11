@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getRepository } from '../config/database';
 import { RefreshToken } from '../entities/RefreshToken';
 import { User } from '../entities/User';
-import { AppError, NotFoundError, AuthenticationError } from '../lib/errors';
+import { AuthenticationError } from '../lib/errors';
 import { config } from '../config';
 
 export interface Session {
@@ -17,12 +17,11 @@ export interface SessionOptions {
 }
 
 const TOKEN_LENGTH = 64;
-const DEFAULT_TTL_DAYS = 30;
 
 export class RefreshTokenService {
   private refreshTokenRepository = getRepository<RefreshToken>(RefreshToken);
 
-  async issueSession(user: User, options: SessionOptions = {}): Promise<Session> {
+  async issueSession(user: User, _options: SessionOptions = {}): Promise<Session> {
     const token = crypto.randomBytes(TOKEN_LENGTH).toString('base64url');
     const ttlDays = parseInt(config.REFRESH_TOKEN_TTL_DAYS?.toString() || '30', 10);
     const expiresAt = new Date();

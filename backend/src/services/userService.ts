@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { getRepository } from '../config/database';
 import { User } from '../entities/User';
-import { AppError, NotFoundError, ConflictError, AuthenticationError } from '../lib/errors';
+import { AppError, NotFoundError, ConflictError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { config } from '../config';
 

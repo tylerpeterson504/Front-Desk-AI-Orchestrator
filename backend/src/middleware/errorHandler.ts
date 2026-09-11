@@ -19,7 +19,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   const requestId = req.requestId || crypto.randomUUID();
 

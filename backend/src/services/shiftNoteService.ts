@@ -1,8 +1,7 @@
 import { getRepository } from '../config/database';
 import { ShiftNote } from '../entities/ShiftNote';
 import { Property } from '../entities/Property';
-import { AppError, NotFoundError, ValidationError, AuthorizationError } from '../lib/errors';
-import { createRequestLogger } from '../lib/logger';
+import { NotFoundError, ValidationError, AuthorizationError } from '../lib/errors';
 
 export interface CreateShiftNoteDto {
   property_id: number;

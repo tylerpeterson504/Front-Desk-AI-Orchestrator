@@ -3,7 +3,7 @@ import { User } from '../entities/User';
 import { userService } from './userService';
 import { refreshTokenService } from './refreshTokenService';
 import { config } from '../config';
-import { AppError, AuthenticationError, NotFoundError } from '../lib/errors';
+import { AuthenticationError, NotFoundError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 
 export interface AuthTokens {

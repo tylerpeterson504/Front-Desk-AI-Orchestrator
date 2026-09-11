@@ -11,9 +11,9 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
     const shiftNotes = await shiftNoteService.getAll(userId);
-    res.json(shiftNotes);
+    return res.json(shiftNotes);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -24,9 +24,9 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
     const shiftNote = await shiftNoteService.create(req.body, userId);
 
     logger.info('Shift note created', { shift_note_id: shiftNote.id, user_id: userId, request_id: req.requestId });
-    res.status(201).json(shiftNote);
+    return res.status(201).json(shiftNote);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -47,9 +47,9 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
     const shiftNote = await shiftNoteService.update(id, req.body, userId);
 
     logger.info('Shift note updated', { shift_note_id: shiftNote.id, user_id: userId, request_id: req.requestId });
-    res.json(shiftNote);
+    return res.json(shiftNote);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -70,9 +70,9 @@ router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
     await shiftNoteService.delete(id, userId);
 
     logger.info('Shift note deleted', { shift_note_id: id, user_id: userId, request_id: req.requestId });
-    res.status(204).send();
+    return res.status(204).send();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

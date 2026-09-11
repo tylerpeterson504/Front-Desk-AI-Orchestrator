@@ -1,6 +1,6 @@
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
+import { NotFoundError, ValidationError } from '../lib/errors';
 import { encryptSecret, decryptSecret } from '../lib/secretBox';
 import { createRequestLogger } from '../lib/logger';
 

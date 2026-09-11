@@ -2,7 +2,6 @@ import express from 'express';
 import { userService } from '../services/userService';
 import { authService } from '../services/authService';
 import { requestId } from '../middleware/errorHandler';
-import { config } from '../config';
 import { getMode, assertRegistrationAllowed } from '../config/registration';
 import { isValidEmail } from '../lib/validateEmail';
 import logger from '../lib/logger';
@@ -58,9 +57,9 @@ router.post('/register', requestId, async (req, res, next) => {
 
     logger.info('user registered', { user_id: response.user.id, role: response.user.role, request_id: req.requestId });
 
-    res.status(201).json(response);
+    return res.status(201).json(response);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -84,9 +83,9 @@ router.post('/login', requestId, async (req, res, next) => {
 
     logger.info('user logged in', { user_id: response.user.id, request_id: req.requestId });
 
-    res.json(response);
+    return res.json(response);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -105,14 +104,14 @@ router.post('/refresh', requestId, async (req, res, next) => {
 
     const tokens = await authService.refresh(refresh_token, req.requestId);
 
-    res.json({
+    return res.json({
       token: tokens.token,
       expires_in: tokens.expiresIn,
       refresh_token: tokens.refreshToken,
       refresh_expires_at: tokens.refreshExpiresAt
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -125,9 +124,9 @@ router.post('/logout', requestId, async (req, res, next) => {
       await authService.logout(refresh_token, req.requestId);
     }
 
-    res.json({ message: 'Logged out successfully' });
+    return res.json({ message: 'Logged out successfully' });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -148,9 +147,9 @@ router.post('/logout-all', requestId, async (req, res, next) => {
 
     await authService.logoutEverywhere(userId, req.requestId);
 
-    res.json({ message: 'Logged out everywhere successfully' });
+    return res.json({ message: 'Logged out everywhere successfully' });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -178,7 +177,7 @@ router.get('/me', requestId, async (req, res, next) => {
       });
     }
 
-    res.json({
+    return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -186,13 +185,13 @@ router.get('/me', requestId, async (req, res, next) => {
       property_id: user.property_id
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
 // Get registration mode
-router.get('/registration-mode', requestId, (req, res) => {
-  res.json({ mode: getMode() });
+router.get('/registration-mode', requestId, (_req, res) => {
+  return res.json({ mode: getMode() });
 });
 
 // Set user role (admin only)
@@ -233,14 +232,14 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
 
     logger.info('user role updated', { user_id: user.id, new_role: user.role, updated_by: req.requestId });
 
-    res.json({
+    return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

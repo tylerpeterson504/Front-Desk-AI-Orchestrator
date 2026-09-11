@@ -7,12 +7,12 @@ import logger from '../lib/logger';
 const router = express.Router();
 
 // Get all properties
-router.get('/', requestId, async (req, res, next) => {
+router.get('/', requestId, async (_req, res, next) => {
   try {
     const properties = await propertyService.getAll();
-    res.json(properties);
+    return res.json(properties);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -29,9 +29,9 @@ router.get('/:id', requestId, async (req, res, next) => {
     }
 
     const property = await propertyService.getById(id);
-    res.json(property);
+    return res.json(property);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -40,9 +40,9 @@ router.post('/', requestId, async (req, res, next) => {
   try {
     const property = await propertyService.create(req.body, req.requestId);
     logger.info('Property created', { property_id: property.id, request_id: req.requestId });
-    res.status(201).json(property);
+    return res.status(201).json(property);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -60,9 +60,9 @@ router.put('/:id', requestId, async (req, res, next) => {
 
     const property = await propertyService.update(id, req.body);
     logger.info('Property updated', { property_id: property.id, request_id: req.requestId });
-    res.json(property);
+    return res.json(property);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -80,9 +80,9 @@ router.delete('/:id', requestId, async (req, res, next) => {
 
     await propertyService.delete(id);
     logger.info('Property deleted', { property_id: id, request_id: req.requestId });
-    res.json({ message: 'Property deleted successfully' });
+    return res.json({ message: 'Property deleted successfully' });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -100,9 +100,9 @@ router.get('/:id/wifi', requestId, authenticateToken, async (req, res, next) => 
 
     const wifi = await propertyService.getWifiPassword(id, req.requestId);
     logger.info('WiFi password retrieved', { property_id: id, user_id: (req as any).user?.id, request_id: req.requestId });
-    res.json(wifi);
+    return res.json(wifi);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

@@ -119,7 +119,7 @@ app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
 
 // Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 // Serve dashboard static files in production.
 // The SPA catch-all is registered BEFORE the notFound middleware so unknown
