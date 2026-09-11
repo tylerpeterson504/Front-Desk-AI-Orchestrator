@@ -19,7 +19,7 @@ router.get('/', requestId, async (_req, res, next) => {
 // Get single property
 router.get('/:id', requestId, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       return res.status(400).json({
         error: 'Invalid property ID',
@@ -49,7 +49,7 @@ router.post('/', requestId, async (req, res, next) => {
 // Update property
 router.put('/:id', requestId, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       return res.status(400).json({
         error: 'Invalid property ID',
@@ -69,7 +69,7 @@ router.put('/:id', requestId, async (req, res, next) => {
 // Delete property
 router.delete('/:id', requestId, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       return res.status(400).json({
         error: 'Invalid property ID',
@@ -89,7 +89,7 @@ router.delete('/:id', requestId, async (req, res, next) => {
 // Get Wi-Fi password (audit-logged, requires authentication)
 router.get('/:id/wifi', requestId, authenticateToken, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       return res.status(400).json({
         error: 'Invalid property ID',

@@ -9,7 +9,7 @@
  * - Deep object manipulation
  */
 
-import { z, ZodSchema } from "zod";
+import { z, ZodSchema, ZodError } from "zod";
 
 /**
  * Result type for validation operations

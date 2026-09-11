@@ -25,7 +25,7 @@ export async function complete(prompt: string): Promise<LLMResult> {
   const model = getModel();
   if (!model) {
     const error = new Error('Gemini is not configured');
-    error.code = 'GEMINI_NOT_CONFIGURED';
+    (error as Error & { code: string }).code = 'GEMINI_NOT_CONFIGURED';
     throw error;
   }
 

@@ -27,7 +27,7 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
 router.get('/:id', requestId, authenticateToken, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
 
     if (isNaN(id)) {
       return res.status(400).json({
@@ -61,7 +61,7 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
 router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
 
     if (isNaN(id)) {
       return res.status(400).json({
@@ -84,7 +84,7 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
 router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
 
     if (isNaN(id)) {
       return res.status(400).json({

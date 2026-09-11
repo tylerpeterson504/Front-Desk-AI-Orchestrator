@@ -18,12 +18,12 @@ export function isConfigured(): boolean {
 export async function complete(messages: Array<{ role: string; content: string }>, options: LLMOptions = {}): Promise<LLMResult> {
   if (!isConfigured()) {
     const error = new Error('Hugging Face is not configured');
-    error.code = 'HUGGINGFACE_NOT_CONFIGURED';
+    (error as Error & { code: string }).code = 'HUGGINGFACE_NOT_CONFIGURED';
     throw error;
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     const error = new Error('Messages are required');
-    error.code = 'INVALID_MESSAGES';
+    (error as Error & { code: string }).code = 'INVALID_MESSAGES';
     throw error;
   }
 

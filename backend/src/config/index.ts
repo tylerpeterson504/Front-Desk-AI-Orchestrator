@@ -32,7 +32,9 @@ const envSchema = z.object({
   DATABRICKS_HOST: z.string().optional(),
   DATABRICKS_TOKEN: z.string().optional(),
   DATABRICKS_WAREHOUSE_ID: z.string().optional(),
+  DATABRICKS_WORKSPACE_ID: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
+  GITHUB_REPOSITORY: z.string().optional(),
   BCRYPT_ROUNDS: z.string().optional(),
 });
 

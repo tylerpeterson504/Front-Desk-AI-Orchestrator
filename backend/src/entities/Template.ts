@@ -18,6 +18,12 @@ export class Template {
   @Column({ default: false })
   is_global!: boolean;
 
+  @Column({ nullable: true })
+  category?: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  tags?: string[];
+
   @ManyToOne(() => Property, (property) => property.id)
   @JoinColumn({ name: 'property_id' })
   property!: Property;

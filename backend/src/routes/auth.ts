@@ -217,7 +217,7 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
       });
     }
 
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { role } = req.body;
 
     if (!role || !['admin', 'agent'].includes(role)) {
