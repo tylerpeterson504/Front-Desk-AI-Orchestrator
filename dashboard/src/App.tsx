@@ -14,7 +14,7 @@ function App() {
   const [page, setPage] = React.useState<import('./types').PageType>('templates');
   const [user, setUser] = React.useState<User | null>(null);
   const [checking, setChecking] = React.useState(true);
-  const { token, clearCredentials, setCredentials } = useAuthStore();
+  const { token, clearCredentials } = useAuthStore();
 
   React.useEffect(() => {
     // Check if we have a token

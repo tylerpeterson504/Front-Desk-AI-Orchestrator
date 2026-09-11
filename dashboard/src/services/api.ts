@@ -1,8 +1,8 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { ApiError, AuthResponse, User } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '/api';
 
 class ApiService {
   private instance: AxiosInstance;
@@ -42,10 +42,9 @@ class ApiService {
         // Handle 401 errors
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
+          const { refreshToken, setCredentials, clearCredentials } = useAuthStore.getState();
 
           try {
-            const { refreshToken, setCredentials, clearCredentials } = useAuthStore.getState();
-
             if (!refreshToken) {
               clearCredentials();
               return Promise.reject(error);
@@ -89,27 +88,27 @@ class ApiService {
     );
   }
 
-  async get<T>(url: string, config?: InternalAxiosRequestConfig): Promise<T> {
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.get<T>(url, config);
     return response.data;
   }
 
-  async post<T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> {
+  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.post<T>(url, data, config);
     return response.data;
   }
 
-  async put<T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> {
+  async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.put<T>(url, data, config);
     return response.data;
   }
 
-  async delete<T>(url: string, config?: InternalAxiosRequestConfig): Promise<T> {
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.delete<T>(url, config);
     return response.data;
   }
 
-  async patch<T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> {
+  async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.patch<T>(url, data, config);
     return response.data;
   }
@@ -131,6 +130,7 @@ export const authAPI = {
 export const propertyAPI = {
   getAll: () => api.get<import('../types').Property[]>('/properties'),
   getOne: (id: number) => api.get<import('../types').Property>(`/properties/${id}`),
+  getWifi: (id: number) => api.get<{ password: string }>(`/properties/${id}/wifi`),
   create: (data: Partial<import('../types').Property>) => api.post<import('../types').Property>('/properties', data),
   update: (id: number, data: Partial<import('../types').Property>) => api.put<import('../types').Property>(`/properties/${id}`, data),
   delete: (id: number) => api.delete<void>(`/properties/${id}`)
@@ -165,7 +165,7 @@ export const onUnauthorized = (callback: () => void) => {
   const originalDelete = api.delete;
   const originalPatch = api.patch;
 
-  api.post = async <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
+  api.post = async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     try {
       return await originalPost<T>(url, data, config);
     } catch (error) {
@@ -176,7 +176,7 @@ export const onUnauthorized = (callback: () => void) => {
     }
   };
 
-  api.get = async <T>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
+  api.get = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     try {
       return await originalGet<T>(url, config);
     } catch (error) {
@@ -187,7 +187,7 @@ export const onUnauthorized = (callback: () => void) => {
     }
   };
 
-  api.put = async <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
+  api.put = async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     try {
       return await originalPut<T>(url, data, config);
     } catch (error) {
@@ -198,7 +198,7 @@ export const onUnauthorized = (callback: () => void) => {
     }
   };
 
-  api.delete = async <T>(url: string, config?: InternalAxiosRequestConfig): Promise<T> => {
+  api.delete = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     try {
       return await originalDelete<T>(url, config);
     } catch (error) {
@@ -209,7 +209,7 @@ export const onUnauthorized = (callback: () => void) => {
     }
   };
 
-  api.patch = async <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
+  api.patch = async <T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     try {
       return await originalPatch<T>(url, data, config);
     } catch (error) {

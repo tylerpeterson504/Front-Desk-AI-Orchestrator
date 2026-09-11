@@ -22,7 +22,7 @@ interface ShiftNotesState {
   clearError: () => void;
 }
 
-export const useShiftNotesStore = create<ShiftNotesState>((set, get) => ({
+export const useShiftNotesStore = create<ShiftNotesState>((set) => ({
   shiftNotes: [],
   currentShiftNote: null,
   isLoading: false,

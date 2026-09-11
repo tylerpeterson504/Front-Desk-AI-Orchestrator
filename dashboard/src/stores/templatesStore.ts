@@ -21,7 +21,7 @@ interface TemplatesState {
   clearError: () => void;
 }
 
-export const useTemplatesStore = create<TemplatesState>((set, get) => ({
+export const useTemplatesStore = create<TemplatesState>((set) => ({
   templates: [],
   currentTemplate: null,
   isLoading: false,

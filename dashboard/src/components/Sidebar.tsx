@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, ClipboardList, LogOut, Building2, StickyNote } from './icons';
-import { User } from '../types';
+import { User, PageType } from '../types';
 
 const NAV_ITEMS = [
   { id: 'templates', label: 'Templates', icon: FileText },
@@ -10,9 +10,9 @@ const NAV_ITEMS = [
 ];
 
 interface SidebarProps {
-  page: string;
-  onNavigate: (page: string) => void;
-  user: User | null;
+  page?: PageType;
+  onNavigate?: (page: PageType) => void;
+  user?: User | null;
   onLogout?: () => void;
 }
 
@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ page, onNavigate, user, onLogo
           return (
             <button
               key={id}
-              onClick={() => onNavigate(id)}
+              onClick={() => onNavigate?.(id as PageType)}
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors w-full text-left ${
                 active
                   ? 'bg-blue-600 text-white'

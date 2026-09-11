@@ -49,12 +49,11 @@ function FormField({
   onBlur,
   children,
 }: FormFieldProps) {
-  const { 
-    control, 
-    formState: { errors }, 
-    watch 
+  const {
+    control,
+    formState: { errors }
   } = useFormContext();
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const error = errors[name] as FieldError;
 
@@ -69,7 +68,6 @@ function FormField({
       case 'textarea':
         return (
           <textarea
-            {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
             name={name}
             placeholder={placeholder}
             disabled={disabled}
@@ -82,18 +80,9 @@ function FormField({
           />
         );
 
-      case 'select':
-        return (
-          <select
-            {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
-            name={name}
-            disabled={disabled}
-            readOnly={readOnly}
-            autoComplete={autoComplete}
-            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
-            onChange={(e) => handleChange(e.target.value, e)}
-            onBlur={onBlur}
-          >
+      case 'select': {
+        const selectChildren = (
+          <>
             {placeholder && <option value="">{placeholder}</option>}
             {options?.map((option) => (
               <option key={option.value} value={option.value}>
@@ -101,15 +90,27 @@ function FormField({
               </option>
             ))}
             {children}
+          </>
+        );
+        return (
+          <select
+            name={name}
+            disabled={disabled}
+            autoComplete={autoComplete}
+            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
+            onChange={(e) => handleChange(e.target.value, e)}
+            onBlur={onBlur}
+          >
+            {selectChildren}
           </select>
         );
+      }
 
       case 'checkbox':
         return (
           <div className="flex items-center">
             <input
               type="checkbox"
-              {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
               name={name}
               disabled={disabled}
               readOnly={readOnly}
@@ -126,7 +127,6 @@ function FormField({
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
               name={name}
               placeholder={placeholder}
               disabled={disabled}
@@ -160,7 +160,6 @@ function FormField({
               <div key={option.value} className="flex items-center">
                 <input
                   type="radio"
-                  {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
                   name={name}
                   value={option.value}
                   disabled={disabled}
@@ -181,7 +180,6 @@ function FormField({
         return (
           <input
             type={type}
-            {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
             name={name}
             placeholder={placeholder}
             disabled={disabled}

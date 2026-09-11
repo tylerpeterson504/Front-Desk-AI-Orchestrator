@@ -86,7 +86,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...formData };
+      const payload: Partial<FormData> = { ...formData };
       // On edit, empty wifi_password means "unchanged" (the API never returns it)
       if (editingId && !payload.wifi_password) delete payload.wifi_password;
       if (editingId) {

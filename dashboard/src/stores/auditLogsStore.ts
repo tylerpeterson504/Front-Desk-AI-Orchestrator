@@ -27,7 +27,7 @@ interface AuditLogsState {
   clearError: () => void;
 }
 
-export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
+export const useAuditLogsStore = create<AuditLogsState>((set) => ({
   auditLogs: [],
   currentAuditLog: null,
   isLoading: false,
@@ -47,12 +47,11 @@ export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
         user_id: params.user_id,
         action: params.action
       });
-      
-      // Assuming response includes data and pagination info
-      const data = Array.isArray(response) ? response : response.data || [];
-      const total = response.total || 0;
-      const totalPages = Math.ceil(total / limit);
-      
+
+      const data = Array.isArray(response) ? response : [];
+      const total = data.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+
       set({
         auditLogs: data,
         pagination: { page, limit, total, totalPages },

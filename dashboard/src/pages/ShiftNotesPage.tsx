@@ -32,7 +32,10 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
       // already made — reading it from state here would also make this callback
       // change identity on every selection.
       if (propsRes.length) {
-        setSelectedProperty((current) => current || String(propsRes[0].id));
+        const firstId = propsRes[0]?.id;
+        if (firstId !== undefined) {
+          setSelectedProperty((current) => current || String(firstId));
+        }
       }
       setError('');
     } catch (err) {

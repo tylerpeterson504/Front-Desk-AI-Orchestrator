@@ -29,6 +29,8 @@ export interface Template {
   content: string;
   property_id: number | null;
   is_global: boolean;
+  category?: string;
+  tags?: string[];
   created_at: string;
   updated_at: string;
 }

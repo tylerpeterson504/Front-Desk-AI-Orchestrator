@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, XCircleIcon, XIcon } from 'lucide-react';
+import { CheckCircleIcon, AlertCircleIcon, InfoIcon, XCircleIcon, XIcon } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -20,8 +20,8 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 const toastIcons = {
   success: CheckCircleIcon,
   error: XCircleIcon,
-  warning: ExclamationCircleIcon,
-  info: InformationCircleIcon
+  warning: AlertCircleIcon,
+  info: InfoIcon
 };
 
 const getToastColors = (type: ToastType) => {

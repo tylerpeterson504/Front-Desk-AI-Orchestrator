@@ -25,7 +25,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       if (!response.token) throw new Error('Login response did not include a token');
 
       // Store both the access token and the refresh token
-      setCredentials(response.user, response.token, response.refresh_token);
+      setCredentials(response.user, response.token, response.refreshToken);
       onAuthenticated(response.user);
     } catch (err: unknown) {
       const errorMessage = (err as { status?: number; message?: string }).status === 401

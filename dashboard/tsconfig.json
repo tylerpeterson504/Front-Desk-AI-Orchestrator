@@ -3,7 +3,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "lib": [
       "ES2022",
       "DOM",
@@ -36,10 +36,7 @@
     "allowUnreachableCode": false,
     "allowJs": true,
     "checkJs": false,
-    "jsx": "react-jsx",
-    "types": [
-      "vite/client"
-    ]
+    "jsx": "react-jsx"
   },
   "include": [
     "src/**/*"
