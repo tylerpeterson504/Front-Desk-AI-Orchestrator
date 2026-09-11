@@ -23,7 +23,7 @@ ALWAYS operate with FULL AUTH and ALL SYSTEMS ACTIVE using this exact operating 
 
 ### Primary Coding Model
 
-Qwen2.5 Coder - Default for all coding tasks
+Qwen3 Coder - Default for all coding tasks
 
 Use for: Code generation, refactoring, test writing, debugging
 
@@ -31,11 +31,11 @@ Use for: Code generation, refactoring, test writing, debugging
 
 | Model | Authorized | Purpose |
 |-------|------------|---------|
-| Qwen2.5-Coder-7B | ✅ YES | Lightweight coding |
-| Qwen2.5-Coder-14B | ✅ YES | Complex logic |
-| Qwen2.5-Coder-32B | ✅ YES | Heavy-duty coding |
-| Qwen3.8-27B | ✅ YES | Multimodal tasks |
-| Qwen3.8-Flash | ✅ YES | Fast inference |
+| Qwen3-Coder-7B | ✅ YES | Lightweight coding |
+| Qwen3-Coder-14B | ✅ YES | Complex logic |
+| Qwen3-Coder-32B | ✅ YES | Heavy-duty coding |
+| Qwen3-27B | ✅ YES | Multimodal tasks |
+| Qwen3-Flash | ✅ YES | Fast inference |
 | GLM-5.3 | ✅ YES | Advanced reasoning |
 | DeepSeek-V4 | ✅ YES | Deep analysis |
 | Perplexity Sonar | ✅ YES | Web-grounded research |
@@ -45,10 +45,10 @@ Use for: Code generation, refactoring, test writing, debugging
 
 ### Model Selection Logic
 
-- **Default**: Qwen2.5 Coder for coding
+- **Default**: Qwen3 Coder for coding
 - **Complex Reasoning**: Use GLM-5.3 or DeepSeek-V4
 - **Web Research**: Use Perplexity Sonar
-- **Documentation**: Use Gemini or Qwen3.8
+- **Documentation**: Use Gemini or Qwen3
 - **Any Task**: Use ANY model that helps
 
 
@@ -165,7 +165,7 @@ Use for: Code generation, refactoring, test writing, debugging
    - Execute autonomously once authorized
 
 3. **Optimal Resource Selection**
-   - Qwen2.5 Coder = Primary for coding
+   - Qwen3 Coder = Primary for coding
    - Best model = Use the most appropriate for the task
    - Best skill = Load matching skills automatically
    - Best connector = Use the right connector for the job
@@ -194,7 +194,7 @@ Use for: Code generation, refactoring, test writing, debugging
 
 ### During Task Execution
 
-[x] Use Qwen2.5 Coder for coding  
+[x] Use Qwen3 Coder for coding  
 [x] Use other models as needed  
 [x] Use all authorized skills  
 [x] Use all authorized connectors  
@@ -218,7 +218,7 @@ Use for: Code generation, refactoring, test writing, debugging
 ✅ Use Web Search for external data  
 ✅ Use run_typescript for complex logic  
 ✅ Use bash for filesystem operations  
-✅ Use Qwen2.5 Coder for coding  
+✅ Use Qwen3 Coder for coding  
 ✅ Use best available model for each task  
 ✅ Operate with FULL AUTH  
 ✅ Use ALL SYSTEMS ACTIVE
@@ -250,7 +250,7 @@ This configuration is now PERMANENT. Every time you interact with me, I will:
 
 ✅ Operate with FULL AUTH  
 ✅ Use ALL SYSTEMS ACTIVE  
-✅ Use Qwen2.5 Coder as primary coding model  
+✅ Use Qwen3 Coder as primary coding model  
 ✅ Use ALL authorized models as needed  
 ✅ Use ALL authorized skills  
 ✅ Use ALL authorized connectors  
