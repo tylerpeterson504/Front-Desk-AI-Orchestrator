@@ -3,12 +3,10 @@ import app from '../src/index';
 import request from 'supertest';
 import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
-import { Property } from '../src/entities/Property';
-import jsonwebtoken from 'jsonwebtoken';
-import { createMockRepository, createMockUser, createMockProperty } from './utils';
+import { createMockRepository, createMockUser } from './utils';
 
 jest.mock('../src/config/database', () => ({
-  getRepository: jest.fn((entity: any) => createMockRepository())
+  getRepository: jest.fn((_entity: any) => createMockRepository())
 }));
 
 jest.mock('../src/config', () => ({
@@ -25,17 +23,9 @@ jest.mock('bcrypt', () => ({
 
 describe('Backend Routes - Basic Tests', () => {
   let testUser: User;
-  let testProperty: Property;
-  let authToken: string;
 
   beforeAll(() => {
     testUser = createMockUser();
-    testProperty = createMockProperty();
-    authToken = jsonwebtoken.sign(
-      { userId: testUser.id, email: testUser.email, role: testUser.role },
-      'test-secret-key-at-least-32-characters-long',
-      { expiresIn: '15m' }
-    );
   });
 
   describe('Health Check', () => {

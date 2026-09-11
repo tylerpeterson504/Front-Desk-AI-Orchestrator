@@ -1,5 +1,3 @@
-import { Repository } from 'typeorm';
-
 /**
  * Mock repository type that extends Jest mock functions
  * This allows TypeScript to recognize mockResolvedValue, mockReturnValue, etc.
@@ -167,12 +165,3 @@ export async function waitForMocks(...mocks: jest.Mock[]): Promise<void> {
     }
   }
 }
-
-export {
-  MockRepository,
-  createMockRepository,
-  mockGetRepository,
-  createMockUser,
-  createMockProperty,
-  createMockTemplate
-};

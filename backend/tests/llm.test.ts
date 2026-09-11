@@ -1,7 +1,5 @@
 // LLM Client Tests
-import * as perplexity from '../src/services/llm/perplexityClient';
 import * as mistral from '../src/services/llm/mistralClient';
-import * as huggingface from '../src/services/llm/huggingfaceClient';
 import * as gemini from '../src/services/llm/geminiClient';
 
 describe('LLM Clients Configuration', () => {

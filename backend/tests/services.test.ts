@@ -1,11 +1,10 @@
 import bcrypt from 'bcrypt';
 import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
-import { Property } from '../src/entities/Property';
 import { userService } from '../src/services/userService';
 import { authService, generateToken, accessTokenTtlSeconds, verifyToken } from '../src/services/authService';
 import { NotFoundError, ConflictError, AuthenticationError, AppError } from '../src/lib/errors';
-import { createMockRepository, createMockUser, createMockProperty } from './utils';
+import { createMockRepository } from './utils';
 
 // Mock bcrypt
 jest.mock('bcrypt', () => ({
@@ -15,7 +14,7 @@ jest.mock('bcrypt', () => ({
 
 // Mock database
 jest.mock('../src/config/database', () => ({
-  getRepository: jest.fn((entity: any) => createMockRepository())
+  getRepository: jest.fn((_entity: any) => createMockRepository())
 }));
 
 // Mock config
@@ -169,7 +168,7 @@ describe('Service Layer', () => {
         mockRepo.save.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
-        const updatedUser = await userService.updateUser('1', {
+        await userService.updateUser('1', {
           name: 'Updated Name'
         });
 
