@@ -142,7 +142,7 @@ const PORT = config.PORT || 3001;
 // Start server only if this file is run directly. Importing this module
 // (e.g. in tests) must NOT connect to the database; only connect when the
 // server is actually starting.
-const isMainModule = import.meta.url.endsWith(process.argv[1]);
+const isMainModule = __filename === process.argv[1] || process.argv[1]?.endsWith(__filename) === true;
 
 if (isMainModule) {
   initializeDatabase()

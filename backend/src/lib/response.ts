@@ -29,7 +29,7 @@ export class ResponseBuilder {
     }
   };
 
-  constructor(private requestId: string) {
+  constructor(requestId: string) {
     this.response.meta!.requestId = requestId;
   }
 
@@ -50,15 +50,16 @@ export class ResponseBuilder {
   }
 
   error(code: string, message: string, details?: Record<string, unknown>): ApiResponse<never> {
-    return {
-      ...this.response,
+    const errorResponse: ApiResponse<never> = {
       success: false,
       error: {
         code,
         message,
         ...(details && { details })
-      }
+      },
+      meta: { ...this.response.meta! }
     };
+    return errorResponse;
   }
 
   paginated<T>(data: T[], pagination: {
@@ -71,7 +72,7 @@ export class ResponseBuilder {
       ...this.response,
       data,
       meta: {
-        ...this.response.meta,
+        ...this.response.meta!,
         pagination
       },
       success: true
@@ -86,6 +87,6 @@ export function createResponseBuilder(requestId: string) {
 // Middleware to add response builder to request
 export function responseBuilder(req: Request, res: Response, next: NextFunction) {
   (res as any).locals = (res as any).locals || {};
-  (res as any).locals.response = createResponseBuilder(req.requestId);
+  (res as any).locals.response = createResponseBuilder(req.requestId || 'unknown');
   next();
 }

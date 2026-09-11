@@ -10,7 +10,7 @@ export class AuditLog {
   id!: number;
 
   @Column({ nullable: true })
-  user_id!: string;
+  user_id!: string | null;
 
   @Column()
   action!: string;
@@ -19,16 +19,19 @@ export class AuditLog {
   resource!: string;
 
   @Column({ nullable: true })
-  resource_id!: string;
+  resource_id!: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata!: Record<string, unknown>;
+  metadata!: Record<string, unknown> | null;
 
   @Column({ nullable: true })
-  ip_address!: string;
+  ip_address!: string | null;
 
   @Column({ nullable: true, length: 500 })
-  user_agent!: string;
+  user_agent!: string | null;
+
+  @Column({ nullable: true })
+  property_id!: number | null;
 
   @CreateDateColumn()
   created_at!: Date;

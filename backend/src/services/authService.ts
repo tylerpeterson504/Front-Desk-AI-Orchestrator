@@ -30,7 +30,7 @@ function generateToken(user: User): string {
   return jsonwebtoken.sign(
     { userId: user.id, email: user.email, role: user.role },
     config.JWT_SECRET as string,
-    { expiresIn: config.JWT_TTL }
+    { expiresIn: config.JWT_TTL as unknown as jsonwebtoken.SignOptions['expiresIn'] }
   );
 }
 
@@ -39,9 +39,9 @@ function accessTokenTtlSeconds(): number {
   const match = ttl.match(/^(d+)([smhd]?)$/i);
   if (!match) return 15 * 60;
 
-  const value = parseInt(match[1], 10);
+  const value = parseInt(match[1] as string, 10);
   if (isNaN(value)) return 15 * 60;
-  const unit = match[2].toLowerCase();
+  const unit = (match[2] as string).toLowerCase();
 
   switch (unit) {
     case 's': return value;

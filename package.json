@@ -13,7 +13,7 @@
     "dev:dashboard": "cd dashboard && vite",
     "test": "npm run test:backend && npm run test:dashboard",
     "test:all": "npm run test:backend && npm run test:dashboard",
-    "test:backend": "cd backend && jest",
+    "test:backend": "cd backend && jest --runInBand",
     "test:dashboard": "cd dashboard && vitest run",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",

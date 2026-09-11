@@ -34,8 +34,8 @@ export function performanceMonitor() {
     (req as any)._startDate = startDate;
     
     // Override res.end to capture response time
-    const originalEnd = res.end;
-    res.end = function (...args: Parameters<Response['end']>) {
+    const originalEnd = res.end as any;
+    (res as any).end = function (this: Response, ...args: any[]) {
       const end = process.hrtime.bigint();
       const durationMs = Number(end - start) / 1_000_000;
       
@@ -75,7 +75,7 @@ export function performanceMonitor() {
       });
       
       // Call original end
-      originalEnd.apply(res, args);
+      return originalEnd.apply(res, args);
     };
     
     next();
@@ -89,8 +89,8 @@ export function performanceMonitor() {
 export function memoryMonitor(req: Request, res: Response, next: NextFunction) {
   const startMemory = process.memoryUsage();
   
-  const originalEnd = res.end;
-  res.end = function (...args: Parameters<Response['end']>) {
+  const originalEnd = res.end as any;
+  (res as any).end = function (this: Response, ...args: any[]) {
     const endMemory = process.memoryUsage();
     
     // Calculate memory delta
@@ -111,7 +111,7 @@ export function memoryMonitor(req: Request, res: Response, next: NextFunction) {
     // Add memory usage header (approximate)
     res.set('X-Memory-Usage', `${Math.round(endMemory.heapUsed / 1024 / 1024)}MB`);
     
-    originalEnd.apply(res, args);
+    return originalEnd.apply(res, args);
   };
   
   next();
@@ -175,8 +175,8 @@ export function enhancedPerformanceMonitor() {
     const start = process.hrtime.bigint();
     const endpointKey = `${req.method}:${req.path}`;
     
-    const originalEnd = res.end;
-    res.end = function (...args: Parameters<Response['end']>) {
+    const originalEnd = res.end as any;
+    (res as any).end = function (this: Response, ...args: any[]) {
       const end = process.hrtime.bigint();
       const durationMs = Number(end - start) / 1_000_000;
       
@@ -212,7 +212,7 @@ export function enhancedPerformanceMonitor() {
         });
       }
       
-      originalEnd.apply(res, args);
+      return originalEnd.apply(res, args);
     };
     
     next();
@@ -249,13 +249,13 @@ export function trackConcurrentRequests(req: Request, res: Response, next: NextF
   }
   
   // Decrement counter when response finishes
-  const originalEnd = res.end;
-  res.end = function (...args: Parameters<Response['end']>) {
+  const originalEnd = res.end as any;
+  (res as any).end = function (this: Response, ...args: any[]) {
     activeRequests--;
-    originalEnd.apply(res, args);
+    return originalEnd.apply(res, args);
   };
   
-  next();
+  return next();
 }
 
 /**

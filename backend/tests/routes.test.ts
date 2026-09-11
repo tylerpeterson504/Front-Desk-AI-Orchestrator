@@ -5,9 +5,12 @@ import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
 import { createMockRepository, createMockUser } from './utils';
 
-jest.mock('../src/config/database', () => ({
-  getRepository: jest.fn((_entity: any) => createMockRepository())
-}));
+jest.mock('../src/config/database', () => {
+  const { createMockRepository } = jest.requireActual('./utils');
+  return {
+    getRepository: jest.fn((_entity: any) => createMockRepository())
+  };
+});
 
 jest.mock('../src/config', () => ({
   config: {
@@ -45,7 +48,7 @@ describe('Backend Routes - Basic Tests', () => {
 
       const response = await request(app)
         .post('/api/auth/register')
-        .send({ email: 'new@example.com', password: 'password123', name: 'New' })
+        .send({ email: 'new@example.com', password: 'password1234', name: 'New' })
         .expect(201);
       expect(response.body.token).toBeDefined();
     });

@@ -42,12 +42,12 @@ export function successResponse<T>(
     success: true,
     data,
     meta: {
-      requestId: req.requestId,
+      requestId: req.requestId || 'unknown',
       timestamp: new Date().toISOString()
     }
   };
 
-  if (pagination) {
+  if (pagination && response.meta) {
     response.meta.pagination = pagination;
   }
 

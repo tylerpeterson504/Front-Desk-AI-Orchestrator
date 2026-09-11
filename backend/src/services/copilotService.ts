@@ -1,3 +1,4 @@
+import { In } from 'typeorm';
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
@@ -79,7 +80,7 @@ function scrubText(value: unknown, maxLength: number): string | null {
     .replace(/[ \t]+/g, ' ')
     .trim();
   if (!text) return null;
-  return text.length > maxLength ? `${text.slice(0, maxLength)}\u2026` : text;
+  return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
 }
 
 export class CopilotService {
@@ -116,7 +117,7 @@ export class CopilotService {
 
     const activeGuest = scrubText((raw as Record<string, unknown>).activeGuest, MAX_FIELD_LENGTH);
     if (!messages.length && !activeGuest) return null;
-    return { messages, activeGuest };
+    return { messages, activeGuest: activeGuest ?? undefined };
   }
 
   async draft(request: DraftRequest, userId: string): Promise<DraftResponse> {
@@ -131,9 +132,9 @@ export class CopilotService {
     if (property_id != null) {
       property = await this.propertyRepository.findOne({
         where: { id: property_id, user_id: userId },
-        select: ['id', 'name', 'checkout_time', 'tone_guidelines', 'wifi_ssid']
+        select: ['id', 'name', 'checkout_time', 'tone_guidelines', 'wifi_ssid', 'user_id']
       });
-      if (!property) {
+      if (!property || property.user_id !== userId) {
         throw new AuthorizationError('Property not found or access denied');
       }
     }
@@ -145,7 +146,7 @@ export class CopilotService {
       : [];
     if (ids.length) {
       templates = await this.templateRepository.find({
-        where: { user_id: userId, id: { $in: ids } },
+        where: { user_id: userId, id: In(ids) },
         order: { name: 'ASC' }
       });
     }

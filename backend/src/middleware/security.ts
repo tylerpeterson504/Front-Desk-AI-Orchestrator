@@ -170,7 +170,7 @@ function sanitizeString(value: string): string {
     : sanitized;
 }
 
-export function additionalSecurityHeaders(_req: Request, res: Response, next: NextFunction): void {
+export function additionalSecurityHeaders(req: Request, res: Response, next: NextFunction): void {
   // XSS Protection
   res.set("X-Content-Type-Options", "nosniff");
   
@@ -201,7 +201,7 @@ export function additionalSecurityHeaders(_req: Request, res: Response, next: Ne
 /**
  * Block requests from known bots/scanners
  */
-export function blockMaliciousUserAgents(req: Request, res: Response, next: NextFunction): void {
+export function blockMaliciousUserAgents(req: Request, res: Response, next: NextFunction) {
   const userAgent = req.headers['user-agent'] || '';
   
   for (const pattern of BLOCKED_USER_AGENTS) {
@@ -214,13 +214,13 @@ export function blockMaliciousUserAgents(req: Request, res: Response, next: Next
     }
   }
   
-  next();
+  return next();
 }
 
 /**
  * Validate content type
  */
-export function validateContentType(req: Request, res: Response, next: NextFunction): void {
+export function validateContentType(req: Request, res: Response, next: NextFunction) {
   const contentType = req.headers['content-type'] || '';
   
   // Skip validation for GET, HEAD, OPTIONS requests
@@ -229,7 +229,7 @@ export function validateContentType(req: Request, res: Response, next: NextFunct
   }
   
   // Check if content type is allowed
-  const baseContentType = contentType.split(';')[0].trim();
+  const baseContentType = (contentType.split(';')[0] || '').trim();
   if (!ALLOWED_CONTENT_TYPES.has(baseContentType)) {
     return res.status(415).json({
       error: 'Unsupported Media Type',
@@ -261,7 +261,7 @@ export function createSensitiveRateLimiter() {
 /**
  * Check for suspicious request patterns
  */
-export function detectSuspiciousRequests(req: Request, res: Response, next: NextFunction): void {
+export function detectSuspiciousRequests(req: Request, res: Response, next: NextFunction) {
   // Check for unusually large request bodies
   if (req.headers['content-length']) {
     const contentLength = parseInt(req.headers['content-length'], 10);
@@ -291,5 +291,5 @@ export function detectSuspiciousRequests(req: Request, res: Response, next: Next
     }
   }
   
-  next();
+  return next();
 }

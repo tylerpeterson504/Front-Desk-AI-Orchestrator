@@ -31,8 +31,8 @@ export class PropertyService {
     return value.trim();
   }
 
-  private optionalString(value: unknown, field: string, maxLength: number = MAX_LENGTH): string | null {
-    if (value == null || value === '') return null;
+  private optionalString(value: unknown, field: string, maxLength: number = MAX_LENGTH): string | undefined {
+    if (value == null || value === '') return undefined;
     if (typeof value !== 'string') {
       throw new ValidationError(`${field} must be a string`);
     }
@@ -80,7 +80,7 @@ export class PropertyService {
   async create(data: CreatePropertyDto, requestId?: string): Promise<Property> {
     const log = createRequestLogger(requestId || '');
 
-    const propertyData = this.readPropertyBody(data);
+    const propertyData = this.readPropertyBody(data as unknown as Record<string, unknown>);
 
     // Encrypt Wi-Fi password if provided
     let encryptedWifiPassword: string | undefined;
@@ -126,7 +126,7 @@ export class PropertyService {
   async update(id: number, data: UpdatePropertyDto): Promise<Property> {
     const property = await this.getById(id);
 
-    const propertyData = this.readPropertyBody(data, property.checkout_time);
+    const propertyData = this.readPropertyBody(data as unknown as Record<string, unknown>, property.checkout_time);
 
     // Encrypt Wi-Fi password if provided
     let encryptedWifiPassword: string | undefined;
@@ -137,10 +137,10 @@ export class PropertyService {
     }
 
     property.name = propertyData.name;
-    property.address = propertyData.address;
-    property.checkout_time = propertyData.checkout_time;
-    property.wifi_ssid = propertyData.wifi_ssid;
-    property.tone_guidelines = propertyData.tone_guidelines;
+    property.address = propertyData.address ?? '';
+    property.checkout_time = propertyData.checkout_time ?? '';
+    property.wifi_ssid = propertyData.wifi_ssid ?? '';
+    property.tone_guidelines = propertyData.tone_guidelines ?? '';
 
     if (encryptedWifiPassword !== undefined) {
       property.wifi_password = encryptedWifiPassword;

@@ -15,6 +15,9 @@ export class Template {
   @Column({ nullable: true })
   property_id!: number;
 
+  @Column({ nullable: true, type: 'uuid' })
+  user_id!: string;
+
   @Column({ default: false })
   is_global!: boolean;
 

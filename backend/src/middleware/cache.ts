@@ -85,7 +85,8 @@ function cleanupExpired() {
 }
 
 // Run cleanup every 5 minutes
-setInterval(cleanupExpired, 5 * 60 * 1000);
+const cleanupTimer = setInterval(cleanupExpired, 5 * 60 * 1000);
+cleanupTimer.unref();
 
 // Run cleanup on startup
 cleanupExpired();
@@ -105,8 +106,16 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
       return next();
     }
     
-    // Don't cache if explicitly disabled
-    if (req.headers['x-no-cache'] === 'true') {
+    if (req.path.startsWith('/api/auth')) {
+      return next();
+    }
+    
+    if (req.path === '/health' || req.path === '/api/health') {
+      return next();
+    }
+    
+    const cacheControl = req.headers['cache-control'];
+    if (req.headers['x-no-cache'] === 'true' || (typeof cacheControl === 'string' && cacheControl.toLowerCase().includes('no-cache'))) {
       return next();
     }
     
@@ -134,7 +143,7 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
     
     // Override res.json to cache the response
     const originalJson = res.json;
-    res.json = function (data: unknown) {
+    res.json = function (data: unknown): Response {
       // Only cache successful responses if configured
       if (!onlySuccess || (res.statusCode >= 200 && res.statusCode < 300)) {
         cache.set(cacheKey, {
@@ -147,7 +156,7 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
         res.set('X-Cache', 'BYPASS');
       }
       
-      originalJson.call(res, data);
+      return originalJson.call(res, data);
     };
     
     next();
@@ -189,6 +198,14 @@ export function clearAllCache(): number {
   const size = cache.size;
   cache.clear();
   return size;
+}
+
+export function clearCache(): void {
+  cache.clear();
+}
+
+export function getCacheSize(): number {
+  return cache.size;
 }
 
 /**
@@ -257,14 +274,14 @@ export function etagCache() {
     
     // Store ETag for future requests
     const originalJson = res.json;
-    res.json = function (data: unknown) {
+    res.json = function (data: unknown): Response {
       const responseEtag = generateETag(data);
       cache.set(cacheKey, {
         data: responseEtag,
         expiresAt: Date.now() + DEFAULT_TTL * 1000
       });
       res.set('ETag', responseEtag);
-      originalJson.call(res, data);
+      return originalJson.call(res, data);
     };
     
     next();

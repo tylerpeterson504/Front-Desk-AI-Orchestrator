@@ -2,7 +2,8 @@
  * Mock repository type that extends Jest mock functions
  * This allows TypeScript to recognize mockResolvedValue, mockReturnValue, etc.
  */
-export interface MockRepository<T> {
+export interface MockRepository<T = unknown> {
+  readonly _entityType?: T;
   findOne: jest.Mock;
   find: jest.Mock;
   findOneBy: jest.Mock;
@@ -18,15 +19,15 @@ export interface MockRepository<T> {
 /**
  * Creates a mock repository with all TypeORM methods mocked
  */
-export function createMockRepository<T>(
+export function createMockRepository<T = unknown>(
   overrides: Partial<MockRepository<T>> = {}
 ): MockRepository<T> {
   return {
     findOne: jest.fn(),
     find: jest.fn(),
     findOneBy: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
+    create: jest.fn((entity?: T) => (entity == null ? ({} as T) : entity)),
+    save: jest.fn((entity?: T) => Promise.resolve(entity)),
     update: jest.fn(),
     delete: jest.fn(),
     remove: jest.fn(),

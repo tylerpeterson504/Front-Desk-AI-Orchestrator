@@ -62,7 +62,7 @@ export class TemplateService {
       content,
       tags: tags || [],
       property_id: property_id ? Number(property_id) : undefined,
-      is_global: is_global ?? false
+      is_global: (is_global as boolean | undefined) ?? false
     };
   }
 
@@ -98,16 +98,16 @@ export class TemplateService {
   }
 
   async create(data: CreateTemplateDto, userId: string): Promise<Template> {
-    const templateData = this.readTemplateBody(data);
+    const templateData = this.readTemplateBody(data as unknown as Record<string, unknown>);
 
     const template = this.templateRepository.create({
       name: templateData.name,
       content: templateData.content,
-      category: templateData.category,
+      category: templateData.category ?? undefined,
       tags: templateData.tags,
       user_id: userId,
       property_id: templateData.property_id,
-      is_global: templateData.is_global
+      is_global: templateData.is_global ?? false
     });
 
     await this.templateRepository.save(template);
@@ -118,11 +118,11 @@ export class TemplateService {
   async update(id: number, data: UpdateTemplateDto, userId: string): Promise<Template> {
     const template = await this.getById(id, userId);
 
-    const templateData = this.readTemplateBody(data);
+    const templateData = this.readTemplateBody(data as unknown as Record<string, unknown>);
 
     template.name = templateData.name;
     template.content = templateData.content;
-    template.category = templateData.category;
+    template.category = templateData.category ?? undefined;
     template.tags = templateData.tags;
 
     if (templateData.property_id !== undefined) {

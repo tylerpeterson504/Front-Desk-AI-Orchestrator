@@ -8,8 +8,8 @@ export function requestId(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-export function notFound(req: Request, res: Response) {
-  res.status(404).json({
+export function notFound(req: Request, res: Response): Response {
+  return res.status(404).json({
     error: 'Not found',
     requestId: req.requestId
   });
@@ -71,7 +71,7 @@ export function errorHandler(
   }
 
   // Default to 500
-  res.status(500).json({
+  return res.status(500).json({
     error: 'Internal server error',
     code: 'INTERNAL_ERROR',
     requestId

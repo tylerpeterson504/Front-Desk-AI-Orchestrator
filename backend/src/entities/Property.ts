@@ -24,6 +24,9 @@ export class Property {
   @Column({ nullable: true, type: 'text' })
   tone_guidelines!: string;
 
+  @Column({ nullable: true, type: 'uuid' })
+  user_id!: string;
+
   @CreateDateColumn()
   created_at!: Date;
 

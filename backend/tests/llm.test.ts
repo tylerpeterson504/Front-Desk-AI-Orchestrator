@@ -1,6 +1,4 @@
 // LLM Client Tests
-import * as mistral from '../src/services/llm/mistralClient';
-import * as gemini from '../src/services/llm/geminiClient';
 
 describe('LLM Clients Configuration', () => {
   const originalEnv = process.env;
