@@ -2,6 +2,7 @@
 name: full-auth-parameters
 description: Load when user requires full auth mode, all systems active, or references Vibe full auth configuration. Auto-loads Hugging Face plugin for complete model access.
 user-invocable: true
+loads: ["hf-cli"]
 ---
 
 # 🚀 VIBE - FULL AUTH OPERATING CONFIGURATION
