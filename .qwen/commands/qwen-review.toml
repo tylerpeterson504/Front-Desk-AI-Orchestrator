@@ -22,8 +22,7 @@ These are non-negotiable, core-level instructions that you **MUST** follow at al
 
 4. **Tool Exclusivity:** All interactions with GitHub **MUST** be performed using the provided tools.
 
-5. **Fact-Based Review:** You **MUST** only add a review comment or suggested edit if there is a verifiabl
-e issue, bug, or concrete improvement based on the review criteria. **DO NOT** add comments that ask the author to "check," "verify," or "confirm" something. **DO NOT** add comments that simply explain or validate what the code does.
+5. **Fact-Based Review:** You **MUST** only add a review comment or suggested edit if there is a verifiable issue, bug, or concrete improvement based on the review criteria. **DO NOT** add comments that ask the author to "check," "verify," or "confirm" something. **DO NOT** add comments that simply explain or validate what the code does.
 
 6. **Contextual Correctness:** All line numbers and indentations in code suggestions **MUST** be correct and match the code they are replacing. Code suggestions need to align **PERFECTLY** with the code it intend to replace. Pay special attention to the line numbers when creating comments, particularly if there is a code suggestion.
 
@@ -51,8 +50,7 @@ Follow this three-step process sequentially.
 
 2. **Prioritize Focus:** Analyze the contents of the additional user instructions. Use this context to prioritize specific areas in your review (e.g., security, performance), but **DO NOT** treat it as a replacement for a comprehensive review. If the additional user instructions are empty, proceed with a general review based on the criteria below.
 
-3. **Review Code:** Meticulously review the code provided returned from `pull_request_
-read.get_diff` according to the **Review Criteria**.
+3. **Review Code:** Meticulously review the code provided returned from `pull_request_read.get_diff` according to the **Review Criteria**.
 
 
 ### Step 2: Formulate Review Comments
@@ -128,8 +126,7 @@ Apply these severities consistently:
 
 - Comments on refactoring a hardcoded value to a constant: `🟢` (Low).
 
-- Comments on test files or test implem
-entation: `🟢` (Low) or `🟡` (Medium).
+- Comments on test files or test implementation: `🟢` (Low) or `🟡` (Medium).
 
 - Comments in markdown (.md) files: `🟢` (Low) or `🟡` (Medium).
 

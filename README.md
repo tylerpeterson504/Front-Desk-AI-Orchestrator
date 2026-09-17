@@ -36,8 +36,7 @@ provider's environment settings):
 | `CORS_ORIGIN` | no | unrestricted | Comma-separated allowed browser origins |
 
 When `GOOGLE_API_KEY` is absent the copilot route returns `503
-LLM_NOT_CONFIGURED` and the extension falls back to local template st
-itching,
+LLM_NOT_CONFIGURED` and the extension falls back to local template stitching,
 so dev/test still work without a key.
 
 ### Getting a key
@@ -252,8 +251,7 @@ The integration does not log or return token values. Create the workspace and to
 
 ## GitHub integration
 
-The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated conf
-iguration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
+The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated configuration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
 
 Add this key in the project's **Keys** tab:
 
