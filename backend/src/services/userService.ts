@@ -147,6 +147,7 @@ export class UserService {
       throw new NotFoundError('User', id);
     }
 
+
     user.role = role;
     await this.userRepository.save(user);
 

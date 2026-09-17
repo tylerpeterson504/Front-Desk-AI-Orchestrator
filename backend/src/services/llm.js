@@ -132,6 +132,7 @@ async function draftGuestReply({ property, guestInfo, chatContext, templates, to
 
   if (mistral.isConfigured()) {
     const result = 
+
 await mistral.complete(MESSAGES(prompt));
     return { text: result.text, provider: 'mistral' }; 
   }

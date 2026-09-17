@@ -116,7 +116,8 @@ export class CopilotService {
       : [];
 
     const activeGuest = scrubText((raw as Record<string, unknown>).activeGuest, MAX_FIELD_LENGTH);
-    if (!messages.length && !activeGuest) return null;
+    if (!messages.length && !activeGuest) return
+ null;
     return { messages, activeGuest };
   }
 
@@ -168,7 +169,8 @@ export class CopilotService {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      result = { text: llmResult.text, provider: 'mistral' };
+      result =
+ { text: llmResult.text, provider: 'mistral' };
     } else if (huggingface.isConfigured()) {
       const llmResult = await huggingface.complete([
         { role: 'system', content: SYSTEM_PROMPT },
@@ -229,6 +231,7 @@ export class CopilotService {
   }): string {
 
     const { property, guestInfo, chatContext, templates, tone } = params;
+
     const lines: string[] = [];
 
     lines.push('You are a hotel front-desk assistant drafting a reply to a guest in a messaging chat.');
@@ -323,7 +326,8 @@ export class CopilotService {
       templates.forEach(t => {
         lines.push(`\n- ${t.name}: ${t.content.slice(0, 100)}...`);
       });
-    }
+  
+  }
 
     if (chatContext?.messages?.length) {
       lines.push('\nFollowing up on your previous messages:');

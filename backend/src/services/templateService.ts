@@ -54,7 +54,8 @@ export class TemplateService {
         throw new ValidationError(`tags must contain at most ${MAX_TAGS} entries`);
       }
       if (tags.some((tag) => typeof tag !== 'string' || tag.length > MAX_TAG_LENGTH)) {
-        throw new ValidationError(`each tag must be a string of at most ${MAX_TAG_LENGTH} characters`);
+ 
+       throw new ValidationError(`each tag must be a string of at most ${MAX_TAG_LENGTH} characters`);
       }
     }
 

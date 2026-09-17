@@ -67,7 +67,8 @@ export class AuthService {
     const user = await userService.createUser({
       email: data.email,
       password: data.password,
-      name: data.name
+      name: 
+data.name
     }, requestId);
 
     const session = await refreshTokenService.issueSession(user, {
