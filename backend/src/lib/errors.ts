@@ -79,7 +79,6 @@ export class AppError extends Error {
       context?: ErrorContext;
       isOperational?: boolean;
       cause?: Error;
-    } = {}
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -158,7 +157,8 @@ export class ValidationError extends AppError {
 }
 
 /**
- * Authentication error for failed authentication attempts
+ * Authentication error for failed authentica
+tion attempts
  */
 export class AuthenticationError extends AppError {
   public readonly failedAttempts?: number;
@@ -234,7 +234,6 @@ export class NotFoundError extends AppError {
     context?: ErrorContext
   ) {
     super(404, 'NOT_FOUND', `${resourceType} not found: ${resourceId}`, {
-      severity: ErrorSeverity.LOW,
       category: ErrorCategory.NOT_FOUND,
       context,
       isOperational: true
@@ -314,7 +313,6 @@ export class RateLimitError extends AppError {
 export class DatabaseError extends AppError {
   public readonly internalMessage: string;
   public readonly query?: string;
-  public readonly parameters?: unknown[];
 
   constructor(
     internalMessage: string,
@@ -393,6 +391,7 @@ export class ExternalServiceError extends AppError {
     } = {}
   ) {
     super(503, 'EXTERNAL_SERVICE_ERROR', message, {
+
       severity: ErrorSeverity.HIGH,
       category: ErrorCategory.EXTERNAL_SERVICE,
       details: {
@@ -466,7 +465,6 @@ export class SecurityError extends AppError {
       isOperational: false
     });
     this.threatType = options.threatType;
-    this.threatDetails = options.threatDetails;
   }
 }
 
@@ -556,7 +554,8 @@ export function wrapError(
   context: ErrorContext
 ): AppError {
   if (error instanceof AppError) {
-    // Preserve existing error but add context
+    // Preserve existing
+ error but add context
     const mergedContext = { ...error.context, ...context };
     return new (error.constructor as any)(
       error.message,
@@ -631,7 +630,8 @@ export function detectError(
       const error = new Error(obj.message as string);
       return wrapError(error, context || createErrorContext({} as any));
     }
-    
+ 
+   
     if (obj.error && typeof obj.error === 'string') {
       const error = new Error(obj.error as string);
       return wrapError(error, context || createErrorContext({} as any));
@@ -725,7 +725,6 @@ export async function retryWithBackoff<T>(
   } = options;
 
   let lastError: Error | undefined;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await operation();

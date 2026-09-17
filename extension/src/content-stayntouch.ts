@@ -57,7 +57,6 @@ interface GuestInfo {
   }
 
   function getRoot(): Element {
-    return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
   }
 
   function firstText(root: Element, selectors: string[]): string | null {
@@ -116,7 +115,6 @@ interface GuestInfo {
         '.room-number',
         '.roomNumber',
         '#roomNumber',
-        '[data-test="room-number"]',
         '[data-testid*="room-number" i]',
         '[name*="room" i]',
         '[id*="room" i]'
@@ -192,7 +190,8 @@ interface GuestInfo {
       checkIn,
       checkOut,
       confirmationNumber,
-      reservationStatus
+  
+    reservationStatus
     };
 
     log.log('extracted guest info:', info);
@@ -239,6 +238,7 @@ interface GuestInfo {
     Object.keys(probes).forEach(function (label) {
       let total = 0; const samples: string[] = [];
       (probes as Record<string, string[]>)[label].forEach(function (sel) {
+
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
       });
@@ -291,7 +291,8 @@ interface GuestInfo {
   init();
 
   // Import createLogger dynamically to avoid circular dependency
-  function createLogger(prefix: string): {
+  function createLogger(prefix: string): 
+{
     log: (message: string, data?: unknown) => void;
     warn: (message: string, data?: unknown) => void;
     error: (message: string, data?: unknown) => void;

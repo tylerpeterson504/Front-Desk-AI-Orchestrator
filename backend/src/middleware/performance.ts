@@ -58,7 +58,8 @@ export function performanceMonitor() {
         logger.info('Slow request', {
           method: req.method,
           path: req.originalUrl,
-          durationMs: responseTime.toFixed(2),
+          durationMs: responseTime.toFixed(
+2),
           userId: (req as any).user?.userId,
           requestId: req.requestId
         });
@@ -135,7 +136,8 @@ const requestStats = new Map<string, {
 export function getRequestStats() {
   const stats: Record<string, {
     count: number;
-    avgTime: number;
+    
+avgTime: number;
     minTime: number;
     maxTime: number;
     requestsPerMinute: number;
@@ -205,7 +207,6 @@ export function enhancedPerformanceMonitor() {
       if (durationMs >= SLOW_REQUEST_THRESHOLD) {
         logger.warn('Slow endpoint detected', {
           endpoint: endpointKey,
-          durationMs: durationMs.toFixed(2),
           count: stats.count,
           avgTime: (stats.totalTime / stats.count).toFixed(2),
           requestId: req.requestId

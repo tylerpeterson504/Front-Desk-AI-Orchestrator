@@ -58,6 +58,7 @@
   }
 
   function warn(message, data) 
+
 {
     if (DEBUG) {
       if (data !== undefined) console.warn('[FDAO/akia]', message, data);
@@ -114,9 +115,8 @@
 
   const COMPOSER_SELECTORS = [
     '.website-chat-client-composer input#message',
-    '.website-chat-client-composer input[aria-l
-abel="Message input" i]',
-    '.website-chat-client-composer input[type="text"]',
+    '.website-chat-client-composer input[aria-
+label="Message input" i]',
     'input[aria-label="Message input" i]',
     'textarea.message-input',
     'input.message-input',
@@ -157,7 +157,8 @@ abel="Message input" i]',
       const time = firstText(el, TIME_SELECTORS);
       return { sender: sender || null, text: text, time: time || null };
     }).filter(function (m) { return !!m.text; });
-    const activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name" i
+    const activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name"
+ i
 ]']);
     let conversationEl = null;
     try { conversationEl = root.querySelector('[data-conversation-id]'); } catch (_) {}
@@ -194,7 +195,6 @@ abel="Message input" i]',
     if (!DEBUG) return;
     const probes = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class
-*="bubble" i]', '[class*="msg" i]'],
       'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
       'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
     };
@@ -230,7 +230,6 @@ abel="Message input" i]',
         const InputEventCtor = window.InputEvent;
         const evt = InputEventCtor ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text }) : new Event('input', { bubbles: true });
         el.dispatchEvent(evt); el.dispatchEvent(n
-ew Event('change', { bubbles: true })); return true;
       }
       const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : el instanceof HTMLInputElement ? HTMLInputElement.prototype : null;
       if (proto) { const desc = Object.getOwnPropertyDescriptor(proto, 'value'); if (desc && desc.set) desc.set.call(el, text); else el.value = text; }
@@ -260,7 +259,6 @@ ew Event('change', { bubbles: true })); return true;
     if (message.type === 'GET_CHAT_CONTEXT') {
       try { const ctx = extractChatContext(); validateContext(ctx); sendResponse({ data: ctx }); }
       catch (e) { warn('GET_CHAT_CONTEXT failed:', e && e.message); sendResponse({ data: { messages: 
-[], activeGuest: '', conversationId: '' } }); }
       return false;
     }
     if (message.type === 'INJECT_MESSAGE') { sendResponse({ success: injectMessage(message.text) }); return false; }

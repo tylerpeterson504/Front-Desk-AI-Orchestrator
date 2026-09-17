@@ -53,7 +53,8 @@ let refreshInFlight: Promise<boolean> | null = null;
 function getHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    ...(authToken ? { Authorization: 'Bearer ' + authToken } : {})
+    ...(authToken ? { Authorization: '
+Bearer ' + authToken } : {})
   };
 }
 
@@ -116,7 +117,8 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
 async function apiRequest(method: string, path: string, body?: unknown): Promise<unknown> {
   let res = await send(method, path, body);
 
-  // Access tokens last 15 minutes, so an expired one is routine during a shift.
+  // Access tokens last 15 minutes, so an expired on
+e is routine during a shift.
   // Refresh once, replay, and only fall back to the login prompt if that fails.
   if (res.status === 401 && !SESSION_PATHS.includes(path)) {
     const refreshed = await refreshSession();
@@ -173,7 +175,8 @@ function showAuthPrompt(): void {
 async function showMainPanel(): Promise<void> {
   hide('auth-prompt');
   show('main-panel');
-  await Promise.all([loadTemplates(), loadShiftNotes()]);
+  await Promise.all([loadTemplates(), loadShiftNotes()
+]);
   detectProperty();
   requestPageData();
 }
@@ -229,7 +232,6 @@ function detectProperty(): void {
 // ━━━━━━ Page data (guest info / chat context) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function requestPageData(): void {
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-    if (!tab) return;
     chrome.tabs.sendMessage(tab.id as number, { type: 'GET_GUEST_INFO' }, (res) => {
       if (chrome.runtime.lastError) return;
       if (res?.data) updateGuestInfo(res.data);
@@ -278,7 +280,8 @@ function updateChatContext(data: ChatContext | null): void {
   if (block) block.textContent = lines.join('\n');
 }
 
-// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━
 async function loadShiftNotes(): Promise<void> {
   try {
     const notes = await apiRequest('GET', '/shift-notes');
@@ -342,7 +345,6 @@ function renderSelected(): void {
   section.style.display = '';
 
   selectedTemplates.forEach((t) => {
-    const el = document.createElement('div');
     el.className = 'selected-item';
     // Template names are user-supplied and arrive from the API, so they are set
     // as text rather than interpolated into markup.
@@ -395,7 +397,6 @@ function localFallbackDraft(): string {
       ? combined.replace(/\bsincerely\b/gi, 'warmly').replace(/\bkindly\b/gi, 'warmly')
       : combined;
   return guestInfo?.guestName ? `Dear ${guestInfo.guestName},\n\n${toneNote}` : toneNote;
-}
 
 // Resolve the backend property id for the tab's host. config.js maps hosts to
 // property configs; the server only accepts ids owned by the caller.
@@ -452,7 +453,6 @@ document.getElementById('btn-generate')?.addEventListener('click', async () => {
     showDraft(localFallbackDraft());
   } finally {
     if (btn) (btn as HTMLButtonElement).disabled = false;
-  }
 });
 
 // ━━━━━━ Copy ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

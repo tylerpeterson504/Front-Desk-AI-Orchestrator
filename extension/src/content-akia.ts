@@ -59,7 +59,8 @@ interface MessageSelectorResult {
 
   function safeSend(payload: { type: string; data?: unknown }): void {
     try {
-      const result = chrome.runtime.sendMessage(payload);
+      const result = chrome.runtime.
+sendMessage(payload);
       if (result && typeof (result as Promise<unknown>).catch === 'function') {
         (result as Promise<unknown>).catch(function (e) {
           log.warn('sendMessage failed for type ' + (payload.type || 'unknown') + ':', (e as Error)?.message);
@@ -108,7 +109,8 @@ interface MessageSelectorResult {
     '.website-chat-client-composer input#message',
     '.website-chat-client-composer input[aria-label="Message input" i]',
     '.website-chat-client-composer input[type="text"]',
-    'input[aria-label="Message input" i]',
+    'input[aria-label="
+Message input" i]',
     'textarea.message-input',
     'input.message-input',
     '[data-test="message-input"]',
@@ -151,7 +153,6 @@ interface MessageSelectorResult {
     const activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name" i]']);
     let conversationEl: Element | null = null;
     try { conversationEl = root.querySelector('[data-conversation-id]'); } catch (_) {}
-    const conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
     
     log.log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
     logDiscovery(root);
@@ -184,7 +185,6 @@ interface MessageSelectorResult {
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
-      'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
       'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
     };
     Object.keys(probes).forEach(function (label) {
@@ -222,7 +222,6 @@ interface MessageSelectorResult {
         }
         catch (_) { ok = false; }
         if (!ok || el.textContent === before) (el as HTMLElement).textContent = text;
-        const InputEventCtor = (window as unknown as { InputEvent: typeof InputEvent }).InputEvent;
         const evt = InputEventCtor 
           ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
           : new Event('input', { bubbles: true });
@@ -262,7 +261,8 @@ interface MessageSelectorResult {
 
   function init(): void {
     setupObserver();
-    if (document.readyState === 'loading') {
+    if (document.readyState ===
+ 'loading') {
       document.addEventListener('DOMContentLoaded', sendChatContext);
     } else {
       sendChatContext();
@@ -322,7 +322,8 @@ interface MessageSelectorResult {
     function warn(message: string, data?: unknown): void {
       if (!debug) return;
       const formatted = data !== undefined 
-        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
+        ? `[${new Date().toISOString()}] 
+[${prefix}] ${message} ${JSON.stringify(data)}`
         : `[${new Date().toISOString()}] [${prefix}] ${message}`;
       console.warn(formatted);
     }

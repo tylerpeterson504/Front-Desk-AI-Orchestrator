@@ -85,6 +85,7 @@ function cleanupExpired() {
 }
 
 // Run cleanup every 5 minutes
+
 setInterval(cleanupExpired, 5 * 60 * 1000);
 
 // Run cleanup on startup
@@ -157,7 +158,8 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
 /**
  * Clear cache for a specific key
  */
-export function clearCacheKey(key: string): boolean {
+export 
+function clearCacheKey(key: string): boolean {
   return cache.delete(key);
 }
 
@@ -253,7 +255,6 @@ export function etagCache() {
     if (cached && !isExpired(cached) && cached.data === etag) {
       res.set('ETag', etag);
       return res.status(304).end();
-    }
     
     // Store ETag for future requests
     const originalJson = res.json;

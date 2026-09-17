@@ -43,6 +43,7 @@ describe('Hugging Face Inference client', () => {
       'https://router.huggingface.co/v1/chat/completions',
       expect.objectContaining({
    
+
      method: 'POST',
         headers: expect.objectContaining({ Authorization: 'Bearer test-hf-token' })
       })
@@ -89,7 +90,6 @@ describe('Hugging Face Inference client', () => {
 
     const body = JSON.parse(fetch.mock.calls[0][1].body);
     expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
-    // vLLM stacks ignore chat_template_kwargs — the /no_think soft switch must
     // be injected as a system message.
     expect(body.messages[0]).toEqual({ role: 'system', content: '/no_think' });
     expect(body.messages[1]).toEqual({ role: 'user', content: 'Hi' });
@@ -131,7 +131,6 @@ describe('Hugging Face Inference client', () => {
   test('falls back to reasoning_content when content is null (thinking channel)', async () => {
     process.env.HUGGINGFACE_TOKEN = 'test-hf-token';
     global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
       json: async () => ({
         model: 'Qwen/Qwen3-32B',
         choices: [{ message: { content: null, reasoning_content: 'The guest asked for a welcome.\n\nWelcome!' } }]

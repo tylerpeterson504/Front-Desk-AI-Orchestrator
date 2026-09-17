@@ -78,7 +78,6 @@ export class ValidationPipeline<T = unknown> {
           return {
             success: false,
             error: {
-              message,
               code: 'CUSTOM_VALIDATION_ERROR',
               errors: [{
                 path: field ? [field] : [],
@@ -156,7 +155,8 @@ export class ValidationPipeline<T = unknown> {
         return {
           success: false,
           error: {
-            message: message || `Expected type ${type}, got ${actualType}`,
+            message: message || 
+`Expected type ${type}, got ${actualType}`,
             code: 'TYPE_ERROR',
             errors: [{
               path: field ? [field] : [],
@@ -226,7 +226,8 @@ export class ValidationPipeline<T = unknown> {
               code: 'LENGTH_ERROR',
               errors: [{
                 path: field ? [field] : [],
-                message: message || `Length must be exactly ${options.exact}`,
+    
+            message: message || `Length must be exactly ${options.exact}`,
                 code: 'LENGTH_ERROR'
               }]
             }
@@ -306,7 +307,8 @@ export class ValidationPipeline<T = unknown> {
           return { success: true, data: value };
         }
         
-        if (!regex.test(value)) {
+        if (
+!regex.test(value)) {
           return {
             success: false,
             error: {
@@ -383,7 +385,8 @@ export class ValidationPipeline<T = unknown> {
     const results: ValidationResult<T>[] = [];
     const errors: ValidationErrorDetails[] = [];
     
-    for (let i = 0; i < values.length; i++) {
+    
+for (let i = 0; i < values.length; i++) {
       const result = this.validate(values[i] as any, context);
       results.push(result);
       
@@ -459,7 +462,8 @@ export const commonSchemas = {
   }),
   
   templateUpdate: z.object({
-    name: z.string().min(1, 'Name is required').optional(),
+ 
+   name: z.string().min(1, 'Name is required').optional(),
     content: z.string().min(1, 'Content is required').optional(),
     is_global: z.boolean().optional()
   }),
@@ -542,7 +546,6 @@ export function validateAll<T extends Record<string, unknown>>(
 ): ValidationResult<T> {
   const errors: ValidationErrorDetails[] = [];
   const validated: Record<string, unknown> = {};
-  
   for (const [key, schema] of Object.entries(schemas)) {
     const result = validate(data[key as keyof T], schema as ZodSchema<unknown>);
     

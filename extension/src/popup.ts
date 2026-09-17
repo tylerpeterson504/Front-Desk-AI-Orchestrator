@@ -54,7 +54,6 @@ function requestOrigin(origin: string): Promise<boolean> {
       return;
     }
     chrome.permissions.request({ origins: [origin] }, (granted) => resolve(Boolean(granted)));
-  });
 }
 
 if (saveButton && urlInput) {

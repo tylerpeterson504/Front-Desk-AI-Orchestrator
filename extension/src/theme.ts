@@ -31,7 +31,8 @@ const THEMES: Record<string, Theme> = {
   frenchQuarter:  { accent: '#c1440e', accent2: '#e8b75e', accentSoft: '#fbeee2', bg: '#f3efe6', surface: '#ffffff', ink: '#20211f', muted: '#6b675e', faint: '#a8a298', line: '#e4ddcf', lineStrong: '#cdbfa6', headerFrom: '#234346', headerTo: '#0f2628', rail: '#e8b75e', railSoft: '#b8902f', dark: '#1f3a3d' },
   mardiGras:      { accent: '#7b2e9e', accent2: '#e8b75e', accentSoft: '#f3e8fb', bg: '#f4f0f7', surface: '#ffffff', ink: '#211a2a', muted: '#6b5e7a', faint: '#a89bb6', line: '#e7dcee', lineStrong: '#d2c2dc', headerFrom: '#3a1d4d', headerTo: '#1a0e2e', rail: '#e8b75e', railSoft: '#b8902f', dark: '#2a1640' },
   gardenDistrict:{ accent: '#3f7d4e', accent2: '#c98a1b', accentSoft: '#e9f3ec', bg: '#f2f4ee', surface: '#ffffff', ink: '#1f2a20', muted: '#5f6b5e', faint: '#9ba89a', line: '#dde6dc', lineStrong: '#c4d0c2', headerFrom: '#2c4a30', headerTo: '#162a1c', rail: '#c98a1b', railSoft: '#9a6a12', dark: '#22401f' },
-  midnightBourbon:{ accent: '#d4a84b', accent2: '#8b6f3f', accentSoft: '#f6efd9', bg: '#15131c', surface: '#211e2a', ink: '#ece8f5', muted: '#9b94aa', faint: '#6b6478', line: '#332f40', lineStrong: '#45405a', headerFrom: '#1a1620', headerTo: '#0a0810', rail: '#d4a84b', railSoft: '#9a7a30', dark: '#15131c' },
+  midnightBourbon:{ accent: '#d4a84b', accent2: '#8b6f3f', accentSoft: '#f6efd9', bg: '#15131c', surface: '#211e2a', ink: '#ece8f5', muted: '#9b94aa', 
+faint: '#6b6478', line: '#332f40', lineStrong: '#45405a', headerFrom: '#1a1620', headerTo: '#0a0810', rail: '#d4a84b', railSoft: '#9a7a30', dark: '#15131c' },
   cafeDuMonde:   { accent: '#3b2a1a', accent2: '#e8b75e', accentSoft: '#f3e9d8', bg: '#f4ede0', surface: '#ffffff', ink: '#241d12', muted: '#6b5d49', faint: '#a89878', line: '#e6dac4', lineStrong: '#cdba96', headerFrom: '#3b2a1a', headerTo: '#1f140b', rail: '#e8b75e', railSoft: '#b8902f', dark: '#241d12' },
   bourbonStreet: { accent: '#7b1e1e', accent2: '#e8b75e', accentSoft: '#fbe9e6', bg: '#f5eeea', surface: '#ffffff', ink: '#241a1a', muted: '#6b5454', faint: '#a88686', line: '#e8d8d4', lineStrong: '#d0b0ac', headerFrom: '#5a1818', headerTo: '#2a0d0d', rail: '#e8b75e', railSoft: '#b8902f', dark: '#3a1010' }
 };
@@ -70,7 +71,6 @@ function restore(): void {
         applyTheme('frenchQuarter');
         root.style.setProperty('--accent', accent as string);
         root.style.setProperty('--accent2', accent as string);
-        markSwatchActive(null);
       }
     });
   } catch {
@@ -135,7 +135,8 @@ function wire(): void {
 
   const custom = document.getElementById('custom-color') as HTMLInputElement | null;
   if (custom) {
-    custom.addEventListener('input', () => {
+    custom.addEventListener
+('input', () => {
       root.style.setProperty('--accent', custom.value);
       root.style.setProperty('--accent2', custom.value);
       markSwatchActive(null);

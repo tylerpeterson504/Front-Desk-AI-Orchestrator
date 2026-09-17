@@ -60,7 +60,8 @@ router.post('/register', requestId, async (req, res, next) => {
 
     res.status(201).json(response);
   } catch (err) {
-    next(err);
+    
+next(err);
   }
 });
 
@@ -145,7 +146,6 @@ router.post('/logout-all', requestId, async (req, res, next) => {
 
     const token = authHeader.substring(7);
     const { userId } = authService.getCurrentUser(token);
-
     await authService.logoutEverywhere(userId, req.requestId);
 
     res.json({ message: 'Logged out everywhere successfully' });
@@ -223,7 +223,8 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
 
     if (!role || !['admin', 'agent'].includes(role)) {
       return res.status(400).json({
-        error: 'Invalid role',
+       
+ error: 'Invalid role',
         code: 'VALIDATION_ERROR',
         requestId: req.requestId
       });

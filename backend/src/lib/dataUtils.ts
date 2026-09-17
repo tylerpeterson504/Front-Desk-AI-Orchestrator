@@ -83,7 +83,6 @@ export const schemas = {
   pagination: z.object({
     page: z.number().int().positive().default(1),
     pageSize: z.number().int().positive().max(100).default(20),
-    sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).default('asc')
   }),
   
@@ -160,7 +159,8 @@ export function validateAndTransform<T, U>(
     const transformed = transform(result.data);
     return { success: true, data: transformed };
   } catch (error) {
-    return {
+ 
+   return {
       success: false,
       error: {
         message: (error as Error).message,
@@ -239,7 +239,8 @@ export function sanitize<T>(
         }
         
         // Skip disallowed keys if allowedKeys is specified
-        if (allowedKeys && !allowedKeys.includes(key)) {
+        if (allowedKeys &
+& !allowedKeys.includes(key)) {
           continue;
         }
         
@@ -314,7 +315,8 @@ export function isObject(value: unknown): value is Record<string, unknown> {
  */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
-    isObject(value) &&
+    isObject(value) 
+&&
     value.constructor === Object &&
     Object.prototype.toString.call(value) === '[object Object]'
   );
@@ -395,7 +397,6 @@ export function isBoolean(value: unknown): value is boolean {
 export function safeJsonParse<T>(json: string, defaultValue?: T): T | null {
   try {
     return JSON.parse(json) as T;
-  } catch {
     return defaultValue ?? null;
   }
 }
@@ -477,7 +478,8 @@ export function pick<T extends Record<string, unknown>, K extends keyof T>(
  */
 export function omit<T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
-  keys: K[]
+ 
+ keys: K[]
 ): Omit<T, K> {
   const result = { ...obj };
   for (const key of keys) {
@@ -556,7 +558,8 @@ export function setNestedValue<T>(
 
 // ============================================================================
 // Object Flattening
-// ============================================================================
+// =======================================================
+=====================
 
 /**
  * Flatten an object into a single level with dot-notation keys
@@ -631,7 +634,6 @@ export function groupBy<T, K extends keyof T>(
     }
     acc[keyValue].push(item);
     return acc;
-  }, {} as Record<string, T[]>);
 }
 
 /**
@@ -720,7 +722,8 @@ export function throttle<T extends (...args: Parameters<T>) => ReturnType<T>>(
 /**
  * Memoize a function
  */
-export function memoize<T extends (...args: Parameters<T>) => ReturnType<T>>(
+export function
+ memoize<T extends (...args: Parameters<T>) => ReturnType<T>>(
   fn: T
 ): (...args: Parameters<T>) => ReturnType<T> {
   const cache = new Map<string, ReturnType<T>>();

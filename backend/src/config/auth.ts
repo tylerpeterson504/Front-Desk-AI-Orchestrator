@@ -67,7 +67,6 @@ export function requireRole(roles: string[]) {
     const user = (req as any).user;
 
     if (!user) {
-      return res.status(401).json({
         error: 'Authentication required',
         code: 'AUTHENTICATION_ERROR',
         requestId: req.requestId

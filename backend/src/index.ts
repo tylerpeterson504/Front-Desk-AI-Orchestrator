@@ -54,7 +54,8 @@ app.use(responseCache(60));
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, // 15 minut
+es
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
@@ -105,6 +106,7 @@ import propertiesRouter from './routes/properties';
 import templatesRouter from './routes/templates';
 import shiftNotesRouter from './routes/shiftNotes';
 import auditLogsRouter from './routes/auditLogs';
+
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
 import githubRouter from './routes/github';
