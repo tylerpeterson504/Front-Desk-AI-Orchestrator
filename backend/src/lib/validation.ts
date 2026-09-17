@@ -78,6 +78,7 @@ export class ValidationPipeline<T = unknown> {
           return {
             success: false,
             error: {
+              message,
               code: 'CUSTOM_VALIDATION_ERROR',
               errors: [{
                 path: field ? [field] : [],
@@ -546,6 +547,7 @@ export function validateAll<T extends Record<string, unknown>>(
 ): ValidationResult<T> {
   const errors: ValidationErrorDetails[] = [];
   const validated: Record<string, unknown> = {};
+  
   for (const [key, schema] of Object.entries(schemas)) {
     const result = validate(data[key as keyof T], schema as ZodSchema<unknown>);
     

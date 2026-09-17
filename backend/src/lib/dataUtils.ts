@@ -83,6 +83,7 @@ export const schemas = {
   pagination: z.object({
     page: z.number().int().positive().default(1),
     pageSize: z.number().int().positive().max(100).default(20),
+    sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).default('asc')
   }),
   
@@ -397,6 +398,7 @@ export function isBoolean(value: unknown): value is boolean {
 export function safeJsonParse<T>(json: string, defaultValue?: T): T | null {
   try {
     return JSON.parse(json) as T;
+  } catch {
     return defaultValue ?? null;
   }
 }
@@ -634,6 +636,7 @@ export function groupBy<T, K extends keyof T>(
     }
     acc[keyValue].push(item);
     return acc;
+  }, {} as Record<string, T[]>);
 }
 
 /**

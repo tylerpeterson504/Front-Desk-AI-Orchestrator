@@ -255,6 +255,7 @@ export function etagCache() {
     if (cached && !isExpired(cached) && cached.data === etag) {
       res.set('ETag', etag);
       return res.status(304).end();
+    }
     
     // Store ETag for future requests
     const originalJson = res.json;

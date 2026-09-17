@@ -71,6 +71,7 @@ function restore(): void {
         applyTheme('frenchQuarter');
         root.style.setProperty('--accent', accent as string);
         root.style.setProperty('--accent2', accent as string);
+        markSwatchActive(null);
       }
     });
   } catch {

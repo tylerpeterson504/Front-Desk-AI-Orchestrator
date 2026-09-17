@@ -146,6 +146,7 @@ router.post('/logout-all', requestId, async (req, res, next) => {
 
     const token = authHeader.substring(7);
     const { userId } = authService.getCurrentUser(token);
+
     await authService.logoutEverywhere(userId, req.requestId);
 
     res.json({ message: 'Logged out everywhere successfully' });

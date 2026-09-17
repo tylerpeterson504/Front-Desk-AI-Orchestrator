@@ -117,6 +117,7 @@
     '.website-chat-client-composer input#message',
     '.website-chat-client-composer input[aria-
 label="Message input" i]',
+    '.website-chat-client-composer input[type="text"]',
     'input[aria-label="Message input" i]',
     'textarea.message-input',
     'input.message-input',
@@ -195,6 +196,7 @@ label="Message input" i]',
     if (!DEBUG) return;
     const probes = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class
+*="bubble" i]', '[class*="msg" i]'],
       'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
       'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
     };
@@ -229,7 +231,7 @@ label="Message input" i]',
         if (!ok || el.textContent === before) el.textContent = text;
         const InputEventCtor = window.InputEvent;
         const evt = InputEventCtor ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text }) : new Event('input', { bubbles: true });
-        el.dispatchEvent(evt); el.dispatchEvent(n
+        el.dispatchEvent(evt); el.dispatchEvent(new Event('change', { bubbles: true })); return true;
       }
       const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : el instanceof HTMLInputElement ? HTMLInputElement.prototype : null;
       if (proto) { const desc = Object.getOwnPropertyDescriptor(proto, 'value'); if (desc && desc.set) desc.set.call(el, text); else el.value = text; }
@@ -259,6 +261,7 @@ label="Message input" i]',
     if (message.type === 'GET_CHAT_CONTEXT') {
       try { const ctx = extractChatContext(); validateContext(ctx); sendResponse({ data: ctx }); }
       catch (e) { warn('GET_CHAT_CONTEXT failed:', e && e.message); sendResponse({ data: { messages: 
+[], activeGuest: '', conversationId: '' } }); }
       return false;
     }
     if (message.type === 'INJECT_MESSAGE') { sendResponse({ success: injectMessage(message.text) }); return false; }

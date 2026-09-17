@@ -232,6 +232,7 @@ function detectProperty(): void {
 // ━━━━━━ Page data (guest info / chat context) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function requestPageData(): void {
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    if (!tab) return;
     chrome.tabs.sendMessage(tab.id as number, { type: 'GET_GUEST_INFO' }, (res) => {
       if (chrome.runtime.lastError) return;
       if (res?.data) updateGuestInfo(res.data);
@@ -345,6 +346,7 @@ function renderSelected(): void {
   section.style.display = '';
 
   selectedTemplates.forEach((t) => {
+    const el = document.createElement('div');
     el.className = 'selected-item';
     // Template names are user-supplied and arrive from the API, so they are set
     // as text rather than interpolated into markup.
@@ -397,6 +399,7 @@ function localFallbackDraft(): string {
       ? combined.replace(/\bsincerely\b/gi, 'warmly').replace(/\bkindly\b/gi, 'warmly')
       : combined;
   return guestInfo?.guestName ? `Dear ${guestInfo.guestName},\n\n${toneNote}` : toneNote;
+}
 
 // Resolve the backend property id for the tab's host. config.js maps hosts to
 // property configs; the server only accepts ids owned by the caller.
@@ -453,6 +456,7 @@ document.getElementById('btn-generate')?.addEventListener('click', async () => {
     showDraft(localFallbackDraft());
   } finally {
     if (btn) (btn as HTMLButtonElement).disabled = false;
+  }
 });
 
 // ━━━━━━ Copy ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

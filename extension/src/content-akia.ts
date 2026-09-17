@@ -153,6 +153,7 @@ Message input" i]',
     const activeGuest = firstText(root, ['.active-guest-name', '.conversation-guest', '[data-test="active-guest"]', '.website-chat-client-header .author', '[data-testid*="guest-name" i]']);
     let conversationEl: Element | null = null;
     try { conversationEl = root.querySelector('[data-conversation-id]'); } catch (_) {}
+    const conversationId = conversationEl ? conversationEl.getAttribute('data-conversation-id') : null;
     
     log.log('messages:', messages.length, 'activeGuest:', activeGuest, 'samples:', messages.slice(0, 3));
     logDiscovery(root);
@@ -185,6 +186,7 @@ Message input" i]',
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
+      'sender-like': ['[class*="sender" i]', '[data-testid*="sender" i]', '[class*="author" i]', '[class*="from" i]'],
       'composer-like': ['textarea', 'input[type="text"]', '[contenteditable="true"]', '[class*="input" i]', '[class*="composer" i]', '[class*="reply" i]']
     };
     Object.keys(probes).forEach(function (label) {
@@ -222,6 +224,7 @@ Message input" i]',
         }
         catch (_) { ok = false; }
         if (!ok || el.textContent === before) (el as HTMLElement).textContent = text;
+        const InputEventCtor = (window as unknown as { InputEvent: typeof InputEvent }).InputEvent;
         const evt = InputEventCtor 
           ? new InputEventCtor('input', { bubbles: true, inputType: 'insertText', data: text })
           : new Event('input', { bubbles: true });

@@ -57,6 +57,7 @@ interface GuestInfo {
   }
 
   function getRoot(): Element {
+    return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
   }
 
   function firstText(root: Element, selectors: string[]): string | null {
@@ -115,6 +116,7 @@ interface GuestInfo {
         '.room-number',
         '.roomNumber',
         '#roomNumber',
+        '[data-test="room-number"]',
         '[data-testid*="room-number" i]',
         '[name*="room" i]',
         '[id*="room" i]'

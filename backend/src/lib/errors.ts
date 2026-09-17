@@ -79,6 +79,7 @@ export class AppError extends Error {
       context?: ErrorContext;
       isOperational?: boolean;
       cause?: Error;
+    } = {}
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -234,6 +235,7 @@ export class NotFoundError extends AppError {
     context?: ErrorContext
   ) {
     super(404, 'NOT_FOUND', `${resourceType} not found: ${resourceId}`, {
+      severity: ErrorSeverity.LOW,
       category: ErrorCategory.NOT_FOUND,
       context,
       isOperational: true
@@ -313,6 +315,7 @@ export class RateLimitError extends AppError {
 export class DatabaseError extends AppError {
   public readonly internalMessage: string;
   public readonly query?: string;
+  public readonly parameters?: unknown[];
 
   constructor(
     internalMessage: string,
@@ -465,6 +468,7 @@ export class SecurityError extends AppError {
       isOperational: false
     });
     this.threatType = options.threatType;
+    this.threatDetails = options.threatDetails;
   }
 }
 
@@ -725,6 +729,7 @@ export async function retryWithBackoff<T>(
   } = options;
 
   let lastError: Error | undefined;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
