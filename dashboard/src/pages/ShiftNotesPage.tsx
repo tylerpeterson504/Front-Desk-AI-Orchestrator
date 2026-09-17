@@ -54,7 +54,8 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
       setSubmitting(true);
       await shiftNoteAPI.create({
         property_id: Number(selectedProperty),
-        content: newNote.trim()
+        content: newNote.
+trim()
       });
       setNewNote('');
       await loadAll();
@@ -154,7 +155,8 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
               <p className="text-gray-500">No shift notes for today yet.</p>
             </div>
           )}
-        </div>
+    
+    </div>
       </div>
     </div>
   );

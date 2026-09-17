@@ -62,7 +62,8 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false
       name: '',
       url_pattern: '',
       wifi_ssid: '',
-      wifi_password: '',
+      
+wifi_password: '',
       checkout_time: '11:00:00',
       tone_guidelines: ''
     });
@@ -170,7 +171,8 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false
                   onChange={(e) => setFormData({ ...formData, url_pattern: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2
+ gap-4">
                   <input
                     type="text"
                     placeholder="WiFi SSID"
@@ -203,7 +205,8 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false
                       placeholder="Professional, formal, courteous"
                       value={formData.tone_guidelines}
                       onChange={(e) => setFormData({ ...formData, tone_guidelines: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-60
+0"
                     />
                   </div>
                 </div>
@@ -245,7 +248,8 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({ embedded = false
                           onClick={() => toggleWifi(property.id)}
                           disabled={revealing === property.id}
                           className="inline-flex items-center space-x-1 text-blue-600 hover:underline disabled:opacity-60"
-                          title={revealed[property.id] ? 'Hide password' : 'Reveal password (logged)'}
+                          title={revealed
+[property.id] ? 'Hide password' : 'Reveal password (logged)'}
                         >
                           {revealed[property.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                           <span>

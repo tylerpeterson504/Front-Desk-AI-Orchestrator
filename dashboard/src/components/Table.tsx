@@ -70,7 +70,8 @@ function Table<T>({
     }
   }, [localSortBy, localSortDirection, onSort]);
 
-  const renderSortIcon = useCallback((key: string) => {
+  const renderSortIcon = useCallback((
+key: string) => {
     if (localSortBy !== key) {
       return <ChevronsUpDownIcon className="h-4 w-4 text-gray-400" />;
     }
@@ -236,7 +237,8 @@ function Table<T>({
                 onChange={(e) => pagination.onRowsPerPageChange?.(Number(e.target.value))}
                 className="text-sm border border-gray-300 rounded px-2 py-1"
               >
-                {pagination.rowsPerPageOptions.map((option) => (
+           
+     {pagination.rowsPerPageOptions.map((option) => (
                   <option key={option} value={option}>
                     {option} per page
                   </option>

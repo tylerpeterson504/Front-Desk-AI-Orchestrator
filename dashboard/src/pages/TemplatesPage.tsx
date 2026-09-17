@@ -122,7 +122,8 @@ export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }
               placeholder="Search templates..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+     
+         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
@@ -201,7 +202,8 @@ export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }
                       <div className="flex flex-wrap gap-2">
                         {template.tags.map((tag: string, idx: number) => (
                           <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {tag}
+        
+                    {tag}
                           </span>
                         ))}
                       </div>

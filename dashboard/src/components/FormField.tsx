@@ -123,7 +123,8 @@ function FormField({
 
       case 'password':
         return (
-          <div className="relative">
+ 
+         <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
               {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
@@ -232,7 +233,8 @@ function FormField({
                   type="checkbox"
                   {...inputProps}
                   checked={Boolean(field.value)}
-                  className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
+                  className={`h-4 w-4 rounded border-gray-30
+0 text-blue-600 focus:ring-blue-500 ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
                 />
                 {label && <span className="ml-2 text-sm text-gray-700">{label}</span>}
               </div>

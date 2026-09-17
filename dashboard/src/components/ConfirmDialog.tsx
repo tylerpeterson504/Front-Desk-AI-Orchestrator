@@ -71,6 +71,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
+
               as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
@@ -175,7 +176,8 @@ export function useConfirmDialog(): [
           title: options.title,
           message: options.message,
           variant: options.variant || 'danger',
-          isLoading: false,
+          
+isLoading: false,
           resolve
         });
       });
