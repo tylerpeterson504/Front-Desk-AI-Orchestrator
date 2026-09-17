@@ -175,7 +175,8 @@ describe('LLM Client Error Handling', () => {
     it('should throw error on empty response', async () => {
       process.env.PERPLEXITY_API_KEY = 'test-key';
       jest.resetModules();
-      const p = require('../src/services/llm/perplexityClient');
+      const p = require('../
+src/services/llm/perplexityClient');
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,

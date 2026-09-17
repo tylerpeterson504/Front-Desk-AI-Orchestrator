@@ -92,7 +92,8 @@ describe('Error Handling', () => {
     });
 
     it('should create ValidationError', () => {
-      const error = new ValidationError('Invalid input', { field: 'email' });
+      const error = new ValidationError(
+'Invalid input', { field: 'email' });
       expect(error.statusCode).toBe(400);
       expect(error.code).toBe('VALIDATION_ERROR');
       expect(error.severity).toBe(ErrorSeverity.LOW);
@@ -258,7 +259,8 @@ describe('Data Utilities', () => {
 
     it('should return null for invalid data', () => {
       const schema = z.object({ name: z.string() });
-      const result = safeValidate({ name: 123 }, schema);
+      const result = safeValidate({ name: 123 }, schema)
+;
       expect(result).toBeNull();
     });
   });
@@ -324,7 +326,8 @@ describe('Data Utilities', () => {
 
     it('should check isNonEmptyString', () => {
       expect(isNonEmptyString('test')).toBe(true);
-      expect(isNonEmptyString('')).toBe(false);
+      expect(isNonEmptyString(
+'')).toBe(false);
       expect(isNonEmptyString('   ')).toBe(false);
     });
 
@@ -583,6 +586,7 @@ describe('Validation Pipeline', () => {
     const pipeline = createPipeline<any>()
       .addSchema(z.object({ name: z.string().min(1) }), 'name')
       .addCustom(
+
         (value: any) => value.age !== undefined && value.age >= 0,
         'Age must be non-negative',
         'age'

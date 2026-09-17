@@ -50,7 +50,8 @@ describe('Content Script Context Guard', function() {
     });
   });
 
-  describe('validateContext', function() {
+  describe(
+'validateContext', function() {
     it('should accept valid context', function() {
       const validateContext = function(ctx) {
         if (!ctx || typeof ctx !== 'object') throw new Error('Context must be an object');

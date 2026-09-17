@@ -198,6 +198,7 @@ describe('access token refresh', () => {
     global.fetch = expiredThenOk();
     await loadSidepanel();
     await flush();
+
     await flush();
     await flush();
 
@@ -296,7 +297,8 @@ describe('guest info and chat context', () => {
 });
 
 describe('property detection', () => {
-  it('labels the detected property', async () => {
+  it
+('labels the detected property', async () => {
     (global as any).getPropertyConfig = () => ({ name: 'St.Pierre Hotel' });
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
@@ -387,6 +389,7 @@ describe('templates', () => {
     search.value = 'time';
     search.dispatchEvent(new Event('input'));
     expect(document.querySelectorAll('#template-list .template-item')).toHaveLength(1);
+
     expect((document.querySelector('#template-list .template-item') as HTMLElement).textContent).toBe('Checkout');
   });
 });

@@ -100,7 +100,8 @@ describe('content-stayntouch.js extraction', () => {
   });
 
   async function loadScript() {
-    await import(SCRIPT_PATH);
+    await import(
+SCRIPT_PATH);
   }
 
   it('broadcasts GUEST_INFO_UPDATED with extracted fields', async () => {
@@ -157,7 +158,8 @@ describe('content-stayntouch.js extraction', () => {
 describe('content-akia.js extraction and injection', () => {
   const SCRIPT_PATH = '../src/content-akia.ts';
 
-  beforeEach(() => {
+  beforeEach
+(() => {
     vi.resetModules();
     vi.clearAllMocks();
   });
@@ -212,7 +214,8 @@ describe('content-akia.js extraction and injection', () => {
     const respond = vi.fn();
     listener()({ type: 'GET_CHAT_CONTEXT' }, {}, respond);
     expect(respond).toHaveBeenCalled();
-    expect(respond.mock.calls[0][0].data.messages[0].text).toBe('hello');
+    expect(respond.mock.calls[0][0].data
+.messages[0].text).toBe('hello');
   });
 
   it('injectMessage sets the textarea via the native setter + input event', async () => {
@@ -265,7 +268,8 @@ describe('background.js relay', () => {
 
   it('forwards context updates to the runtime', async () => {
     await loadScript();
-    // Background script registers its listener on chrome.runtime.onMessage
+    // Background script registers its listener 
+on chrome.runtime.onMessage
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
     listener({ type: 'GUEST_INFO_UPDATED', data: {} }, {}, vi.fn());
     listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, {}, vi.fn());

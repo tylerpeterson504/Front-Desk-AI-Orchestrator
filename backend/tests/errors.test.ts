@@ -118,7 +118,8 @@ describe('Error Classes', () => {
     });
 
     it('should accept custom message', () => {
-      const error = new RateLimitError('Rate limit exceeded');
+  
+    const error = new RateLimitError('Rate limit exceeded');
       
       expect(error.statusCode).toBe(429);
       expect(error.code).toBe('RATE_LIMIT_ERROR');
