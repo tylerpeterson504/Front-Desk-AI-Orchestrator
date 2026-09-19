@@ -1,0 +1,24 @@
+# Dashboard Dockerfile
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY dashboard/package*.json ./
+
+# Install dependencies
+RUN npm install --production=false
+
+# Copy source files
+COPY dashboard/src ./src
+COPY dashboard/public ./public
+COPY dashboard/tsconfig.json ./
+COPY dashboard/vite.config.ts ./
+COPY dashboard/index.html ./
+
+# Expose port
+EXPOSE 5173
+
+# Start the dashboard
+CMD ["npm", "run", "dev"]

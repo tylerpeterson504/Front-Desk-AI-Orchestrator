@@ -1,0 +1,25 @@
+# Backend Dockerfile
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY backend/package*.json ./
+
+# Install dependencies
+RUN npm install --production=false
+
+# Copy source files
+COPY backend/src ./src
+COPY backend/tsconfig.json ./
+COPY backend/.env.example ./
+
+# Create necessary directories
+RUN mkdir -p tmp
+
+# Expose port
+EXPOSE 3001
+
+# Start the backend
+CMD ["npm", "run", "dev"]
