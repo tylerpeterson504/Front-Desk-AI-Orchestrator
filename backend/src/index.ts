@@ -17,6 +17,19 @@ import { additionalSecurityHeaders, sanitizeInput } from './middleware/security'
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '../../.env.local') });
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'MISTRAL_API_KEY',
+  'JWT_SECRET',
+  'DATABASE_URL'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 
 app.disable('x-powered-by');
@@ -54,8 +67,7 @@ app.use(responseCache(60));
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minut
-es
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,

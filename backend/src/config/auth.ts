@@ -51,7 +51,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
   try {
     const decoded = verifyToken(token);
-    (req as any).user = decoded;
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({
@@ -64,7 +64,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
 export function requireRole(roles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
+    const user = req.user;
 
     if (!user) {
       return res.status(401).json({

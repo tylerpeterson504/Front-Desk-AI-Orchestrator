@@ -189,7 +189,11 @@ export function additionalSecurityHeaders(_req: Request, res: Response, next: Ne
   }
   
   // Content Security Policy
-  res.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'");
+  // Use nonces for inline scripts/styles in production
+  const csp = process.env.NODE_ENV === 'production'
+    ? "default-src 'self'; script-src 'self' 'nonce-{RANDOM}'; style-src 'self' 'nonce-{RANDOM}'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+    : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:*";
+  res.set("Content-Security-Policy", csp);
   
   // Cross-Origin policies
   res.set("Cross-Origin-Embedder-Policy", "require-corp");
@@ -286,7 +290,7 @@ export function detectSuspiciousRequests(req: Request, res: Response, next: Next
     if (pattern.test(query)) {
       // Log but don't block - could be false positive
       // The actual SQL injection will be caught by parameterized queries
-      console.warn('Suspicious query pattern detected:', req.url);
+      logger.warn('Suspicious query pattern detected', { url: req.url });
       break;
     }
   }

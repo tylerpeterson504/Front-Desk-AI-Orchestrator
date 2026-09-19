@@ -111,8 +111,8 @@ export function validate<T>(
       path: err.path,
       message: err.message,
       code: err.code,
-      expected: (err as any).expected?.toString(),
-      received: (err as any).received?.toString()
+      expected: err.expected?.toString(),
+      received: err.received?.toString()
     }));
     
     const formattedError: ValidationErrorDetails = {
@@ -123,7 +123,7 @@ export function validate<T>(
     
     // Add more details from first error
     if (zodError.errors.length > 0) {
-      const firstError = zodError.errors[0] as any;
+      const firstError = zodError.errors[0];
       formattedError.path = firstError.path;
       formattedError.expected = firstError.expected?.toString();
       formattedError.received = firstError.received?.toString();
@@ -154,7 +154,7 @@ export function validateAndTransform<T, U>(
 ): ValidationResult<U> {
   const result = validate(data, schema);
   if (!result.success) {
-    return result as any;
+    return result;
   }
   try {
     const transformed = transform(result.data);
@@ -166,7 +166,7 @@ export function validateAndTransform<T, U>(
       error: {
         message: (error as Error).message,
         code: 'TRANSFORMATION_ERROR'
-      } as any
+      }
     };
   }
 }
@@ -229,7 +229,7 @@ export function sanitize<T>(
     }
 
     // Handle blocked keys
-    if (isObject(value) && 'constructor' in (value as any) && value.constructor === Object) {
+    if (isObject(value) && value.constructor === Object) {
       const obj = value as Record<string, unknown>;
       const sanitized: Record<string, unknown> = {};
       
@@ -397,7 +397,7 @@ export function isBoolean(value: unknown): value is boolean {
  */
 export function safeJsonParse<T>(json: string, defaultValue?: T): T | null {
   try {
-    return JSON.parse(json) as T;
+    return JSON.parse(json);
   } catch {
     return defaultValue ?? null;
   }
@@ -426,32 +426,32 @@ export function safeJsonStringify(
  * Deep clone an object
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj)) as T;
+  return JSON.parse(JSON.stringify(obj));
 }
 
 /**
  * Deep merge two objects
  */
-export function deepMerge<T, U>(target: T, source: U): T & U {
+export function deepMerge<T extends Record<string, unknown>, U extends Record<string, unknown>>(target: T, source: U): T & U {
   const result = { ...target } as T & U;
   
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
-      const sourceValue = (source as Record<string, unknown>)[key];
-      const targetValue = (result as Record<string, unknown>)[key];
+      const sourceValue = source[key];
+      const targetValue = result[key];
       
       if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
-        (result as Record<string, unknown>)[key] = deepMerge(
-          targetValue as object,
-          sourceValue as object
+        result[key] = deepMerge(
+          targetValue,
+          sourceValue
         );
       } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
-        (result as Record<string, unknown>)[key] = [
-          ...(targetValue as unknown[]),
-          ...(sourceValue as unknown[])
+        result[key] = [
+          ...targetValue,
+          ...sourceValue
         ];
       } else {
-        (result as Record<string, unknown>)[key] = sourceValue;
+        result[key] = sourceValue;
       }
     }
   }
@@ -501,10 +501,10 @@ export function renameKeys<T extends Record<string, unknown>>(
   
   for (const [oldKey, value] of Object.entries(obj)) {
     const newKey = keyMap[oldKey] || oldKey;
-    result[newKey] = value;
+    result[newKey as string] = value;
   }
   
-  return result as T;
+  return result;
 }
 
 // ============================================================================
@@ -529,7 +529,7 @@ export function getNestedValue<T>(
     current = (current as Record<string, unknown>)[key];
   }
   
-  return (current as T) ?? defaultValue as T;
+  return (current as T) ?? defaultValue;
 }
 
 /**
@@ -545,16 +545,16 @@ export function setNestedValue<T>(
   
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
-    const currentVal = current[key as string];
+    const currentVal = current[key];
     if (currentVal === undefined || currentVal === null || !isObject(currentVal)) {
-      current[key as string] = {};
+      current[key] = {};
     }
-    current = current[key as string] as Record<string, unknown>;
+    current = current[key] as Record<string, unknown>;
   }
   
   const lastKey = keys[keys.length - 1];
   if (lastKey !== undefined) {
-    current[lastKey as string] = value;
+    current[lastKey] = value;
   }
 }
 
@@ -576,10 +576,10 @@ export function flattenObject(
     const newKey = prefix ? `${prefix}.${key}` : key;
     
     if (isPlainObject(value)) {
-      Object.assign(result, flattenObject(value as Record<string, unknown>, newKey));
+      Object.assign(result, flattenObject(value, newKey));
     } else if (Array.isArray(value)) {
       // Handle arrays by joining with comma
-      result[newKey] = (value as unknown[]).join(',');
+      result[newKey] = value.join(',');
     } else {
       result[newKey] = value;
     }
@@ -602,16 +602,16 @@ export function unflattenObject(
     
     for (let i = 0; i < keys.length - 1; i++) {
       const k = keys[i];
-      const currentVal = current[k as string];
+      const currentVal = current[k];
       if (currentVal === undefined || currentVal === null || !isObject(currentVal)) {
-        current[k as string] = {};
+        current[k] = {};
       }
-      current = current[k as string] as Record<string, unknown>;
+      current = current[k] as Record<string, unknown>;
     }
     
     const lastKey = keys[keys.length - 1];
     if (lastKey !== undefined) {
-      current[lastKey as string] = value;
+      current[lastKey] = value;
     }
   }
   

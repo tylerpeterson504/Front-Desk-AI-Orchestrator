@@ -30,7 +30,7 @@ export function errorHandler(
     requestId,
     path: req.path,
     method: req.method,
-    userId: (req as any).user?.id
+    userId: req.user?.userId
   });
 
   // Handle AppError
@@ -44,7 +44,7 @@ export function errorHandler(
   }
 
   // Handle JWT errors
-  if ((err as any).name === 'JsonWebTokenError') {
+  if ((err as { name?: string }).name === 'JsonWebTokenError') {
     return res.status(401).json({
       error: 'Invalid token',
       code: 'INVALID_TOKEN',
@@ -52,7 +52,7 @@ export function errorHandler(
     });
   }
 
-  if ((err as any).name === 'TokenExpiredError') {
+  if ((err as { name?: string }).name === 'TokenExpiredError') {
     return res.status(401).json({
       error: 'Token expired',
       code: 'TOKEN_EXPIRED',
@@ -61,12 +61,12 @@ export function errorHandler(
   }
 
   // Handle validation errors (from express-validator)
-  if ((err as any).name === 'ValidationError') {
+  if ((err as { name?: string; details?: unknown }).name === 'ValidationError') {
     return res.status(400).json({
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
       requestId,
-      details: (err as any).details
+      details: (err as { details?: unknown }).details
     });
   }
 

@@ -1,0 +1,25 @@
+{
+  "name": "front-desk-ai-extension",
+  "version": "1.0.0",
+  "description": "Chrome Extension for Front Desk AI Orchestrator",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "webextension-polyfill": "^0.10.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/webextension-polyfill": "^0.10.0",
+    "eslint": "^8.57.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.10",
+    "vite-plugin-web-extension": "^4.0.0",
+    "vitest": "^1.6.0"
+  }
+}

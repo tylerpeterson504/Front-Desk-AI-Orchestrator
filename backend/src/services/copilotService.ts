@@ -3,10 +3,7 @@ import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
 import { AppError, ValidationError, AuthorizationError } from '../lib/errors';
 import logger from '../lib/logger';
-import * as perplexity from './llm/perplexityClient';
 import * as mistral from './llm/mistralClient';
-import * as huggingface from './llm/huggingfaceClient';
-import * as gemini from './llm/geminiClient';
 
 // Fence markers the model is told to treat as data boundaries. Any occurrence
 // inside untrusted text is neutralised so a guest cannot close the fence early
@@ -155,34 +152,18 @@ export class CopilotService {
     // Build prompt for LLM
     const prompt = this.buildPrompt({ property, guestInfo, chatContext, templates, tone: toneSafe });
 
-    // Provider chain: Perplexity -> Mistral -> Hugging Face -> Gemini.
+    // Provider chain: Mistral only.
     let result: { text: string; provider: string };
 
-    if (perplexity.isConfigured()) {
-      const llmResult = await perplexity.complete([
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ]);
-      result = { text: llmResult.text, provider: 'perplexity' };
-    } else if (mistral.isConfigured()) {
+    if (mistral.isConfigured()) {
       const llmResult = await mistral.complete([
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      result =
- { text: llmResult.text, provider: 'mistral' };
-    } else if (huggingface.isConfigured()) {
-      const llmResult = await huggingface.complete([
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ]);
-      result = { text: llmResult.text, provider: 'huggingface' };
-    } else if (gemini.isConfigured()) {
-      const llmResult = await gemini.complete(prompt);
-      result = { text: llmResult.text, provider: 'gemini' };
+      result = { text: llmResult.text, provider: 'mistral' };
     } else {
-      const err = new Error('LLM not configured (PERPLEXITY_API_KEY, MISTRAL_API_KEY, HUGGINGFACE_TOKEN, or GOOGLE_API_KEY missing)');
-      (err as any).code = 'LLM_NOT_CONFIGURED';
+      const err = new Error('Mistral is not configured (MISTRAL_API_KEY missing)');
+      (err as any).code = 'MISTRAL_NOT_CONFIGURED';
       throw err;
     }
 
