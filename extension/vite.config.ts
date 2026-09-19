@@ -1,12 +1,21 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import webExtension from 'vite-plugin-web-extension';
+import { readFile } from 'node:fs';
+import { fileURLToPath, URL } from 'node:url';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  root: resolve(__dirname, 'src'),
+  root,
+  plugins: [
+    webExtension({
+      // manifest.json lives at the extension root; entry points (background,
+      // content scripts, popup) are resolved from it by the plugin.
+      manifest: () => JSON.parse(readFile(fileURLToPath(new URL('./manifest.json', import.meta.url)), 'utf-8')),
+    }),
+  ],
   build: {
-    outDir: resolve(__dirname, '../dist/extension'),
-    rollupOptions: {
-      input: resolve(__dirname, 'src/manifest.json')
-    }
-  }
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
 });

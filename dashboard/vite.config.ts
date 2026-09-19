@@ -1,24 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: resolve(__dirname, 'src'),
   server: {
-    port: 3000,
+    port: 5173,
     proxy: { '/api': { target: 'http://localhost:3001', changeOrigin: true } },
   },
   build: {
-    outDir: resolve(__dirname, '../dist/dashboard'),
+    outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      input: resolve(__dirname, 'src/index.html')
-    }
-  },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: './src/setupTests.ts'
   },
 });
+// Note: tests are configured separately in vitest.config.ts
