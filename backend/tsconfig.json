@@ -3,6 +3,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
+    "strictPropertyInitialization": false,
     "emitDecoratorMetadata": true,
     "module": "commonjs",
     "moduleResolution": "node",
@@ -19,7 +20,6 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
