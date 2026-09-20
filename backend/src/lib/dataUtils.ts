@@ -111,8 +111,8 @@ export function validate<T>(
       path: err.path,
       message: err.message,
       code: err.code,
-      expected: err.expected?.toString(),
-      received: err.received?.toString()
+      expected: (err as { expected?: unknown }).expected?.toString(),
+      received: (err as { received?: unknown }).received?.toString()
     }));
     
     const formattedError: ValidationErrorDetails = {
@@ -122,11 +122,11 @@ export function validate<T>(
     };
     
     // Add more details from first error
-    if (zodError.errors.length > 0) {
-      const firstError = zodError.errors[0];
+    const firstError = zodError.errors[0];
+    if (firstError) {
       formattedError.path = firstError.path;
-      formattedError.expected = firstError.expected?.toString();
-      formattedError.received = firstError.received?.toString();
+      formattedError.expected = (firstError as { expected?: unknown }).expected?.toString();
+      formattedError.received = (firstError as { received?: unknown }).received?.toString();
     }
     
     return { success: false, error: formattedError };
