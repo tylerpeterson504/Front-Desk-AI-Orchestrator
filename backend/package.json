@@ -1,60 +1,9 @@
 {
-  "name": "front-desk-ai-backend",
-  "version": "1.0.0",
-  "description": "Backend API for Front Desk AI Orchestrator",
-  "main": "dist/index.js",
-  "type": "module",
-  "engines": {
-    "node": ">=22"
-  },
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node-dev src/index.ts",
-    "migrate": "node db/migrate.js",
-    "seed": "node db/seed-runner.js",
-    "db-setup": "node db/db-setup.js",
-    "encrypt-wifi": "node db/encrypt-wifi.js",
-    "set-role": "node db/set-role.js",
-    "prune-sessions": "node db/prune-sessions.js",
-    "test": "jest --runInBand",
-    "test:api": "jest tests/api.test.ts",
-    "test:security": "jest tests/security.test.ts",
-    "test:coverage": "jest --runInBand --coverage",
-    "lint": "eslint src --ext .js,.ts",
-    "lint:fix": "eslint src --ext .js,.ts --fix",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^7.3.1",
-    "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "pg-promise": "^11.9.1",
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.20",
-    "uuid": "^9.0.1",
-    "winston": "^3.13.1",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.12",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22.5.0",
-    "@types/pg": "^8.11.6",
-    "@types/uuid": "^9.0.8",
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.4",
-    "supertest": "^7.0.0",
-    "ts-jest": "^29.1.2",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
-  }
+  "path": "/home/user/fixpayload/package.json",
+  "content": "{\n  \"name\": \"front-desk-ai-backend\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Backend API for Front Desk AI Orchestrator\",\n  \"main\": \"dist/index.js\",\n  \"engines\": {\n    \"node\": \">=22\"\n  },\n  \"scripts\": {\n    \"build\": \"tsc\",\n    \"start\": \"node dist/index.js\",\n    \"dev\": \"ts-node-dev src/index.ts\",\n    \"migrate\": \"node db/migrate.js\",\n    \"seed\": \"node db/seed-runner.js\",\n    \"db-setup\": \"node db/db-setup.js\",\n    \"encrypt-wifi\": \"node db/encrypt-wifi.js\",\n    \"set-role\": \"node db/set-role.js\",\n    \"prune-sessions\": \"node db/prune-sessions.js\",\n    \"test\": \"jest --runInBand\",\n    \"test:api\": \"jest tests/api.test.ts\",\n    \"test:security\": \"jest tests/security.test.ts\",\n    \"test:coverage\": \"jest --runInBand --coverage\",\n    \"lint\": \"eslint src --ext .js,.ts\",\n    \"lint:fix\": \"eslint src --ext .js,.ts --fix\",\n    \"typecheck\": \"tsc --noEmit\"\n  },\n  \"dependencies\": {\n    \"bcrypt\": \"^6.0.0\",\n    \"cors\": \"^2.8.5\",\n    \"dotenv\": \"^16.4.5\",\n    \"express\": \"^4.19.2\",\n    \"express-rate-limit\": \"^7.3.1\",\n    \"helmet\": \"^7.1.0\",\n    \"jsonwebtoken\": \"^9.0.2\",\n    \"pg-promise\": \"^11.9.1\",\n    \"reflect-metadata\": \"^0.2.2\",\n    \"typeorm\": \"^0.3.20\",\n    \"uuid\": \"^9.0.1\",\n    \"winston\": \"^3.13.1\",\n    \"zod\": \"^3.23.8\"\n  },\n  \"devDependencies\": {\n    \"@types/bcrypt\": \"^5.0.2\",\n    \"@types/cors\": \"^2.8.17\",\n    \"@types/express\": \"^4.17.21\",\n    \"@types/jest\": \"^29.5.12\",\n    \"@types/jsonwebtoken\": \"^9.0.10\",\n    \"@types/node\": \"^22.5.0\",\n    \"@types/pg\": \"^8.11.6\",\n    \"@types/uuid\": \"^9.0.8\",\n    \"jest\": \"^29.7.0\",\n    \"nodemon\": \"^3.1.4\",\n    \"supertest\": \"^7.0.0\",\n    \"ts-jest\": \"^29.1.2\",\n    \"ts-node\": \"^10.9.2\",\n    \"ts-node-dev\": \"^2.0.0\",\n    \"typescript\": \"^5.3.3\"\n  }\n}\n",
+  "file_size_bytes": 1686,
+  "returned_bytes": 1686,
+  "offset": 0,
+  "lines_read": 59,
+  "was_truncated": false
 }

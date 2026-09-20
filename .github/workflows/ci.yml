@@ -30,7 +30,10 @@ jobs:
       - name: Install dependencies
         env:
           HUSKY: "0"
-        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: TypeScript type check
@@ -60,7 +63,10 @@ jobs:
       - name: Install dependencies
         env:
           HUSKY: "0"
-        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: Build backend
