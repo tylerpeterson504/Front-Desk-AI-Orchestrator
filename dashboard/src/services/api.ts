@@ -89,7 +89,8 @@ export const authAPI = {
 };
 
 export const propertyAPI = {
-  getAll: (): Promise<Property[]> => getData<Property[]>('/properties'),
+  getAll: (propertyId?: number): Promise<Property[]> =>
+    getData<Property[]>(propertyId ? '/properties?property_id=' + propertyId : '/properties'),
   list: (): Promise<Property[]> => getData<Property[]>('/properties'),
   getOne: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
   get: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
@@ -104,7 +105,8 @@ export const propertyAPI = {
 };
 
 export const templateAPI = {
-  getAll: (): Promise<Template[]> => getData<Template[]>('/templates'),
+  getAll: (propertyId?: number): Promise<Template[]> =>
+    getData<Template[]>(propertyId ? '/templates?property_id=' + propertyId : '/templates'),
   list: (): Promise<Template[]> => getData<Template[]>('/templates'),
   getOne: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
   get: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
@@ -117,12 +119,16 @@ export const templateAPI = {
 };
 
 export const shiftNoteAPI = {
-  getAll: (params?: { property_id?: number }): Promise<ShiftNote[]> =>
-    getData<ShiftNote[]>('/shift-notes', { params }),
+  getAll: (propertyId?: number): Promise<ShiftNote[]> =>
+    getData<ShiftNote[]>(propertyId ? '/shift-notes?property_id=' + propertyId : '/shift-notes'),
   list: (params?: { property_id?: number }): Promise<ShiftNote[]> =>
     getData<ShiftNote[]>('/shift-notes', { params }),
+  getOne: (id: number): Promise<ShiftNote> => getData<ShiftNote>('/shift-notes/' + id),
+  get: (id: number): Promise<ShiftNote> => getData<ShiftNote>('/shift-notes/' + id),
   create: (data: Partial<ShiftNote>): Promise<ShiftNote> =>
     postData<ShiftNote>('/shift-notes', data),
+  update: (id: number, data: Partial<ShiftNote>): Promise<ShiftNote> =>
+    putData<ShiftNote>('/shift-notes/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
   remove: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
 };
