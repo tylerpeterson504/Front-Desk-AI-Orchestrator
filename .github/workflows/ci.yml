@@ -56,6 +56,8 @@ jobs:
           exit $status
         env:
           JWT_SECRET: ci-only-secret-not-for-production
+          MISTRAL_API_KEY: ci-dummy-key-not-used-by-tests
+          DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           NODE_ENV: test
           CI: "true"
 
