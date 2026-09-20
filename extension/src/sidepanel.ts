@@ -117,8 +117,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
 async function apiRequest(method: string, path: string, body?: unknown): Promise<unknown> {
   let res = await send(method, path, body);
 
-  // Access tokens last 15 minutes, so an expired on
-e is routine during a shift.
+  // Access tokens last 15 minutes, so an expired one is routine during a shift.
   // Refresh once, replay, and only fall back to the login prompt if that fails.
   if (res.status === 401 && !SESSION_PATHS.includes(path)) {
     const refreshed = await refreshSession();

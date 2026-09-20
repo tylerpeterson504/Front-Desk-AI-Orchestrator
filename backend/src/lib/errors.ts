@@ -158,8 +158,7 @@ export class ValidationError extends AppError {
 }
 
 /**
- * Authentication error for failed authentica
-tion attempts
+ * Authentication error for failed authentication attempts
  */
 export class AuthenticationError extends AppError {
   public readonly failedAttempts?: number;
@@ -558,8 +557,7 @@ export function wrapError(
   context: ErrorContext
 ): AppError {
   if (error instanceof AppError) {
-    // Preserve existing
- error but add context
+    // Preserve existing error but add context
     const mergedContext = { ...error.context, ...context };
     return new (error.constructor as any)(
       error.message,

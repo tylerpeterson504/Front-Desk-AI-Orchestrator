@@ -84,8 +84,7 @@ export function sanitizeInput(req: Request, _res: Response, next: NextFunction):
           sanitized = sanitized.replace(pattern, '');
         }
         
-        req.body[key] =
- sanitized;
+        req.body[key] = sanitized;
       }
       
       // Limit array lengths
@@ -149,8 +148,7 @@ function sanitizeObject(obj: Record<string, unknown>): Record<string, unknown> {
       );
     }
     else if (typeof value === "object" && value !== null) {
-      result[key] = sanitizeObject(value as Rec
-ord<string, unknown>);
+      result[key] = sanitizeObject(value as Record<string, unknown>);
     }
     else {
       result[key] = value;
@@ -192,6 +190,7 @@ export function additionalSecurityHeaders(req: Request, res: Response, next: Nex
   }
   
   // Content Security Policy
+  // Content Security Policy
   // This service is a JSON API: it serves no HTML and no inline scripts, so
   // production uses a strict policy without 'unsafe-inline'. If HTML is ever
   // served from this origin, generate a real per-request nonce instead of
@@ -215,8 +214,7 @@ export function blockMaliciousUserAgents(req: Request, res: Response, next: Next
   const userAgent = req.headers['user-agent'] || '';
   
   for (const pattern of BLOCKED_USER_AGENTS) {
-    if (pat
-tern.test(userAgent)) {
+    if (pattern.test(userAgent)) {
       // Return 403 without revealing why
       return res.status(403).json({
         error: 'Forbidden',
@@ -287,8 +285,7 @@ export function detectSuspiciousRequests(req: Request, res: Response, next: Next
   // Check for suspicious query parameters
   const suspiciousPatterns = [
     /\b(union|select|insert|delete|update|drop|alter|create|truncate)\b/gi,
-    /\b(or\s+1=1|'
-\s*or\s*'|\"\s*or\s*\")/gi,
+    /\b(or\s+1=1|'\s*or\s*'|\"\s*or\s*\")/gi,
     /\b(exec|execute|sp_|xp_)\b/gi,
     /\b(load_file|into\s+(outfile|dumpfile))\b/gi,
   ];
