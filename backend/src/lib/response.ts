@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   error?: {
     code: string;
     message: string;
+    requestId: string;
     details?: Record<string, unknown>;
   };
   meta?: {

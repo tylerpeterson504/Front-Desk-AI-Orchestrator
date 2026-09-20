@@ -65,7 +65,6 @@ function isExpired(entry: CacheEntry): boolean {
  * Clean up expired entries periodically
  */
 function cleanupExpired() {
-  const now = Date.now();
   const keysToDelete: string[] = [];
   
   for (const [key, entry] of cache.entries()) {
@@ -135,7 +134,7 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
     
     // Override res.json to cache the response
     const originalJson = res.json;
-    res.json = function (data: unknown) {
+    res.json = (function (data: unknown) {
       // Only cache successful responses if configured
       if (!onlySuccess || (res.statusCode >= 200 && res.statusCode < 300)) {
         cache.set(cacheKey, {
@@ -149,7 +148,7 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
       }
       
       originalJson.call(res, data);
-    };
+    }) as typeof res.json;
     
     next();
   };
@@ -198,7 +197,6 @@ export function clearAllCache(): number {
  */
 export function getCacheStats() {
   let expiredCount = 0;
-  const now = Date.now();
   
   for (const entry of cache.values()) {
     if (isExpired(entry)) {
@@ -259,7 +257,7 @@ export function etagCache() {
     
     // Store ETag for future requests
     const originalJson = res.json;
-    res.json = function (data: unknown) {
+    res.json = (function (data: unknown) {
       const responseEtag = generateETag(data);
       cache.set(cacheKey, {
         data: responseEtag,
@@ -267,7 +265,7 @@ export function etagCache() {
       });
       res.set('ETag', responseEtag);
       originalJson.call(res, data);
-    };
+    }) as typeof res.json;
     
     next();
   };
