@@ -25,7 +25,7 @@ export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
 
   private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto {
-    const typedBody = (body || {}) as Record<string, unknown>;
+    const typedBody = (body || {}) as unknown as Record<string, unknown>;
     const { name, category, content, tags, property_id, is_global } = typedBody;
 
     if (typeof name !== 'string' || !name.trim()) {
@@ -126,7 +126,7 @@ export class TemplateService {
 
     template.name = templateData.name;
     template.content = templateData.content;
-    template.category = templateData.category;
+    template.category = templateData.category ?? null;
     template.tags = templateData.tags;
 
     if (templateData.property_id !== undefined) {
