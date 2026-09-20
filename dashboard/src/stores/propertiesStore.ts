@@ -68,8 +68,7 @@ export const usePropertiesStore = create<PropertiesState>((set) => ({
     }
   },
 
-  updateProperty: async (id: numbe
-r, data: Partial<Property>) => {
+  updateProperty: async (id: number, data: Partial<Property>) => {
     set({ isLoading: true, error: null });
     try {
       const property = await propertyAPI.update(id, data);

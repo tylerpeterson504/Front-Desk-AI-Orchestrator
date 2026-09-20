@@ -62,8 +62,7 @@ export const useShiftNotesStore = create<ShiftNotesState>((set) => ({
     try {
       const shiftNote = await shiftNoteAPI.create(data);
       set((state) => ({
-        shiftNotes: [...st
-ate.shiftNotes, shiftNote],
+        shiftNotes: [...state.shiftNotes, shiftNote],
         isLoading: false
       }));
       return shiftNote;
