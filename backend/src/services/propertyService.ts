@@ -138,7 +138,7 @@ export class PropertyService {
 
     property.name = propertyData.name;
     property.address = propertyData.address ?? null;
-    property.checkout_time = propertyData.checkout_time;
+    property.checkout_time = propertyData.checkout_time ?? '11:00:00';
     property.wifi_ssid = propertyData.wifi_ssid ?? null;
     property.tone_guidelines = propertyData.tone_guidelines ?? null;
 

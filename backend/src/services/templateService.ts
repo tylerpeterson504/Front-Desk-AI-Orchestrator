@@ -127,7 +127,7 @@ export class TemplateService {
     template.name = templateData.name;
     template.content = templateData.content;
     template.category = templateData.category ?? null;
-    template.tags = templateData.tags;
+    template.tags = templateData.tags ?? null;
 
     if (templateData.property_id !== undefined) {
       template.property_id = templateData.property_id;
