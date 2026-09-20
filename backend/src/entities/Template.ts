@@ -7,6 +7,9 @@ export class Template {
   id: number;
 
   @Column()
+  user_id: string;
+
+  @Column()
   name: string;
 
   @Column({ type: 'text' })
@@ -14,6 +17,12 @@ export class Template {
 
   @Column({ nullable: true })
   property_id: number;
+
+  @Column({ nullable: true, length: 100 })
+  category: string | null;
+
+  @Column({ nullable: true, type: 'text', array: true })
+  tags: string[] | null;
 
   @Column({ default: false })
   is_global: boolean;

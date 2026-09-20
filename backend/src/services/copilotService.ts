@@ -1,3 +1,4 @@
+import { In } from 'typeorm';
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
@@ -113,9 +114,8 @@ export class CopilotService {
       : [];
 
     const activeGuest = scrubText((raw as Record<string, unknown>).activeGuest, MAX_FIELD_LENGTH);
-    if (!messages.length && !activeGuest) return
- null;
-    return { messages, activeGuest };
+    if (!messages.length && !activeGuest) return null;
+    return { messages, activeGuest: activeGuest ?? undefined };
   }
 
   async draft(request: DraftRequest, userId: string): Promise<DraftResponse> {
@@ -144,7 +144,7 @@ export class CopilotService {
       : [];
     if (ids.length) {
       templates = await this.templateRepository.find({
-        where: { user_id: userId, id: { $in: ids } },
+        where: { user_id: userId, id: In(ids) },
         order: { name: 'ASC' }
       });
     }

@@ -216,7 +216,7 @@ export function blockMaliciousUserAgents(req: Request, res: Response, next: Next
   for (const pattern of BLOCKED_USER_AGENTS) {
     if (pattern.test(userAgent)) {
       // Return 403 without revealing why
-      return res.status(403).json({
+      res.status(403).json({
         error: 'Forbidden',
         request_id: req.requestId
       });
@@ -240,7 +240,7 @@ export function validateContentType(req: Request, res: Response, next: NextFunct
   // Check if content type is allowed
   const baseContentType = contentType.split(';')[0].trim();
   if (!ALLOWED_CONTENT_TYPES.has(baseContentType)) {
-    return res.status(415).json({
+    res.status(415).json({
       error: 'Unsupported Media Type',
       request_id: req.requestId
     });
@@ -273,9 +273,9 @@ export function createSensitiveRateLimiter() {
 export function detectSuspiciousRequests(req: Request, res: Response, next: NextFunction): void {
   // Check for unusually large request bodies
   if (req.headers['content-length']) {
-    const contentLength = parseInt(req.headers['content-length'], 10);
+    const contentLength = parseInt(String(req.headers['content-length'] ?? '0'), 10);
     if (contentLength > MAX_BODY_SIZE * 2) {
-      return res.status(413).json({
+      res.status(413).json({
         error: 'Request body too large',
         request_id: req.requestId
       });

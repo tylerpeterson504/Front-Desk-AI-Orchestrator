@@ -24,8 +24,9 @@ const MAX_NAME_LENGTH = 255;
 export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
 
-  private readTemplateBody(body: Record<string, unknown>): CreateTemplateDto {
-    const { name, category, content, tags, property_id, is_global } = body || {};
+  private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto {
+    const typedBody = (body || {}) as Record<string, unknown>;
+    const { name, category, content, tags, property_id, is_global } = typedBody;
 
     if (typeof name !== 'string' || !name.trim()) {
       throw new ValidationError('name is required');
@@ -65,7 +66,7 @@ export class TemplateService {
       content,
       tags: tags || [],
       property_id: property_id ? Number(property_id) : undefined,
-      is_global: is_global ?? false
+      is_global: is_global === true
     };
   }
 
