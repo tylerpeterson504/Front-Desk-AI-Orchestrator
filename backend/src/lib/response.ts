@@ -56,6 +56,7 @@ export class ResponseBuilder {
       error: {
         code,
         message,
+        requestId: this.requestId,
         ...(details && { details })
       }
     };
@@ -71,7 +72,8 @@ export class ResponseBuilder {
       ...this.response,
       data,
       meta: {
-        ...this.response.meta,
+        requestId: this.requestId,
+        timestamp: new Date().toISOString(),
         pagination
       },
       success: true
@@ -86,6 +88,6 @@ export function createResponseBuilder(requestId: string) {
 // Middleware to add response builder to request
 export function responseBuilder(req: Request, res: Response, next: NextFunction) {
   (res as any).locals = (res as any).locals || {};
-  (res as any).locals.response = createResponseBuilder(req.requestId);
+  (res as any).locals.response = createResponseBuilder(req.requestId || 'unknown');
   next();
 }
