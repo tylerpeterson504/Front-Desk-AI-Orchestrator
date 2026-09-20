@@ -171,8 +171,7 @@ wifi_password: '',
                   onChange={(e) => setFormData({ ...formData, url_pattern: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
-                <div className="grid grid-cols-2
- gap-4">
+                <div className="grid grid-cols-2 gap-4"
                   <input
                     type="text"
                     placeholder="WiFi SSID"
@@ -205,8 +204,7 @@ wifi_password: '',
                       placeholder="Professional, formal, courteous"
                       value={formData.tone_guidelines}
                       onChange={(e) => setFormData({ ...formData, tone_guidelines: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-60
-0"
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>

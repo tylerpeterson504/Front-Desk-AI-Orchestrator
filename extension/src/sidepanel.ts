@@ -53,8 +53,7 @@ let refreshInFlight: Promise<boolean> | null = null;
 function getHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    ...(authToken ? { Authorization: '
-Bearer ' + authToken } : {})
+    ...(authToken ? { Authorization: 'Bearer ' + authToken } : {})
   };
 }
 

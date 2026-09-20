@@ -51,8 +51,7 @@ export class PropertyService {
     return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
   }
 
-  private readPropertyBody(body: Record<string, unknown>, checkoutFallback: string = '
-11:00:00'): CreatePropertyDto {
+  private readPropertyBody(body: Record<string, unknown>, checkoutFallback: string = '11:00:00'): CreatePropertyDto {
     const name = this.requireString(body.name, 'name');
     const address = this.optionalString(body.address, 'address');
     const checkout_time = this.normalizeCheckoutTime(body.checkout_time, checkoutFallback);
