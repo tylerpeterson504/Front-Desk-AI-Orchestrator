@@ -240,8 +240,7 @@ export function sanitize<T>(
         }
         
         // Skip disallowed keys if allowedKeys is specified
-        if (allowedKeys &
-& !allowedKeys.includes(key)) {
+        if (allowedKeys && !allowedKeys.includes(key)) {
           continue;
         }
         
