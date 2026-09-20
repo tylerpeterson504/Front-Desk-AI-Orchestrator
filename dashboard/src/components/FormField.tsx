@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFormContext, Controller, FieldError } from 'react-hook-form';
-import { EyeIcon, EyeOffIcon, AlertCircleIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 interface FormFieldProps {
   name: string;
@@ -27,11 +27,10 @@ export function FormField({
 }: FormFieldProps) {
   const { control } = useFormContext();
   const [showPassword, setShowPassword] = React.useState(false);
-
   const error = undefined as FieldError | undefined;
 
   const baseClasses =
-    'block w-full rounded-md border shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-1 sm:text-sm ';
+    'block w-full rounded-md border shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-1 ';
   const normalClasses = baseClasses + 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
   const errorClasses = baseClasses + 'border-red-300 focus:border-red-500 focus:ring-red-500';
 
@@ -120,11 +119,7 @@ export function FormField({
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
                   onClick={() => setShowPassword((s) => !s)}
                 >
-                  {showPassword ? (
-                    <EyeOffIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
               )}
             </div>

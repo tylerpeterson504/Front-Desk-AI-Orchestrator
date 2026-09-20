@@ -1,13 +1,16 @@
 import axios, { AxiosError } from 'axios';
 
-export interface LoginCredentials {
+export interface User {
+  id: number;
   email: string;
-  password: string;
+  name?: string;
+  role?: string;
 }
 
-export interface AuthTokens {
-  access_token: string;
+export interface LoginResponse {
+  token: string;
   refresh_token: string;
+  user: User;
 }
 
 export interface Property {
@@ -79,13 +82,13 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const res = await axios.post<AuthTokens>(
-            baseURL + '/auth/refresh',
-            { refresh_token: refreshToken }
-          );
-          localStorage.setItem('access_token', res.data.access_token);
-          localStorage.setItem('refresh_token', res.data.refresh_token);
-          original.headers.Authorization = 'Bearer ' + res.data.access_token;
+          const res = await axios.post(baseURL + '/auth/refresh', {
+            refresh_token: refreshToken,
+          });
+          const data = res.data as { access_token: string; refresh_token: string };
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('refresh_token', data.refresh_token);
+          original.headers.Authorization = 'Bearer ' + data.access_token;
           return api(original);
         } catch {
           // fall through to logout
@@ -99,42 +102,86 @@ api.interceptors.response.use(
   }
 );
 
+async function getData<T>(url: string, config?: object): Promise<T> {
+  const res = await api.get<T>(url, config);
+  return res.data;
+}
+
+async function postData<T>(url: string, body?: unknown): Promise<T> {
+  const res = await api.post<T>(url, body);
+  return res.data;
+}
+
+async function putData<T>(url: string, body?: unknown): Promise<T> {
+  const res = await api.put<T>(url, body);
+  return res.data;
+}
+
+async function deleteData<T>(url: string): Promise<T> {
+  const res = await api.delete<T>(url);
+  return res.data;
+}
+
 export const authAPI = {
-  login: (credentials: LoginCredentials) =>
-    api.post<AuthTokens>('/auth/login', credentials),
-  logout: () => api.post('/auth/logout'),
-  me: () => api.get('/auth/me'),
+  login: (email: string, password: string): Promise<LoginResponse> =>
+    postData<LoginResponse>('/auth/login', { email, password }),
+  me: (): Promise<User> => getData<User>('/auth/me'),
+  logout: (): Promise<void> => postData<void>('/auth/logout'),
 };
 
 export const propertyAPI = {
-  list: () => api.get<Property[]>('/properties'),
-  get: (id: number) => api.get<Property>('/properties/' + id),
-  create: (data: Partial<Property>) => api.post<Property>('/properties', data),
-  update: (id: number, data: Partial<Property>) =>
-    api.put<Property>('/properties/' + id, data),
-  remove: (id: number) => api.delete('/properties/' + id),
-  getWifi: (id: number) => api.get<{ password: string }>('/properties/' + id + '/wifi'),
+  getAll: (): Promise<Property[]> => getData<Property[]>('/properties'),
+  list: (): Promise<Property[]> => getData<Property[]>('/properties'),
+  getOne: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
+  get: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
+  create: (data: Partial<Property>): Promise<Property> =>
+    postData<Property>('/properties', data),
+  update: (id: number, data: Partial<Property>): Promise<Property> =>
+    putData<Property>('/properties/' + id, data),
+  delete: (id: number): Promise<void> => deleteData<void>('/properties/' + id),
+  remove: (id: number): Promise<void> => deleteData<void>('/properties/' + id),
+  getWifi: (id: number): Promise<{ password: string }> =>
+    getData<{ password: string }>('/properties/' + id + '/wifi'),
 };
 
 export const templateAPI = {
-  list: () => api.get<Template[]>('/templates'),
-  get: (id: number) => api.get<Template>('/templates/' + id),
-  create: (data: Partial<Template>) => api.post<Template>('/templates', data),
-  update: (id: number, data: Partial<Template>) =>
-    api.put<Template>('/templates/' + id, data),
-  remove: (id: number) => api.delete('/templates/' + id),
+  getAll: (): Promise<Template[]> => getData<Template[]>('/templates'),
+  list: (): Promise<Template[]> => getData<Template[]>('/templates'),
+  getOne: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
+  get: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
+  create: (data: Partial<Template>): Promise<Template> =>
+    postData<Template>('/templates', data),
+  update: (id: number, data: Partial<Template>): Promise<Template> =>
+    putData<Template>('/templates/' + id, data),
+  delete: (id: number): Promise<void> => deleteData<void>('/templates/' + id),
+  remove: (id: number): Promise<void> => deleteData<void>('/templates/' + id),
 };
 
 export const shiftNoteAPI = {
-  list: (params?: { property_id?: number }) =>
-    api.get<ShiftNote[]>('/shift-notes', { params }),
-  create: (data: Partial<ShiftNote>) => api.post<ShiftNote>('/shift-notes', data),
-  remove: (id: number) => api.delete('/shift-notes/' + id),
+  getAll: (params?: { property_id?: number }): Promise<ShiftNote[]> =>
+    getData<ShiftNote[]>('/shift-notes', { params }),
+  list: (params?: { property_id?: number }): Promise<ShiftNote[]> =>
+    getData<ShiftNote[]>('/shift-notes', { params }),
+  create: (data: Partial<ShiftNote>): Promise<ShiftNote> =>
+    postData<ShiftNote>('/shift-notes', data),
+  delete: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
+  remove: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
 };
 
 export const auditAPI = {
-  list: (params?: { page?: number; limit?: number }) =>
-    api.get<AuditLog[]>('/audit-logs', { params }),
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
+    user_id?: number;
+    action?: string;
+  }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
+  list: (params?: {
+    page?: number;
+    limit?: number;
+    user_id?: number;
+    action?: string;
+  }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
+  getOne: (id: number): Promise<AuditLog> => getData<AuditLog>('/audit-logs/' + id),
 };
 
 export default api;

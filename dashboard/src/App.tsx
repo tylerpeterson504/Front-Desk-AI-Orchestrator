@@ -6,9 +6,8 @@ import { ShiftNotesPage } from './pages/ShiftNotesPage';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { authAPI } from './services/api';
+import { authAPI, User } from './services/api';
 import { useAuthStore } from './stores/authStore';
-import { User } from './types';
 
 function App() {
   const [page, setPage] = React.useState<import('./types').PageType>('templates');
@@ -17,7 +16,6 @@ function App() {
   const { token, clearCredentials } = useAuthStore();
 
   React.useEffect(() => {
-    // Check if we have a token
     setChecking(Boolean(token));
   }, [token]);
 
@@ -27,10 +25,9 @@ function App() {
       setChecking(false);
       return undefined;
     }
-
     authAPI
       .me()
-      .then((response) => {
+      .then((response: User) => {
         if (!cancelled) {
           setUser(response);
           setChecking(false);
@@ -43,7 +40,6 @@ function App() {
           setChecking(false);
         }
       });
-
     return () => {
       cancelled = true;
     };
@@ -67,8 +63,7 @@ function App() {
   return (
     <div className="flex h-screen">
       <Sidebar page={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
-      <div 
-className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto">
         {page === 'templates' && <TemplatesPage embedded />}
         {page === 'audit' && <AuditPage embedded />}
         {page === 'properties' && <PropertiesPage embedded />}

@@ -12,10 +12,15 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix"
   },
   "dependencies": {
+    "@headlessui/react": "^1.7.19",
+    "@hookform/resolvers": "^3.9.1",
+    "axios": "^1.7.9",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@headlessui/react": "^1.7.19"
+    "react-hook-form": "^7.54.1",
+    "zod": "^3.24.1",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
