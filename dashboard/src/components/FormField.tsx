@@ -49,10 +49,9 @@ function FormField({
   onBlur,
   children,
 }: FormFieldProps) {
-  const { 
-    control, 
-    formState: { errors }, 
-    watch 
+  const {
+    control,
+    formState: { errors }
   } = useFormContext();
   
   const [showPassword, setShowPassword] = useState(false);
@@ -71,7 +70,8 @@ function FormField({
           <textarea
             {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
             name={name}
-            placeholder={placeholder}
+            placeholde
+r={placeholder}
             disabled={disabled}
             readOnly={readOnly}
             rows={rows}
@@ -88,7 +88,6 @@ function FormField({
             {...(control?._fields[name]?.ref ? { ref: control._fields[name].ref } : {})}
             name={name}
             disabled={disabled}
-            readOnly={readOnly}
             autoComplete={autoComplete}
             className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
             onChange={(e) => handleChange(e.target.value, e)}
@@ -124,6 +123,7 @@ function FormField({
       case 'password':
         return (
  
+
          <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -171,7 +171,8 @@ function FormField({
                   onBlur={onBlur}
                 />
                 <label className="ml-2 text-sm text-gray-700">
-                  {option.label}
+                  {option.la
+bel}
                 </label>
               </div>
             ))}
@@ -233,7 +234,8 @@ function FormField({
                   type="checkbox"
                   {...inputProps}
                   checked={Boolean(field.value)}
-                  className={`h-4 w-4 rounded border-gray-30
+                  className={`h-4 w-4 rounded border-gray-3
+0
 0 text-blue-600 focus:ring-blue-500 ${inputClassName} ${error ? 'border-red-500' : 'border'}`}
                 />
                 {label && <span className="ml-2 text-sm text-gray-700">{label}</span>}

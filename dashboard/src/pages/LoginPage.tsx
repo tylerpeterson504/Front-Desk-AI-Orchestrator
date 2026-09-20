@@ -25,7 +25,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
       if (!response.token) throw new Error('Login response did not include a token');
 
       // Store both the access token and the refresh token
-      setCredentials(response.user, response.token, response.refresh_token);
+      setCredentials(response.user, response.token, response.refreshToken);
       onAuthenticated(response.user);
     } catch (err: unknown) {
       const errorMessage = (err as { status?: number; message?: string }).status === 401
@@ -47,7 +47,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
-          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+          {error && <Alert type="error" message={error} onClose={() => setErr
+or('')} />}
 
           <div>
             <label htmlFor="email" className="block text-sm text-gray-600 mb-1">

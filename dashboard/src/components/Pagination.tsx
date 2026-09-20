@@ -1,5 +1,4 @@
-import React from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 interface PaginationProps {
   currentPage: number;
@@ -70,7 +69,8 @@ function Pagination({
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-500">Rows per page:</span>
             <select
-              value={rowsPerPage}
+              value
+={rowsPerPage}
               onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
               className="text-sm border border-gray-300 rounded px-2 py-1"
             >
@@ -96,7 +96,7 @@ function Pagination({
             className="px-2 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
             title="First page"
           >
-            <ChevronDoubleLeftIcon className="h-4 w-4" />
+            <ChevronsLeft className="h-4 w-4" />
           </button>
 
           <button
@@ -105,7 +105,7 @@ function Pagination({
             className="px-2 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
             title="Previous page"
           >
-            <ChevronLeftIcon className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
 
           {showPageNumbers && (
@@ -120,7 +120,8 @@ function Pagination({
                     {page}
                   </button>
                 ) : (
-                  <span key={`ellipsis-${index}`} className="px-2 py-1 text-gray-400">
+                  <span key={`ellipsis-${index}`} className=
+"px-2 py-1 text-gray-400">
                     {page}
                   </span>
                 )
@@ -134,7 +135,7 @@ function Pagination({
             className="px-2 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
             title="Next page"
           >
-            <ChevronRightIcon className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </button>
 
           <button
@@ -143,7 +144,7 @@ function Pagination({
             className="px-2 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
             title="Last page"
           >
-            <ChevronDoubleRightIcon className="h-4 w-4" />
+            <ChevronsRight className="h-4 w-4" />
           </button>
         </div>
       </div>

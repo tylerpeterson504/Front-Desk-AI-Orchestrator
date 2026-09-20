@@ -16,7 +16,7 @@ interface PropertiesState {
   clearError: () => void;
 }
 
-export const usePropertiesStore = create<PropertiesState>((set, get) => ({
+export const usePropertiesStore = create<PropertiesState>((set) => ({
   properties: [],
   currentProperty: null,
   isLoading: false,
@@ -68,7 +68,8 @@ export const usePropertiesStore = create<PropertiesState>((set, get) => ({
     }
   },
 
-  updateProperty: async (id: number, data: Partial<Property>) => {
+  updateProperty: async (id: numbe
+r, data: Partial<Property>) => {
     set({ isLoading: true, error: null });
     try {
       const property = await propertyAPI.update(id, data);

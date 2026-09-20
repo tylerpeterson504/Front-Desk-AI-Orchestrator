@@ -159,7 +159,7 @@ key: string) => {
       );
     }
 
-    const value = column.render ? column.render(item, index) : (item as Record<string, unknown>)[column.key];
+    const value: React.ReactNode = column.render ? column.render(item, index) : ((item as Record<string, unknown>)[column.key] as React.ReactNode);
     
     return (
       <td

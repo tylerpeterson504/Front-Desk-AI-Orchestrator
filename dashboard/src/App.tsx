@@ -14,7 +14,7 @@ function App() {
   const [page, setPage] = React.useState<import('./types').PageType>('templates');
   const [user, setUser] = React.useState<User | null>(null);
   const [checking, setChecking] = React.useState(true);
-  const { token, clearCredentials, setCredentials } = useAuthStore();
+  const { token, clearCredentials } = useAuthStore();
 
   React.useEffect(() => {
     // Check if we have a token
@@ -67,7 +67,8 @@ function App() {
   return (
     <div className="flex h-screen">
       <Sidebar page={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
-      <div className="flex-1 overflow-auto">
+      <div 
+className="flex-1 overflow-auto">
         {page === 'templates' && <TemplatesPage embedded />}
         {page === 'audit' && <AuditPage embedded />}
         {page === 'properties' && <PropertiesPage embedded />}

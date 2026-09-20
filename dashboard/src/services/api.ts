@@ -59,7 +59,8 @@ class ApiService {
                 const { token, refresh_token } = response.data;
                 setCredentials(useAuthStore.getState().user!, token, refresh_token);
                 return token;
-              }).catch(() => {
+  
+            }).catch(() => {
                 clearCredentials();
                 return Promise.reject(error);
               }).finally(() => {
@@ -120,7 +121,8 @@ export const api = new ApiService();
 
 // Domain-specific services
 export const authAPI = {
-  login: (email: string, password: string) => api.post<AuthResponse>('/auth/login', { email, password }),
+  login: (email: string, password: stri
+ng) => api.post<AuthResponse>('/auth/login', { email, password }),
   register: (email: string, password: string, name: string) => api.post<AuthResponse>('/auth/register', { email, password, name }),
   me: () => api.get<User>('/auth/me'),
   logout: () => api.post<void>('/auth/logout'),
@@ -133,7 +135,8 @@ export const propertyAPI = {
   getOne: (id: number) => api.get<import('../types').Property>(`/properties/${id}`),
   create: (data: Partial<import('../types').Property>) => api.post<import('../types').Property>('/properties', data),
   update: (id: number, data: Partial<import('../types').Property>) => api.put<import('../types').Property>(`/properties/${id}`, data),
-  delete: (id: number) => api.delete<void>(`/properties/${id}`)
+  delete: (id: number) => api.delete<void>(`/properties/${id}`),
+  getWifi: (id: number) => api.get<{ password: string }>(`/properties/${id}/wifi`)
 };
 
 export const templateAPI = {
@@ -148,7 +151,8 @@ export const shiftNoteAPI = {
   getAll: (propertyId?: number) => api.get<import('../types').ShiftNote[]>('/shift-notes', propertyId ? { params: { property_id: propertyId } } : undefined),
   getOne: (id: number) => api.get<import('../types').ShiftNote>(`/shift-notes/${id}`),
   create: (data: Partial<import('../types').ShiftNote>) => api.post<import('../types').ShiftNote>('/shift-notes', data),
-  update: (id: number, data: Partial<import('../types').ShiftNote>) => api.put<import('../types').ShiftNote>(`/shift-notes/${id}`, data),
+  update: (id: number,
+ data: Partial<import('../types').ShiftNote>) => api.put<import('../types').ShiftNote>(`/shift-notes/${id}`, data),
   delete: (id: number) => api.delete<void>(`/shift-notes/${id}`)
 };
 
@@ -211,7 +215,8 @@ export const onUnauthorized = (callback: () => void) => {
 
   api.patch = async <T>(url: string, data?: unknown, config?: InternalAxiosRequestConfig): Promise<T> => {
     try {
-      return await originalPatch<T>(url, data, config);
+      return aw
+ait originalPatch<T>(url, data, config);
     } catch (error) {
       if ((error as ApiError).status === 401) {
         callback();

@@ -31,8 +31,9 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
       // Default to the first property, but never clobber a choice the user has
       // already made — reading it from state here would also make this callback
       // change identity on every selection.
-      if (propsRes.length) {
-        setSelectedProperty((current) => current || String(propsRes[0].id));
+      const firstProperty = propsRes[0];
+      if (firstProperty) {
+        setSelectedProperty((current) => current || String(firstProperty.id));
       }
       setError('');
     } catch (err) {
@@ -55,6 +56,7 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
       await shiftNoteAPI.create({
         property_id: Number(selectedProperty),
         content: newNote.
+
 trim()
       });
       setNewNote('');
@@ -107,7 +109,8 @@ trim()
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">Note</label>
+                <label className="bl
+ock text-sm text-gray-600 mb-1">Note</label>
                 <input
                   type="text"
                   placeholder="e.g. Elevator maintenance 2–4 PM"
@@ -155,7 +158,8 @@ trim()
               <p className="text-gray-500">No shift notes for today yet.</p>
             </div>
           )}
-    
+   
+ 
     </div>
       </div>
     </div>

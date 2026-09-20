@@ -1,6 +1,6 @@
 import React, { Fragment, ReactNode } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { ExclamationTriangleIcon } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -72,6 +72,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
 
+
               as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
@@ -84,7 +85,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
               >
                 <div className="flex items-center justify-center mb-4">
-                  <ExclamationTriangleIcon
+                  <AlertTriangle
                     className={'h-8 w-8 ' + styles.icon}
                     aria-hidden="true"
                   />
@@ -116,7 +117,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                     type="button"
                     className={'inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ' + styles.confirm}
                     onClick={handleConfirm}
-                    disabled={isLoading}
+                    disabled={isLoa
+ding}
                   >
                     {isLoading ? (
                       <>
@@ -176,7 +178,8 @@ export function useConfirmDialog(): [
           title: options.title,
           message: options.message,
           variant: options.variant || 'danger',
-          
+         
+ 
 isLoading: false,
           resolve
         });
@@ -185,17 +188,9 @@ isLoading: false,
     []
   );
 
-  const handleClose = React.useCallback(() => {
-    state.resolve(false);
-    setState((prev) => ({ ...prev, isOpen: false }));
-  }, [state]);
+  
 
-  const handleConfirm = React.useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true }));
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    state.resolve(true);
-    setState((prev) => ({ ...prev, isOpen: false, isLoading: false }));
-  }, [state]);
+  
 
   React.useEffect(() => {
     // Cleanup on unmount

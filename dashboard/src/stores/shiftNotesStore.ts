@@ -22,7 +22,7 @@ interface ShiftNotesState {
   clearError: () => void;
 }
 
-export const useShiftNotesStore = create<ShiftNotesState>((set, get) => ({
+export const useShiftNotesStore = create<ShiftNotesState>((set) => ({
   shiftNotes: [],
   currentShiftNote: null,
   isLoading: false,
@@ -62,7 +62,8 @@ export const useShiftNotesStore = create<ShiftNotesState>((set, get) => ({
     try {
       const shiftNote = await shiftNoteAPI.create(data);
       set((state) => ({
-        shiftNotes: [...state.shiftNotes, shiftNote],
+        shiftNotes: [...st
+ate.shiftNotes, shiftNote],
         isLoading: false
       }));
       return shiftNote;

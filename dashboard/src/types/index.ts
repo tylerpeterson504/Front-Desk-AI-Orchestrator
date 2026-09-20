@@ -27,6 +27,9 @@ export interface Template {
   id: number;
   name: string;
   content: string;
+  user_id?: string | null;
+  category?: string | null;
+  tags?: string[] | null;
   property_id: number | null;
   is_global: boolean;
   created_at: string;
@@ -108,6 +111,7 @@ export interface PaginationParams {
 
 export interface PaginatedResponse<T> {
   data: T[];
+
   pagination: {
     page: number;
     limit: number;

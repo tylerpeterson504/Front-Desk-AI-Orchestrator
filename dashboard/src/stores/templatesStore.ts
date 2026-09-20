@@ -21,7 +21,7 @@ interface TemplatesState {
   clearError: () => void;
 }
 
-export const useTemplatesStore = create<TemplatesState>((set, get) => ({
+export const useTemplatesStore = create<TemplatesState>((set) => ({
   templates: [],
   currentTemplate: null,
   isLoading: false,
@@ -64,7 +64,8 @@ export const useTemplatesStore = create<TemplatesState>((set, get) => ({
         templates: [...state.templates, template],
         isLoading: false
       }));
-      return template;
+      return 
+template;
     } catch (err) {
       set({
         error: (err as Error).message || 'Failed to create template',
