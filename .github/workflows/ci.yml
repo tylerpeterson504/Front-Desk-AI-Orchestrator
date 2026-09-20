@@ -31,6 +31,7 @@ jobs:
         env:
           HUSKY: "0"
         run: |
+          exec > >(tee /tmp/install.log) 2>&1
           npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
           cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
           cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
@@ -42,17 +43,6 @@ jobs:
           npm run typecheck > /tmp/typecheck.log 2>&1
           status=$?
           cat /tmp/typecheck.log
-          if [ $status -ne 0 ]; then
-            git config user.name "ci-debug"
-            git config user.email "ci-debug@users.noreply.github.com"
-            git fetch origin fix/ci-typecheck-corruption
-            git checkout FETCH_HEAD
-            mkdir -p .ci-debug
-            cp /tmp/typecheck.log .ci-debug/typecheck.log
-            git add -f .ci-debug
-            git commit -m "ci: attach typecheck log [skip ci]"
-            git push origin HEAD:refs/heads/ci-debug-log-${{ github.run_id }} --force || echo "::error::failed to push typecheck log"
-          fi
           exit $status
 
       - name: Lint
@@ -64,6 +54,20 @@ jobs:
           JWT_SECRET: ci-only-secret-not-for-production
           NODE_ENV: test
           CI: "true"
+
+      - name: Attach debug logs on failure
+        if: failure()
+        run: |
+          git config user.name "ci-debug"
+          git config user.email "ci-debug@users.noreply.github.com"
+          git fetch origin ${{ github.head_ref || github.ref_name }}
+          git checkout FETCH_HEAD
+          mkdir -p .ci-debug
+          if [ -f /tmp/install.log ]; then cp /tmp/install.log .ci-debug/; fi
+          if [ -f /tmp/typecheck.log ]; then cp /tmp/typecheck.log .ci-debug/; fi
+          git add -f .ci-debug
+          git commit -m "ci: attach debug logs [skip ci]"
+          git push origin HEAD:refs/heads/ci-debug-log-${{ github.run_id }} --force || echo "::error::failed to push debug logs"
 
   build:
     name: Build
