@@ -9,7 +9,6 @@
     ],
     "outDir": "../dist/backend",
     "rootDir": ".",
-    "baseUrl": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
