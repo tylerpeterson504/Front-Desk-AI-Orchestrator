@@ -168,11 +168,3 @@ export async function waitForMocks(...mocks: jest.Mock[]): Promise<void> {
   }
 }
 
-export {
-  MockRepository,
-  createMockRepository,
-  mockGetRepository,
-  createMockUser,
-  createMockProperty,
-  createMockTemplate
-};

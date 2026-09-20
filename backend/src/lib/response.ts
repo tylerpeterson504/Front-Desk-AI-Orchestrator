@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   error?: {
     code: string;
     message: string;
+    requestId: string;
     details?: Record<string, unknown>;
   };
   meta?: {
@@ -50,15 +51,16 @@ export class ResponseBuilder {
   }
 
   error(code: string, message: string, details?: Record<string, unknown>): ApiResponse<never> {
-    return {
+    return ({
       ...this.response,
       success: false,
       error: {
         code,
         message,
+        requestId: this.requestId,
         ...(details && { details })
       }
-    };
+    }) as ApiResponse<never>;
   }
 
   paginated<T>(data: T[], pagination: {
@@ -71,7 +73,8 @@ export class ResponseBuilder {
       ...this.response,
       data,
       meta: {
-        ...this.response.meta,
+        requestId: this.requestId,
+        timestamp: new Date().toISOString(),
         pagination
       },
       success: true
@@ -86,6 +89,6 @@ export function createResponseBuilder(requestId: string) {
 // Middleware to add response builder to request
 export function responseBuilder(req: Request, res: Response, next: NextFunction) {
   (res as any).locals = (res as any).locals || {};
-  (res as any).locals.response = createResponseBuilder(req.requestId);
+  (res as any).locals.response = createResponseBuilder(req.requestId || 'unknown');
   next();
 }

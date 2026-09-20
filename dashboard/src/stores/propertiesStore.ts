@@ -16,7 +16,7 @@ interface PropertiesState {
   clearError: () => void;
 }
 
-export const usePropertiesStore = create<PropertiesState>((set, get) => ({
+export const usePropertiesStore = create<PropertiesState>((set) => ({
   properties: [],
   currentProperty: null,
   isLoading: false,

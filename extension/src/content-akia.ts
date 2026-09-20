@@ -109,8 +109,7 @@ sendMessage(payload);
     '.website-chat-client-composer input#message',
     '.website-chat-client-composer input[aria-label="Message input" i]',
     '.website-chat-client-composer input[type="text"]',
-    'input[aria-label="
-Message input" i]',
+    'input[aria-label="Message input" i]',
     'textarea.message-input',
     'input.message-input',
     '[data-test="message-input"]',

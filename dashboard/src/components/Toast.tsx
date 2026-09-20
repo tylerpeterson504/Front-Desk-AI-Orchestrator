@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { CheckCircleIcon, ExclamationCircleIcon, InformationCircleIcon, XCircleIcon, XIcon } from 'lucide-react';
+import { CheckCircleIcon, AlertCircle, Info, XCircleIcon, XIcon } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -20,8 +20,8 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 const toastIcons = {
   success: CheckCircleIcon,
   error: XCircleIcon,
-  warning: ExclamationCircleIcon,
-  info: InformationCircleIcon
+  warning: AlertCircle,
+  info: Info
 };
 
 const getToastColors = (type: ToastType) => {
@@ -65,8 +65,7 @@ const ToastComponent: React.FC<ToastProps> = ({ toast, onRemove }) => {
         </div>
         <div className="ml-3">
           {toast.title && (
-            <p className="text-sm font-medium">{toast.title}<
-/p>
+            <p className="text-sm font-medium">{toast.title}</p>
           )}
           <p className="text-sm">{toast.message}</p>
         </div>
@@ -97,7 +96,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const addToast = useCallback((type: ToastType, message: string, title?: string) => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, type, message, title }]);
-    
+
     setTimeout(() => {
       removeToast(id);
     }, 5000);

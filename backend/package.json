@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend API for Front Desk AI Orchestrator",
   "main": "dist/index.js",
-  "type": "module",
   "engines": {
     "node": ">=22"
   },
@@ -58,3 +57,4 @@
     "typescript": "^5.3.3"
   }
 }
+

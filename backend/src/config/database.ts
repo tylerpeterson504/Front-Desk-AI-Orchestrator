@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, ObjectLiteral, EntityTarget } from 'typeorm';
 import { config, isProduction, getDatabaseConfig } from './index';
 import logger from '../lib/logger';
 import { User, Property, Template, ShiftNote, AuditLog, RefreshToken } from '../entities';
@@ -39,6 +39,6 @@ export const initializeDatabase = async () => {
 
 export const getDatabase = () => AppDataSource;
 
-export const getRepository = <T>(entity: any) => {
+export const getRepository = <T extends ObjectLiteral>(entity: EntityTarget<T>) => {
   return AppDataSource.getRepository<T>(entity);
 };

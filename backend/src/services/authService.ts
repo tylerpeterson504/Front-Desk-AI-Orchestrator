@@ -30,7 +30,7 @@ function generateToken(user: User): string {
   return jsonwebtoken.sign(
     { userId: user.id, email: user.email, role: user.role },
     config.JWT_SECRET as string,
-    { expiresIn: config.JWT_TTL }
+    { expiresIn: config.JWT_TTL as jsonwebtoken.SignOptions['expiresIn'] }
   );
 }
 

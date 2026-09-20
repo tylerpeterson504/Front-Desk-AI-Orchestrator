@@ -19,7 +19,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   const requestId = req.requestId || crypto.randomUUID();
 
@@ -35,7 +35,7 @@ export function errorHandler(
 
   // Handle AppError
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       error: err.message,
       code: err.code,
       requestId: err.requestId || requestId,
@@ -45,7 +45,7 @@ export function errorHandler(
 
   // Handle JWT errors
   if ((err as { name?: string }).name === 'JsonWebTokenError') {
-    return res.status(401).json({
+    res.status(401).json({
       error: 'Invalid token',
       code: 'INVALID_TOKEN',
       requestId
@@ -53,7 +53,7 @@ export function errorHandler(
   }
 
   if ((err as { name?: string }).name === 'TokenExpiredError') {
-    return res.status(401).json({
+    res.status(401).json({
       error: 'Token expired',
       code: 'TOKEN_EXPIRED',
       requestId
@@ -62,7 +62,7 @@ export function errorHandler(
 
   // Handle validation errors (from express-validator)
   if ((err as { name?: string; details?: unknown }).name === 'ValidationError') {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
       requestId,
@@ -71,7 +71,7 @@ export function errorHandler(
   }
 
   // Default to 500
-  res.status(500).json({
+  return res.status(500).json({
     error: 'Internal server error',
     code: 'INTERNAL_ERROR',
     requestId

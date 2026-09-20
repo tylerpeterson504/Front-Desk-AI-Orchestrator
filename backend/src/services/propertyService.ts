@@ -31,8 +31,8 @@ export class PropertyService {
     return value.trim();
   }
 
-  private optionalString(value: unknown, field: string, maxLength: number = MAX_LENGTH): string | null {
-    if (value == null || value === '') return null;
+  private optionalString(value: unknown, field: string, maxLength: number = MAX_LENGTH): string | undefined {
+    if (value == null || value === '') return undefined;
     if (typeof value !== 'string') {
       throw new ValidationError(`${field} must be a string`);
     }
@@ -51,13 +51,12 @@ export class PropertyService {
     return trimmed.length === 5 ? `${trimmed}:00` : trimmed;
   }
 
-  private readPropertyBody(body: Record<string, unknown>, checkoutFallback: string = '
-11:00:00'): CreatePropertyDto {
-    const name = this.requireString(body.name, 'name');
-    const address = this.optionalString(body.address, 'address');
-    const checkout_time = this.normalizeCheckoutTime(body.checkout_time, checkoutFallback);
-    const wifi_ssid = this.optionalString(body.wifi_ssid, 'wifi_ssid');
-    const tone_guidelines = this.optionalString(body.tone_guidelines, 'tone_guidelines', 10000);
+  private readPropertyBody(body: CreatePropertyDto | UpdatePropertyDto, checkoutFallback: string = '11:00:00'): CreatePropertyDto {
+    const name = this.requireString((body as unknown as Record<string, unknown>).name, 'name');
+    const address = this.optionalString((body as unknown as Record<string, unknown>).address, 'address');
+    const checkout_time = this.normalizeCheckoutTime((body as unknown as Record<string, unknown>).checkout_time, checkoutFallback);
+    const wifi_ssid = this.optionalString((body as unknown as Record<string, unknown>).wifi_ssid, 'wifi_ssid');
+    const tone_guidelines = this.optionalString((body as unknown as Record<string, unknown>).tone_guidelines, 'tone_guidelines', 10000);
 
     // Wi-Fi password is handled separately for encryption
     let wifi_password: string | undefined;
@@ -127,7 +126,7 @@ export class PropertyService {
   async update(id: number, data: UpdatePropertyDto): Promise<Property> {
     const property = await this.getById(id);
 
-    const propertyData = this.readPropertyBody(data, property.checkout_time);
+    const propertyData = this.readPropertyBody(data, property.checkout_time ?? '11:00:00');
 
     // Encrypt Wi-Fi password if provided
     let encryptedWifiPassword: string | undefined;
@@ -138,10 +137,10 @@ export class PropertyService {
     }
 
     property.name = propertyData.name;
-    property.address = propertyData.address;
-    property.checkout_time = propertyData.checkout_time;
-    property.wifi_ssid = propertyData.wifi_ssid;
-    property.tone_guidelines = propertyData.tone_guidelines;
+    property.address = propertyData.address ?? null;
+    property.checkout_time = propertyData.checkout_time ?? '11:00:00';
+    property.wifi_ssid = propertyData.wifi_ssid ?? null;
+    property.tone_guidelines = propertyData.tone_guidelines ?? null;
 
     if (encryptedWifiPassword !== undefined) {
       property.wifi_password = encryptedWifiPassword;

@@ -23,8 +23,8 @@ export function isValidEmail(email: string): boolean {
     return false;
   }
 
-  const localPart = parts[0];
-  const domain = parts[1];
+  const localPart = parts[0] ?? '';
+  const domain = parts[1] ?? '';
 
   if (localPart.length === 0) {
     return false;

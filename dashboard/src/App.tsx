@@ -8,16 +8,15 @@ import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { authAPI } from './services/api';
 import { useAuthStore } from './stores/authStore';
-import { User } from './types';
+import type { User } from './types';
 
 function App() {
   const [page, setPage] = React.useState<import('./types').PageType>('templates');
   const [user, setUser] = React.useState<User | null>(null);
   const [checking, setChecking] = React.useState(true);
-  const { token, clearCredentials, setCredentials } = useAuthStore();
+  const { token, clearCredentials } = useAuthStore();
 
   React.useEffect(() => {
-    // Check if we have a token
     setChecking(Boolean(token));
   }, [token]);
 
@@ -27,10 +26,9 @@ function App() {
       setChecking(false);
       return undefined;
     }
-
     authAPI
       .me()
-      .then((response) => {
+      .then((response: User) => {
         if (!cancelled) {
           setUser(response);
           setChecking(false);
@@ -43,7 +41,6 @@ function App() {
           setChecking(false);
         }
       });
-
     return () => {
       cancelled = true;
     };

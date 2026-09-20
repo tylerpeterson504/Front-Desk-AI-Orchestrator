@@ -14,7 +14,7 @@ interface AuditLogsState {
     totalPages: number;
   };
   filter: {
-    userId?: string;
+    user_id?: string;
     action?: string;
     resource?: string;
     startDate?: string;
@@ -23,11 +23,11 @@ interface AuditLogsState {
   fetchAuditLogs: (params?: { page?: number; limit?: number; user_id?: string; action?: string }) => Promise<void>;
   fetchAuditLog: (id: number) => Promise<void>;
   setCurrentAuditLog: (auditLog: AuditLog | null) => void;
-  setFilter: (filter: { userId?: string; action?: string; resource?: string; startDate?: string; endDate?: string }) => void;
+  setFilter: (filter: { user_id?: string; action?: string; resource?: string; startDate?: string; endDate?: string }) => void;
   clearError: () => void;
 }
 
-export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
+export const useAuditLogsStore = create<AuditLogsState>((set) => ({
   auditLogs: [],
   currentAuditLog: null,
   isLoading: false,
@@ -36,7 +36,7 @@ export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
   filter: {},
 
   fetchAuditLogs: async (params = {}) => {
-    set({ isLoading: true, error: null, filter: { ...params } });
+    set({ isLoading: true, error: null, filter: { user_id: params.user_id, action: params.action } });
     try {
       const page = params.page || 1;
       const limit = params.limit || 20;
@@ -49,8 +49,8 @@ export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
       });
       
       // Assuming response includes data and pagination info
-      const data = Array.isArray(response) ? response : response.data || [];
-      const total = response.total || 0;
+      const data = Array.isArray(response) ? response : [];
+      const total = data.length;
       const totalPages = Math.ceil(total / limit);
       
       set({
@@ -85,7 +85,7 @@ export const useAuditLogsStore = create<AuditLogsState>((set, get) => ({
     set({ currentAuditLog: auditLog });
   },
 
-  setFilter: (filter: { userId?: string; action?: string; resource?: string; startDate?: string; endDate?: string }) => {
+  setFilter: (filter: { user_id?: string; action?: string; resource?: string; startDate?: string; endDate?: string }) => {
     set({ filter });
   },
 

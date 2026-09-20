@@ -133,7 +133,7 @@ app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
 
 // Health check
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 // Serve dashboard static files in production.
 // The SPA catch-all is registered BEFORE the notFound middleware so unknown
@@ -156,7 +156,7 @@ const PORT = config.PORT || 3001;
 // Start server only if this file is run directly. Importing this module
 // (e.g. in tests) must NOT connect to the database; only connect when the
 // server is actually starting.
-const isMainModule = import.meta.url.endsWith(process.argv[1]);
+const isMainModule = require.main === module;
 
 if (isMainModule) {
   initializeDatabase()

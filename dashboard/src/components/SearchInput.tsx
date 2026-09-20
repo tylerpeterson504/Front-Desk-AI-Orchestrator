@@ -23,7 +23,7 @@ function SearchInput({
   disabled = false,
 }: SearchInputProps) {
   const [value, setValue] = useState(externalValue || '');
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync external value changes
   useEffect(() => {
@@ -76,7 +76,8 @@ function SearchInput({
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
       <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
+        <div className="pointer-events-none 
+absolute inset-y-0 left-0 pl-3 flex items-center">
           <SearchIcon className="h-5 w-5 text-gray-400" />
         </div>
         

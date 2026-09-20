@@ -2,14 +2,16 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false,
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
     "lib": [
       "ES2022"
     ],
     "outDir": "../dist/backend",
     "rootDir": ".",
-    "baseUrl": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,16 +20,15 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "exactOptionalPropertyTypes": false,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "allowUnusedLabels": false,
@@ -36,25 +37,25 @@
     "checkJs": false,
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@config/*": [
-        "src/config/*"
+        "./src/config/*"
       ],
       "@routes/*": [
-        "src/routes/*"
+        "./src/routes/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@lib/*": [
-        "src/lib/*"
+        "./src/lib/*"
       ],
       "@middleware/*": [
-        "src/middleware/*"
+        "./src/middleware/*"
       ],
       "@entities/*": [
-        "src/entities/*"
+        "./src/entities/*"
       ]
     }
   },

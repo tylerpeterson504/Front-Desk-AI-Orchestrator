@@ -42,13 +42,13 @@ export function successResponse<T>(
     success: true,
     data,
     meta: {
-      requestId: req.requestId,
+      requestId: req.requestId || 'unknown',
       timestamp: new Date().toISOString()
     }
   };
 
   if (pagination) {
-    response.meta.pagination = pagination;
+    response.meta!.pagination = pagination;
   }
 
   return response;
@@ -132,7 +132,7 @@ export function createdResponse<T>(
 /**
  * Build a no content response (204)
  */
-export function noContentResponse(req: Request): { status: number; body?: ApiResponse<never> } {
+export function noContentResponse(_req: Request): { status: number; body?: ApiResponse<never> } {
   return {
     status: 204
   };

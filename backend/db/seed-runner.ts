@@ -143,8 +143,7 @@ async function createSampleTemplates(adminUser: User) {
     },
     {
       name: 'Checkout Reminder',
-      content: 'This is a friendly reminder that checkout time is at 11:00 AM
-. Late checkout may be available upon request.',
+      content: 'This is a friendly reminder that checkout time is at 11:00 AM. Late checkout may be available upon request.',
       is_global: true,
       user_id: adminUser.id
     },

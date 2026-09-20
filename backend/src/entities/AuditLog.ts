@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { Property } from './Property';
 
 @Entity('audit_logs')
 @Index(['user_id'])
@@ -10,7 +11,7 @@ export class AuditLog {
   id: number;
 
   @Column({ nullable: true })
-  user_id: string;
+  user_id: string | null;
 
   @Column()
   action: string;
@@ -19,16 +20,23 @@ export class AuditLog {
   resource: string;
 
   @Column({ nullable: true })
-  resource_id: string;
-
-  @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, unknown>;
+  resource_id: string | null;
 
   @Column({ nullable: true })
-  ip_address: string;
+  property_id: number | null;
+
+  @ManyToOne(() => Property, { nullable: true })
+  @JoinColumn({ name: 'property_id' })
+  property: Property | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, unknown> | null;
+
+  @Column({ nullable: true })
+  ip_address: string | null;
 
   @Column({ nullable: true, length: 500 })
-  user_agent: string;
+  user_agent: string | null;
 
   @CreateDateColumn()
   created_at: Date;

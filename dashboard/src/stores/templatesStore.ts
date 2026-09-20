@@ -7,10 +7,7 @@ interface TemplatesState {
   currentTemplate: Template | null;
   isLoading: boolean;
   error: string | null;
-  filter: {
-    propertyId?: number;
-    search?: string;
-  };
+  filter: { propertyId?: number; search?: string };
   fetchTemplates: (propertyId?: number) => Promise<void>;
   fetchTemplate: (id: number) => Promise<void>;
   createTemplate: (data: Partial<Template>) => Promise<Template>;
@@ -21,59 +18,43 @@ interface TemplatesState {
   clearError: () => void;
 }
 
-export const useTemplatesStore = create<TemplatesState>((set, get) => ({
+export const useTemplatesStore = create<TemplatesState>((set) => ({
   templates: [],
   currentTemplate: null,
   isLoading: false,
   error: null,
   filter: {},
-
   fetchTemplates: async (propertyId?: number) => {
     set({ isLoading: true, error: null, filter: { propertyId } });
     try {
       const templates = await templateAPI.getAll(propertyId);
       set({ templates, isLoading: false });
     } catch (err) {
-      set({
-        error: (err as Error).message || 'Failed to fetch templates',
-        isLoading: false
-      });
+      set({ error: (err as Error).message || 'Failed to fetch templates', isLoading: false });
       throw err;
     }
   },
-
   fetchTemplate: async (id: number) => {
     set({ isLoading: true, error: null });
     try {
       const template = await templateAPI.getOne(id);
       set({ currentTemplate: template, isLoading: false });
     } catch (err) {
-      set({
-        error: (err as Error).message || 'Failed to fetch template',
-        isLoading: false
-      });
+      set({ error: (err as Error).message || 'Failed to fetch template', isLoading: false });
       throw err;
     }
   },
-
   createTemplate: async (data: Partial<Template>) => {
     set({ isLoading: true, error: null });
     try {
       const template = await templateAPI.create(data);
-      set((state) => ({
-        templates: [...state.templates, template],
-        isLoading: false
-      }));
+      set((state) => ({ templates: [...state.templates, template], isLoading: false }));
       return template;
     } catch (err) {
-      set({
-        error: (err as Error).message || 'Failed to create template',
-        isLoading: false
-      });
+      set({ error: (err as Error).message || 'Failed to create template', isLoading: false });
       throw err;
     }
   },
-
   updateTemplate: async (id: number, data: Partial<Template>) => {
     set({ isLoading: true, error: null });
     try {
@@ -85,14 +66,10 @@ export const useTemplatesStore = create<TemplatesState>((set, get) => ({
       }));
       return template;
     } catch (err) {
-      set({
-        error: (err as Error).message || 'Failed to update template',
-        isLoading: false
-      });
+      set({ error: (err as Error).message || 'Failed to update template', isLoading: false });
       throw err;
     }
   },
-
   deleteTemplate: async (id: number) => {
     set({ isLoading: true, error: null });
     try {
@@ -103,22 +80,16 @@ export const useTemplatesStore = create<TemplatesState>((set, get) => ({
         isLoading: false
       }));
     } catch (err) {
-      set({
-        error: (err as Error).message || 'Failed to delete template',
-        isLoading: false
-      });
+      set({ error: (err as Error).message || 'Failed to delete template', isLoading: false });
       throw err;
     }
   },
-
   setCurrentTemplate: (template: Template | null) => {
     set({ currentTemplate: template });
   },
-
   setFilter: (filter: { propertyId?: number; search?: string }) => {
     set({ filter });
   },
-
   clearError: () => {
     set({ error: null });
   }

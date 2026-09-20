@@ -11,7 +11,7 @@ import {
 describe('Error Classes', () => {
   describe('AppError', () => {
     it('should create an error with all properties', () => {
-      const error = new AppError(400, 'TEST_ERROR', 'Test message', { field: 'test' }, 'req-123');
+      const error = new AppError(400, 'TEST_ERROR', 'Test message', { details: { field: 'test' }, requestId: 'req-123' });
       
       expect(error.statusCode).toBe(400);
       expect(error.code).toBe('TEST_ERROR');

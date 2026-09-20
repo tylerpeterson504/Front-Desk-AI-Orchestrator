@@ -5,7 +5,17 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MODEL_NAME = process.env.MISTRAL_MODEL || 'mistral-small-latest';
 const BASE_URL = process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai';
 
-import type { LLMResult, LLMOptions } from './perplexityClient';
+export interface LLMOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+}
+
+export interface LLMResult {
+  text: string;
+  model: string;
+}
 
 export function isConfigured(): boolean {
   return Boolean(String(process.env.MISTRAL_API_KEY || '').trim());
@@ -14,12 +24,12 @@ export function isConfigured(): boolean {
 export async function complete(messages: Array<{ role: string; content: string }>, options: LLMOptions = {}): Promise<LLMResult> {
   if (!isConfigured()) {
     const error = new Error('Mistral is not configured');
-    error.code = 'MISTRAL_NOT_CONFIGURED';
+    (error as any).code = 'MISTRAL_NOT_CONFIGURED';
     throw error;
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     const error = new Error('Messages are required');
-    error.code = 'INVALID_MESSAGES';
+    (error as any).code = 'INVALID_MESSAGES';
     throw error;
   }
 

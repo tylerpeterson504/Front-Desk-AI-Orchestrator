@@ -1,3 +1,4 @@
+import { And, MoreThanOrEqual, LessThan } from 'typeorm';
 import { getRepository } from '../config/database';
 import { ShiftNote } from '../entities/ShiftNote';
 import { Property } from '../entities/Property';
@@ -46,7 +47,7 @@ export class ShiftNoteService {
     return this.shiftNoteRepository.find({
       where: {
         user_id: userId,
-        created_at: { $gte: today, $lt: tomorrow }
+        created_at: And(MoreThanOrEqual(today), LessThan(tomorrow))
       },
       order: { created_at: 'DESC' },
       relations: ['property']

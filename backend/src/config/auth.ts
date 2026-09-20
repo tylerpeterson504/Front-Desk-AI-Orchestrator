@@ -7,7 +7,7 @@ export function generateToken(user: { userId: string; email: string; role: strin
   return jsonwebtoken.sign(
     { userId: user.userId, email: user.email, role: user.role },
     config.JWT_SECRET,
-    { expiresIn: config.JWT_TTL }
+    { expiresIn: config.JWT_TTL as jsonwebtoken.SignOptions["expiresIn"] }
   );
 }
 
@@ -16,8 +16,8 @@ export function accessTokenTtlSeconds(): number {
   const match = ttl.match(/^(\d+)([smhd]?)$/i);
   if (!match) return 15 * 60; // 15 minutes default
 
-  const value = parseInt(match[1], 10);
-  const unit = match[2].toLowerCase();
+  const value = parseInt(match[1] ?? "0", 10);
+  const unit = (match[2] ?? "").toLowerCase();
 
   switch (unit) {
     case 's': return value;
@@ -52,7 +52,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   try {
     const decoded = verifyToken(token);
     req.user = decoded;
-    next();
+    return next();
   } catch (err) {
     return res.status(401).json({
       error: 'Invalid token',
@@ -82,6 +82,6 @@ export function requireRole(roles: string[]) {
       });
     }
 
-    next();
+    return next();
   };
 }
