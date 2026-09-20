@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -21,7 +19,7 @@ services:
     networks:
       - frontdesk-network
 
-  # Backend API Server
+  # Backend API Server (source mounted at /app/backend, matching Dockerfile)
   backend:
     build:
       context: .
@@ -31,9 +29,10 @@ services:
       NODE_ENV: development
       PORT: 3001
       DATABASE_URL: postgresql://frontdesk:frontdesk123@postgres:5432/frontdesk_ai
-      JWT_SECRET: your_very_strong_jwt_secret_here_change_in_production
+      # Override these in .env or the shell for anything beyond local dev
+      JWT_SECRET: ${JWT_SECRET:-change_me_local_dev_only}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY}
-      WIFI_ENCRYPTION_KEY: ${WIFI_ENCRYPTION_KEY:-default_encryption_key_change_me}
+      WIFI_ENCRYPTION_KEY: ${WIFI_ENCRYPTION_KEY:-change_me_local_dev_only}
       CORS_ORIGIN: http://localhost:5173,http://dashboard:5173
       REGISTRATION_MODE: open
     ports:
@@ -48,7 +47,7 @@ services:
     networks:
       - frontdesk-network
 
-  # Dashboard (Vite)
+  # Dashboard (Vite, port 5173 matches vite.config.ts server.port)
   dashboard:
     build:
       context: .
@@ -66,13 +65,13 @@ services:
     networks:
       - frontdesk-network
 
-  # PGAdmin (Optional - for database management)
+  # PGAdmin (optional database UI)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: frontdesk-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@frontdesk.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@frontdesk.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
     ports:
       - "5050:80"
     depends_on:

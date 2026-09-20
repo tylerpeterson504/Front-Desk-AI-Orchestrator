@@ -1,25 +1,21 @@
-# Backend Dockerfile
+# Backend Dockerfile (local development)
 FROM node:20-alpine
 
-# Set working directory
-WORKDIR /app
+WORKDIR /app/backend
 
-# Copy package files
+# Install dependencies first so Docker can cache this layer
 COPY backend/package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm install --production=false
-
-# Copy source files
+# Copy source files (paths match the ./backend:/app/backend volume mount
+# in docker-compose.yml)
 COPY backend/src ./src
 COPY backend/tsconfig.json ./
 COPY backend/.env.example ./
 
-# Create necessary directories
 RUN mkdir -p tmp
 
-# Expose port
 EXPOSE 3001
 
-# Start the backend
+# Dev server with hot reload; do not use for production
 CMD ["npm", "run", "dev"]

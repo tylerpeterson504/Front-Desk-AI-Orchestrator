@@ -1,24 +1,17 @@
-# Dashboard Dockerfile
+# Dashboard Dockerfile (local development)
 FROM node:20-alpine
 
-# Set working directory
-WORKDIR /app
+WORKDIR /app/dashboard
 
-# Copy package files
+# Install dependencies first so Docker can cache this layer
 COPY dashboard/package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm install --production=false
+# Copy the rest of the dashboard (paths match the ./dashboard:/app/dashboard
+# volume mount in docker-compose.yml)
+COPY dashboard/ ./
 
-# Copy source files
-COPY dashboard/src ./src
-COPY dashboard/public ./public
-COPY dashboard/tsconfig.json ./
-COPY dashboard/vite.config.ts ./
-COPY dashboard/index.html ./
-
-# Expose port
 EXPOSE 5173
 
-# Start the dashboard
+# Dev server with hot reload; do not use for production
 CMD ["npm", "run", "dev"]

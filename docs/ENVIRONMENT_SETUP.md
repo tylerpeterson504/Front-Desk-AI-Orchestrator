@@ -70,7 +70,8 @@ cd extension && npm install && cd ..
 
 Create a `.env` file in the `backend` directory:
 
-```bash
+```bas
+h
 cd backend
 cp .env.example .env
 ```
@@ -171,7 +172,8 @@ curl http://localhost:3001/health
 ```bash
 curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123","name":"Test User"}'
+  -d '{"email":"test@example.com","
+password":"test123","name":"Test User"}'
 ```
 
 **Login:**
@@ -251,7 +253,8 @@ Error: Connection refused to localhost:5432
 ```
 **Solution:**
 - Ensure PostgreSQL is running
-- Verify database credentials in `DATABASE_URL`
+- Verify database credential
+s in `DATABASE_URL`
 - Test connection: `psql -U frontdesk -d frontdesk_ai`
 
 #### 4. Node.js Version Too Old
@@ -329,7 +332,8 @@ npm run typecheck
 
 - [Mistral Documentation](https://docs.mistral.ai/)
 - [Node.js Documentation](https://nodejs.org/docs/latest/api/)
-- [Express.js Documentation](https://expressjs.com/)
+- [Express.js
+ Documentation](https://expressjs.com/)
 - [Vite Documentation](https://vitejs.dev/)
 - [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
 

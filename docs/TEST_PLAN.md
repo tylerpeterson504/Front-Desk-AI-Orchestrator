@@ -93,7 +93,8 @@ npm run lint:fix
 ### 2.3 Verify No `as any` Casts
 
 ```bash
-# Search for remaining 'as any' casts
+# Search for remaining 'as any'
+ casts
 grep -r "as any" backend/src/ || echo "✅ No 'as any' casts found"
 ```
 
@@ -207,7 +208,8 @@ npm run build
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **Load unpacked**
-4. Select the `extension/dist` folder
+4. Select the `extensi
+on/dist` folder
 
 **Expected**:
 - ✅ Extension loads without errors
@@ -295,6 +297,7 @@ curl -X POST http://localhost:3001/api/auth/login \
   -d '{"email": "test@example.com", "password": "test123"}'
 ```
 **Expected**:
+
 - ✅ Registration succeeds (or fails with clear error if email exists)
 - ✅ Login returns a JWT token
 
@@ -387,7 +390,8 @@ for i in {1..20}; do curl -s http://localhost:3001/health > /dev/null; done
 ## 📝 Step 10: Final Verification Checklist
 
 - [ ] ✅ All dependencies installed successfully
-- [ ] ✅ Type checking passes (`npm run typecheck`)
+- [ ] ✅ Type checking passes (`npm run typecheck`
+)
 - [ ] ✅ Linting passes (`npm run lint`)
 - [ ] ✅ No `as any` casts in codebase
 - [ ] ✅ Backend starts without errors
@@ -456,7 +460,8 @@ The project is considered **fully tested and ready for use** when:
 
 ## 📞 Support
 
-If you encounter any issues during testing:
+If you encounter any i
+ssues during testing:
 1. Check the **console logs** for errors
 2. Review the **network requests** in DevTools
 3. Verify **environment variables** are set correctly
