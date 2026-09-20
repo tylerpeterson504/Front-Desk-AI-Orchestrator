@@ -65,8 +65,7 @@ const ToastComponent: React.FC<ToastProps> = ({ toast, onRemove }) => {
         </div>
         <div className="ml-3">
           {toast.title && (
-            <p className="text-sm font-medium">{toast.title}<
-/p>
+            <p className="text-sm font-medium">{toast.title}</p>
           )}
           <p className="text-sm">{toast.message}</p>
         </div>
