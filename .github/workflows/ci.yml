@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
   issues: write
 
@@ -37,21 +37,21 @@ jobs:
         timeout-minutes: 15
 
       - name: TypeScript type check
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set +e
           npm run typecheck > /tmp/typecheck.log 2>&1
           status=$?
           cat /tmp/typecheck.log
-          if [ $status -ne 0 ] && [ -n "$PR_NUMBER" ]; then
-            head -c 60000 /tmp/typecheck.log | jq -Rs '{body: .}' > /tmp/comment.json
-            curl -s -X POST \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-              -d @/tmp/comment.json
+          if [ $status -ne 0 ]; then
+            git config user.name "ci-debug"
+            git config user.email "ci-debug@users.noreply.github.com"
+            git fetch origin fix/ci-typecheck-corruption
+            git checkout FETCH_HEAD
+            mkdir -p .ci-debug
+            cp /tmp/typecheck.log .ci-debug/typecheck.log
+            git add .ci-debug
+            git commit -m "ci: attach typecheck log [skip ci]"
+            git push origin HEAD:fix/ci-typecheck-corruption || echo "::error::failed to push typecheck log"
           fi
           exit $status
 
