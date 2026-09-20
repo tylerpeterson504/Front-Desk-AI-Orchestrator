@@ -6,8 +6,9 @@ import { ShiftNotesPage } from './pages/ShiftNotesPage';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { authAPI, User } from './services/api';
+import { authAPI } from './services/api';
 import { useAuthStore } from './stores/authStore';
+import type { User } from './types';
 
 function App() {
   const [page, setPage] = React.useState<import('./types').PageType>('templates');
@@ -62,7 +63,7 @@ function App() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar page={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
+      <Sidebar currentPage={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
       <div className="flex-1 overflow-auto">
         {page === 'templates' && <TemplatesPage embedded />}
         {page === 'audit' && <AuditPage embedded />}

@@ -1,55 +1,14 @@
 import axios, { AxiosError } from 'axios';
+import type {
+  User,
+  Property,
+  Template,
+  ShiftNote,
+  AuditLog,
+  AuthResponse,
+} from '../types';
 
-export interface User {
-  id: number;
-  email: string;
-  name?: string;
-  role?: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  refresh_token: string;
-  user: User;
-}
-
-export interface Property {
-  id: number;
-  name: string;
-  address: string;
-  phone: string;
-  wifi_ssid: string;
-  wifi_password: string;
-  check_in_time: string;
-  check_out_time: string;
-}
-
-export interface Template {
-  id: number;
-  name: string;
-  subject: string;
-  body: string;
-  category?: string;
-  user_id?: number;
-  tags?: string[];
-}
-
-export interface ShiftNote {
-  id: number;
-  property_id: number;
-  author: string;
-  content: string;
-  shift: string;
-  created_at: string;
-}
-
-export interface AuditLog {
-  id: number;
-  event_type: string;
-  actor: string;
-  details: string;
-  created_at: string;
-}
+export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse };
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
@@ -83,12 +42,12 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const res = await axios.post(baseURL + '/auth/refresh', {
-            refresh_token: refreshToken,
+            refreshToken,
           });
-          const data = res.data as { access_token: string; refresh_token: string };
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
-          original.headers.Authorization = 'Bearer ' + data.access_token;
+          const data = res.data as { token: string; refreshToken: string };
+          localStorage.setItem('access_token', data.token);
+          localStorage.setItem('refresh_token', data.refreshToken);
+          original.headers.Authorization = 'Bearer ' + data.token;
           return api(original);
         } catch {
           // fall through to logout
@@ -123,8 +82,8 @@ async function deleteData<T>(url: string): Promise<T> {
 }
 
 export const authAPI = {
-  login: (email: string, password: string): Promise<LoginResponse> =>
-    postData<LoginResponse>('/auth/login', { email, password }),
+  login: (email: string, password: string): Promise<AuthResponse> =>
+    postData<AuthResponse>('/auth/login', { email, password }),
   me: (): Promise<User> => getData<User>('/auth/me'),
   logout: (): Promise<void> => postData<void>('/auth/logout'),
 };
@@ -172,13 +131,13 @@ export const auditAPI = {
   getAll: (params?: {
     page?: number;
     limit?: number;
-    user_id?: number;
+    user_id?: string | number;
     action?: string;
   }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
   list: (params?: {
     page?: number;
     limit?: number;
-    user_id?: number;
+    user_id?: string | number;
     action?: string;
   }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
   getOne: (id: number): Promise<AuditLog> => getData<AuditLog>('/audit-logs/' + id),

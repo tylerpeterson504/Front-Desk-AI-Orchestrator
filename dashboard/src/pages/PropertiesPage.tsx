@@ -8,21 +8,19 @@ import { usePropertiesStore } from '../stores/propertiesStore';
 interface FormData {
   name: string;
   address: string;
-  phone: string;
+  checkout_time: string;
   wifi_ssid: string;
   wifi_password: string;
-  check_in_time: string;
-  check_out_time: string;
+  tone_guidelines: string;
 }
 
 const emptyForm: FormData = {
   name: '',
   address: '',
-  phone: '',
+  checkout_time: '11:00',
   wifi_ssid: '',
   wifi_password: '',
-  check_in_time: '15:00',
-  check_out_time: '11:00',
+  tone_guidelines: '',
 };
 
 interface PropertiesPageProps {
@@ -30,8 +28,15 @@ interface PropertiesPageProps {
 }
 
 export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
-  const { properties, loading, error, fetchProperties, addProperty, updateProperty, deleteProperty } =
-    usePropertiesStore();
+  const {
+    properties,
+    isLoading,
+    error,
+    fetchProperties,
+    createProperty,
+    updateProperty,
+    deleteProperty,
+  } = usePropertiesStore();
 
   const [showForm, setShowForm] = React.useState(false);
   const [editingId, setEditingId] = React.useState<number | null>(null);
@@ -40,9 +45,12 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
   const [revealing, setRevealing] = React.useState<number | null>(null);
   const [wifiPasswords, setWifiPasswords] = React.useState<Record<number, string>>({});
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
-    defaultValues: emptyForm,
-  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({ defaultValues: emptyForm });
 
   React.useEffect(() => {
     fetchProperties();
@@ -59,7 +67,10 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
       setWifiPasswords((prev) => ({ ...prev, [prop.id]: data.password }));
       setRevealed((prev) => ({ ...prev, [prop.id]: true }));
     } catch {
-      setWifiPasswords((prev) => ({ ...prev, [prop.id]: prop.wifi_password }));
+      setWifiPasswords((prev) => ({
+        ...prev,
+        [prop.id]: prop.wifi_password || '',
+      }));
       setRevealed((prev) => ({ ...prev, [prop.id]: true }));
     } finally {
       setRevealing(null);
@@ -74,7 +85,7 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
     if (editingId !== null) {
       await updateProperty(editingId, payload);
     } else {
-      await addProperty(payload as FormData);
+      await createProperty(payload);
     }
     setShowForm(false);
     setEditingId(null);
@@ -86,12 +97,11 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
     setShowForm(true);
     reset({
       name: prop.name,
-      address: prop.address,
-      phone: prop.phone,
-      wifi_ssid: prop.wifi_ssid,
-      wifi_password: prop.wifi_password,
-      check_in_time: prop.check_in_time,
-      check_out_time: prop.check_out_time,
+      address: prop.address || '',
+      checkout_time: prop.checkout_time || '11:00',
+      wifi_ssid: prop.wifi_ssid || '',
+      wifi_password: prop.wifi_password || '',
+      tone_guidelines: prop.tone_guidelines || '',
     });
   };
 
@@ -102,7 +112,7 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
     }
   };
 
-  const content = (
+  return (
     <div className={embedded ? 'p-6' : 'p-8'}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -152,10 +162,13 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Checkout time
+                </label>
                 <input
+                  type="time"
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                  {...register('phone')}
+                  {...register('checkout_time')}
                 />
               </div>
               <div>
@@ -166,30 +179,23 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WiFi Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  WiFi Password
+                </label>
                 <input
                   type="password"
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                   {...register('wifi_password')}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
-                  <input
-                    type="time"
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                    {...register('check_in_time')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Check-out</label>
-                  <input
-                    type="time"
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                    {...register('check_out_time')}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tone guidelines
+                </label>
+                <input
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                  {...register('tone_guidelines')}
+                />
               </div>
             </div>
             <div className="mt-4 flex justify-end space-x-3">
@@ -214,25 +220,35 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
           </form>
         )}
 
-        {loading ? (
+        {isLoading ? (
           <p className="text-gray-500">Loading properties...</p>
         ) : (
           <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">WiFi</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-in / out</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Address
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    WiFi
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Checkout
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {properties.map((prop: Property) => (
                   <tr key={prop.id}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{prop.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{prop.address}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{prop.address || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <button
                         type="button"
@@ -255,7 +271,7 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {prop.check_in_time} / {prop.check_out_time}
+                      {prop.checkout_time || '-'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
@@ -282,17 +298,16 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
       </div>
 
       <ConfirmDialog
-        open={confirmId !== null}
+        isOpen={confirmId !== null}
         title="Delete Property"
         message="Are you sure you want to delete this property? This action cannot be undone."
-        confirmLabel="Delete"
+        confirmText="Delete"
+        variant="danger"
         onConfirm={handleDelete}
-        onCancel={() => setConfirmId(null)}
+        onClose={() => setConfirmId(null)}
       />
     </div>
   );
-
-  return content;
 }
 
 export default PropertiesPage;
