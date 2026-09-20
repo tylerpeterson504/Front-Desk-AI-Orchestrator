@@ -63,7 +63,7 @@ function App() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar currentPage={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
+      <Sidebar page={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
       <div className="flex-1 overflow-auto">
         {page === 'templates' && <TemplatesPage embedded />}
         {page === 'audit' && <AuditPage embedded />}
