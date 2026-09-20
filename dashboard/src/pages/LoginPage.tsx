@@ -47,8 +47,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
-          {error && <Alert type="error" message={error} onClose={() => setErr
-or('')} />}
+          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
           <div>
             <label htmlFor="email" className="block text-sm text-gray-600 mb-1">
