@@ -49,7 +49,7 @@ jobs:
             git checkout FETCH_HEAD
             mkdir -p .ci-debug
             cp /tmp/typecheck.log .ci-debug/typecheck.log
-            git add .ci-debug
+            git add -f .ci-debug
             git commit -m "ci: attach typecheck log [skip ci]"
             git push origin HEAD:refs/heads/ci-debug-log || echo "::error::failed to push typecheck log"
           fi

@@ -51,7 +51,7 @@ export class ResponseBuilder {
   }
 
   error(code: string, message: string, details?: Record<string, unknown>): ApiResponse<never> {
-    return {
+    return ({
       ...this.response,
       success: false,
       error: {
@@ -60,7 +60,7 @@ export class ResponseBuilder {
         requestId: this.requestId,
         ...(details && { details })
       }
-    };
+    }) as ApiResponse<never>;
   }
 
   paginated<T>(data: T[], pagination: {
