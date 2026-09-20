@@ -9,7 +9,7 @@
  * - Deep object manipulation
  */
 
-import { z, ZodSchema, ZodError, ZodIssue } from 'zod';
+import { z, ZodSchema, ZodError } from 'zod';
 
 /**
  * Result type for validation operations
@@ -165,7 +165,8 @@ export function validateAndTransform<T, U>(
       success: false,
       error: {
         message: (error as Error).message,
-        code: 'TRANSFORMATION_ERROR'
+        code: 'TRANSFORMATION_ERROR',
+        errors: []
       }
     };
   }
@@ -432,7 +433,7 @@ export function deepClone<T>(obj: T): T {
  * Deep merge two objects
  */
 export function deepMerge<T extends Record<string, unknown>, U extends Record<string, unknown>>(target: T, source: U): T & U {
-  const result = { ...target } as T & U;
+  const result = { ...target } as Record<string, unknown>;
   
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
@@ -455,7 +456,7 @@ export function deepMerge<T extends Record<string, unknown>, U extends Record<st
     }
   }
   
-  return result;
+  return result as T & U;
 }
 
 /**
@@ -503,7 +504,7 @@ export function renameKeys<T extends Record<string, unknown>>(
     result[newKey as string] = value;
   }
   
-  return result;
+  return result as T;
 }
 
 // ============================================================================
@@ -528,7 +529,7 @@ export function getNestedValue<T>(
     current = (current as Record<string, unknown>)[key];
   }
   
-  return (current as T) ?? defaultValue;
+  return (current as T) ?? (defaultValue as T);
 }
 
 /**
@@ -543,7 +544,7 @@ export function setNestedValue<T>(
   let current: Record<string, unknown> = obj;
   
   for (let i = 0; i < keys.length - 1; i++) {
-    const key = keys[i];
+    const key = keys[i] as string;
     const currentVal = current[key];
     if (currentVal === undefined || currentVal === null || !isObject(currentVal)) {
       current[key] = {};
@@ -599,7 +600,7 @@ export function unflattenObject(
     let current = result;
     
     for (let i = 0; i < keys.length - 1; i++) {
-      const k = keys[i];
+      const k = keys[i] as string;
       const currentVal = current[k];
       if (currentVal === undefined || currentVal === null || !isObject(currentVal)) {
         current[k] = {};
