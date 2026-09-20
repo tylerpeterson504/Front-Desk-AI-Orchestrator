@@ -35,25 +35,25 @@
     "checkJs": false,
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@config/*": [
-        "src/config/*"
+        "./src/config/*"
       ],
       "@routes/*": [
-        "src/routes/*"
+        "./src/routes/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@lib/*": [
-        "src/lib/*"
+        "./src/lib/*"
       ],
       "@middleware/*": [
-        "src/middleware/*"
+        "./src/middleware/*"
       ],
       "@entities/*": [
-        "src/entities/*"
+        "./src/entities/*"
       ]
     }
   },
