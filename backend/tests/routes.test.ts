@@ -1,12 +1,11 @@
 // Integration tests for backend routes - SIMPLIFIED
-import app from '../src/index';
 import request from 'supertest';
-import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
 import { Property } from '../src/entities/Property';
 import jsonwebtoken from 'jsonwebtoken';
 import { createMockRepository, createMockUser, createMockProperty } from './utils';
 
+// Mock database and config BEFORE importing app
 jest.mock('../src/config/database', () => ({
   getRepository: jest.fn((entity: any) => createMockRepository())
 }));
@@ -22,6 +21,9 @@ jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed'),
   compare: jest.fn().mockResolvedValue(true)
 }));
+
+// Import app AFTER mocks are set up
+import app from '../src/index';
 
 describe('Backend Routes - Basic Tests', () => {
   let testUser: User;

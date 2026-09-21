@@ -1,11 +1,10 @@
 import { getRepository } from '../src/config/database';
 import { Property } from '../src/entities/Property';
 import { Template } from '../src/entities/Template';
-import { CopilotService, copilotService } from '../src/services/copilotService';
 import { AuthorizationError } from '../src/lib/errors';
 import { createMockRepository, createMockProperty, createMockTemplate } from './utils';
 
-// Mock database
+// Mock database BEFORE importing CopilotService
 jest.mock('../src/config/database', () => ({
   getRepository: jest.fn((entity: any) => createMockRepository())
 }));
@@ -25,6 +24,9 @@ jest.mock('../src/services/llm/mistralClient', () => ({
   isConfigured: jest.fn(() => false),
   complete: jest.fn()
 }));
+
+// Import CopilotService AFTER mocks are set up
+import { CopilotService, copilotService } from '../src/services/copilotService';
 
 describe('CopilotService', () => {
   let service: CopilotService;

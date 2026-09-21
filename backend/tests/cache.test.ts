@@ -1,13 +1,13 @@
 // @ts-nocheck
 import express, { Request, Response } from 'express';
-import { responseCache, clearCache, getCacheSize } from '../src/middleware/cache';
+import { responseCache, clearAllCache, getCacheStats } from '../src/middleware/cache';
 import request from 'supertest';
 
 describe('Response Cache Middleware', () => {
   let app: express.Application;
 
   beforeEach(() => {
-    clearCache();
+    clearAllCache();
     app = express();
     app.use(responseCache(1)); // 1 second TTL for fast tests
 
@@ -68,8 +68,8 @@ describe('Response Cache Middleware', () => {
   });
 
   it('tracks cache size', async () => {
-    expect(getCacheSize()).toBe(0);
+    expect(getCacheStats().size).toBe(0);
     await request(app).get('/api/data');
-    expect(getCacheSize()).toBe(1);
+    expect(getCacheStats().size).toBe(1);
   });
 });
