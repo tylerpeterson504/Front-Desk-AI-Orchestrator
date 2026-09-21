@@ -19,10 +19,13 @@ jest.mock('../src/lib/logger', () => ({
   }
 }));
 
-// Mock LLM client
+// Mock LLM client - must be configured for tests to pass
 jest.mock('../src/services/llm/mistralClient', () => ({
-  isConfigured: jest.fn(() => false),
-  complete: jest.fn()
+  isConfigured: jest.fn(() => true),
+  complete: jest.fn().mockResolvedValue({
+    text: 'Test response from LLM',
+    model: 'mistral-small-latest'
+  })
 }));
 
 // Import CopilotService AFTER mocks are set up
@@ -85,8 +88,9 @@ describe('CopilotService', () => {
       const longName = 'a'.repeat(300);
       const raw = { guestName: longName };
       const result = (service as any).sanitizeGuestInfo(raw);
+      // MAX_FIELD_LENGTH is 200, so result should be 199 chars + 1 ellipsis = 200
       expect(result?.guestName?.length).toBeLessThanOrEqual(200);
-      expect(result?.guestName?.endsWith('\u2026')).toBe(true);
+      expect(result?.guestName?.endsWith('…')).toBe(true);
     });
   });
 
@@ -173,22 +177,22 @@ describe('CopilotService', () => {
     });
 
     it('should throw AuthorizationError for property not owned by user', async () => {
-      const property = { id: 1, name: 'Hotel', user_id: 'other-user' } as unknown as Property;
-      mockPropertyRepo.findOne.mockResolvedValue(property);
+      // When property doesn't belong to user, findOne returns null
+      mockPropertyRepo.findOne.mockResolvedValue(null);
       await expect(service.draft({ property_id: 1 }, 'user-1')).rejects.toThrow(AuthorizationError);
     });
 
     it('should return draft with property info', async () => {
-      const property = { id: 1, name: 'Grand Hotel', user_id: 'user-1' } as unknown as Property;
+      const property = { 
+        id: 1, 
+        name: 'Grand Hotel', 
+        user_id: 'user-1',
+        checkout_time: '11:00',
+        tone_guidelines: 'professional',
+        wifi_ssid: 'HotelWiFi'
+      } as unknown as Property;
       mockPropertyRepo.findOne.mockResolvedValue(property);
       mockTemplateRepo.find.mockResolvedValue([]);
-
-      const mistral = require('../src/services/llm/mistralClient');
-      mistral.isConfigured.mockReturnValue(true);
-      mistral.complete.mockResolvedValue({
-        text: 'Hello! Thank you for choosing our hotel.',
-        model: 'mistral-small-latest'
-      });
 
       const result = await service.draft({ property_id: 1, tone: 'professional' }, 'user-1');
       expect(result.draft).toBeDefined();

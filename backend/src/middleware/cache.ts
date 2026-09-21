@@ -163,8 +163,7 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
 /**
  * Clear cache for a specific key
  */
-export 
-function clearCacheKey(key: string): boolean {
+export function clearCacheKey(key: string): boolean {
   return cache.delete(key);
 }
 
