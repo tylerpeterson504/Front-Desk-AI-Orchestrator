@@ -55,5 +55,8 @@ extension/build/
 .vibe/
 .agents/
 
+# Neon CLI
+.neon
+
 # GitHub App credentials
 gha-creds-*.json

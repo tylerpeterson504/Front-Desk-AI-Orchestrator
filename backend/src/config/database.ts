@@ -17,7 +17,7 @@ const manualConfig = connectionString ? {} : {
 export const AppDataSource = new DataSource({
   type: 'postgres',
   ...(connectionString ? { url: connectionString } : manualConfig),
-  ssl: isProduction() ? { rejectUnauthorized: false } : false,
+  ssl: connectionString?.includes('neon.tech') || isProduction() ? { rejectUnauthorized: false } : false,
   entities: [User, Property, Template, ShiftNote, AuditLog, RefreshToken],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   synchronize: false,

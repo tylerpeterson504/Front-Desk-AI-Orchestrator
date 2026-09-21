@@ -36,7 +36,7 @@ function generateToken(user: User): string {
 
 function accessTokenTtlSeconds(): number {
   const ttl = config.JWT_TTL || '15m';
-  const match = ttl.match(/^(d+)([smhd]?)$/i);
+  const match = ttl.match(/^(\d+)([smhd]?)$/i);
   if (!match) return 15 * 60;
 
   const value = parseInt(match[1], 10);
