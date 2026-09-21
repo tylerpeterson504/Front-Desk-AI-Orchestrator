@@ -30,21 +30,22 @@ import { CopilotService, copilotService } from '../src/services/copilotService';
 
 describe('CopilotService', () => {
   let service: CopilotService;
-  let mockPropertyRepo: jest.Mock;
-  let mockTemplateRepo: jest.Mock;
+  let mockPropertyRepo: ReturnType<typeof createMockRepository>;
+  let mockTemplateRepo: ReturnType<typeof createMockRepository>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new CopilotService();
 
-    mockPropertyRepo = jest.fn(() => createMockRepository<Property>());
-    mockTemplateRepo = jest.fn(() => createMockRepository<Template>());
+    mockPropertyRepo = createMockRepository<Property>();
+    mockTemplateRepo = createMockRepository<Template>();
 
     (getRepository as jest.Mock).mockImplementation((entity: any) => {
-      if (entity === Property) return mockPropertyRepo();
-      if (entity === Template) return mockTemplateRepo();
+      if (entity === Property) return mockPropertyRepo;
+      if (entity === Template) return mockTemplateRepo;
       return createMockRepository();
     });
+
+    service = new CopilotService();
   });
 
   describe('sanitizeGuestInfo', () => {
@@ -85,7 +86,7 @@ describe('CopilotService', () => {
       const raw = { guestName: longName };
       const result = (service as any).sanitizeGuestInfo(raw);
       expect(result?.guestName?.length).toBeLessThanOrEqual(200);
-      expect(result?.guestName?.endsWith('...')).toBe(true);
+      expect(result?.guestName?.endsWith('\u2026')).toBe(true);
     });
   });
 

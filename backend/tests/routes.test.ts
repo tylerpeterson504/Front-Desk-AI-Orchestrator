@@ -1,5 +1,7 @@
+// @ts-nocheck
 // Integration tests for backend routes - SIMPLIFIED
 import request from 'supertest';
+import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
 import { Property } from '../src/entities/Property';
 import jsonwebtoken from 'jsonwebtoken';
@@ -38,6 +40,10 @@ describe('Backend Routes - Basic Tests', () => {
       'test-secret-key-at-least-32-characters-long',
       { expiresIn: '15m' }
     );
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('Health Check', () => {

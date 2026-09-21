@@ -106,7 +106,13 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
     }
     
     // Don't cache if explicitly disabled
-    if (req.headers['x-no-cache'] === 'true') {
+    if (req.headers['x-no-cache'] === 'true' || req.headers['cache-control']?.includes('no-cache')) {
+      return next();
+    }
+    
+    // Don't cache auth, health, or internal endpoints
+    const path = req.path;
+    if (path.includes('/api/auth') || path.includes('/health') || path.includes('/internal')) {
       return next();
     }
     

@@ -78,7 +78,7 @@ function scrubText(value: unknown, maxLength: number): string | null {
     .replace(/[ \t]+/g, ' ')
     .trim();
   if (!text) return null;
-  return text.length > maxLength ? `${text.slice(0, maxLength)}\u2026` : text;
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}\u2026` : text;
 }
 
 export class CopilotService {
