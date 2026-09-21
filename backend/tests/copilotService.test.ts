@@ -168,20 +168,20 @@ describe('CopilotService', () => {
 
   describe('draft', () => {
     it('should throw AuthorizationError for non-existent property', async () => {
-      mockPropertyRepo().findOne.mockResolvedValue(null);
+      mockPropertyRepo.findOne.mockResolvedValue(null);
       await expect(service.draft({ property_id: 999 }, 'user-1')).rejects.toThrow(AuthorizationError);
     });
 
     it('should throw AuthorizationError for property not owned by user', async () => {
       const property = { id: 1, name: 'Hotel', user_id: 'other-user' } as unknown as Property;
-      mockPropertyRepo().findOne.mockResolvedValue(property);
+      mockPropertyRepo.findOne.mockResolvedValue(property);
       await expect(service.draft({ property_id: 1 }, 'user-1')).rejects.toThrow(AuthorizationError);
     });
 
     it('should return draft with property info', async () => {
       const property = { id: 1, name: 'Grand Hotel', user_id: 'user-1' } as unknown as Property;
-      mockPropertyRepo().findOne.mockResolvedValue(property);
-      mockTemplateRepo().find.mockResolvedValue([]);
+      mockPropertyRepo.findOne.mockResolvedValue(property);
+      mockTemplateRepo.find.mockResolvedValue([]);
 
       const mistral = require('../src/services/llm/mistralClient');
       mistral.isConfigured.mockReturnValue(true);

@@ -44,6 +44,9 @@ describe('Backend Routes - Basic Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (getRepository as jest.Mock).mockImplementation((entity: any) => {
+      return createMockRepository();
+    });
   });
 
   describe('Health Check', () => {
@@ -59,7 +62,10 @@ describe('Backend Routes - Basic Tests', () => {
       mockUserRepo.findOne.mockResolvedValue(null);
       mockUserRepo.create.mockReturnValue(testUser);
       mockUserRepo.save.mockResolvedValue(testUser);
-      (getRepository as jest.Mock).mockReturnValueOnce(mockUserRepo);
+      (getRepository as jest.Mock).mockImplementationOnce((entity: any) => {
+        if (entity === User) return mockUserRepo;
+        return createMockRepository();
+      });
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -71,7 +77,10 @@ describe('Backend Routes - Basic Tests', () => {
     it('should login a user', async () => {
       const mockUserRepo = createMockRepository<User>();
       mockUserRepo.findOne.mockResolvedValue(testUser);
-      (getRepository as jest.Mock).mockReturnValueOnce(mockUserRepo);
+      (getRepository as jest.Mock).mockImplementationOnce((entity: any) => {
+        if (entity === User) return mockUserRepo;
+        return createMockRepository();
+      });
 
       const response = await request(app)
         .post('/api/auth/login')
