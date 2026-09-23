@@ -209,7 +209,7 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const { role: currentRole } = authService.getCurrentUser(token);
+    const { userId, role: currentRole } = authService.getCurrentUser(token);
 
     if (currentRole !== 'admin') {
       return res.status(403).json({
@@ -233,7 +233,8 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
 
     const user = await userService.setUserRole(id, role as 'admin' | 'agent');
 
-    logger.info('user role updated', { user_id: user.id, new_role: user.role, updated_by: req.requestId });
+    logger.info('user role updated', { user_id: user.id, new_role: user.role, updated_by: userId,
+      request_id: req.requestId });
 
     res.json({
       id: user.id,
