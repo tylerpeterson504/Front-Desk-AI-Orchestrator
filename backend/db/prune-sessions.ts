@@ -16,6 +16,7 @@ const url = connectionString ? new URL(connectionString) : null;
 const host = url?.hostname || dbConfig.host;
 const remote = Boolean(host && !['localhost', '127.0.0.1', '::1'].includes(host));
 if (remote && url) {
+  url.searchParams.delete('ssl');
   url.searchParams.delete('sslmode');
   url.searchParams.delete('uselibpqcompat');
 }

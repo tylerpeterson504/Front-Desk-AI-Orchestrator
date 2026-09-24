@@ -15,11 +15,20 @@ async function getAuditLogs(req: express.Request, res: express.Response, next: e
     const userId = (req as any).user.userId;
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 100, 500);
     const requestedOffset = parseInt(req.query.offset as string, 10) || 0;
-    const page = Math.max(parseInt(req.query.page as string, 10) || 1, 1);
-    const offset = req.query.page ? (page - 1) * limit : Math.max(requestedOffset, 0);
+    const pageQuery = req.query.page;
+    const hasPage = pageQuery !== undefined;
+    if (hasPage && (typeof pageQuery !== 'string' || !pageQuery.trim())) {
+      return res.status(400).json({
+        error: 'Invalid page parameter',
+        code: 'VALIDATION_ERROR',
+        requestId: req.requestId
+      });
+    }
+    const page = Math.max(parseInt(typeof pageQuery === 'string' ? pageQuery : '1', 10) || 1, 1);
+    const offset = hasPage ? (page - 1) * limit : Math.max(requestedOffset, 0);
 
     const logs = await auditLogService.getAll(userId, { limit, offset });
-    res.json(req.query.page ? logs : logs.data);
+    res.json(hasPage ? logs : logs.data);
   } catch (err) {
     next(err);
   }

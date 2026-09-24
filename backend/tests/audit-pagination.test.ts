@@ -43,5 +43,20 @@ describe('audit log pagination', () => {
     expect(auditLogService.getAll).toHaveBeenCalledWith('user-1', { limit: 1, offset: 1 });
     const legacy = await request(app).get('/api/audit-logs').expect(200);
     expect(legacy.body).toEqual(page.data);
+    const legacyOffset = await request(app).get('/api/audit-logs?offset=2').expect(200);
+    expect(legacyOffset.body).toEqual(page.data);
+    expect(auditLogService.getAll).toHaveBeenLastCalledWith('user-1', { limit: 100, offset: 2 });
   });
+
+  it.each(['page=', 'page=%20%20', 'page=1&page=2', 'page[]=1', 'page[foo]=1'])(
+    'rejects invalid page query %s', async (query) => {
+      const getAll = jest.spyOn(auditLogService, 'getAll');
+      getAll.mockClear();
+      const app = express().use('/api/audit-logs', auditLogsRouter);
+
+      const response = await request(app).get(`/api/audit-logs?${query}`).expect(400);
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(getAll).not.toHaveBeenCalled();
+    }
+  );
 });
