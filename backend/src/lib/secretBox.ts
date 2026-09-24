@@ -18,6 +18,7 @@ function getEncryptionKey(): Buffer {
   return crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
 }
 
+/** Encrypts text as a `v1:`-prefixed, Base64-encoded authenticated payload. */
 export function encryptSecret(plaintext: string): string {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -36,6 +37,10 @@ export function encryptSecret(plaintext: string): string {
   return CIPHERTEXT_PREFIX + combined.toString('base64');
 }
 
+/**
+ * Decrypts a versioned payload or an unprefixed legacy payload.
+ * @throws If the payload is malformed, authentication fails, or the key differs.
+ */
 export function decryptSecret(encrypted: string): string {
   const key = getEncryptionKey();
 
@@ -58,10 +63,15 @@ export function decryptSecret(encrypted: string): string {
   return decrypted;
 }
 
+/** Checks for the `v1:` prefix without validating the ciphertext. */
 export function isEncrypted(value: string): boolean {
   return value.startsWith(CIPHERTEXT_PREFIX);
 }
 
+/**
+ * Tries to decrypt an unprefixed legacy payload. Returns null for versioned
+ * values or on any decryption failure, including ordinary plaintext.
+ */
 export function tryDecryptLegacySecret(value: string): string | null {
   if (isEncrypted(value)) return null;
   try {
@@ -71,6 +81,10 @@ export function tryDecryptLegacySecret(value: string): string | null {
   }
 }
 
+/**
+ * Leaves versioned values unchanged, prefixes valid legacy ciphertext, and
+ * encrypts other values. Encryption failures propagate to the caller.
+ */
 export function migrateSecret(value: string): string {
   if (isEncrypted(value)) return value;
   return tryDecryptLegacySecret(value) !== null
@@ -78,6 +92,7 @@ export function migrateSecret(value: string): string {
     : encryptSecret(value);
 }
 
+/** Checks whether WIFI_ENCRYPTION_KEY is present and at least 32 characters long. */
 export function isEncryptionConfigured(): boolean {
   return Boolean(config.WIFI_ENCRYPTION_KEY && config.WIFI_ENCRYPTION_KEY.length >= 32);
 }

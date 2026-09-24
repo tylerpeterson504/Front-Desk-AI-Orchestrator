@@ -33,6 +33,10 @@ function run(command: string, args: string[]): Promise<void> {
   });
 }
 
+/**
+ * Runs migrations, then seeds. Exits if DATABASE_URL is missing; rejects if
+ * either child command fails, which the script converts to exit status 1.
+ */
 async function main() {
   if (!process.env.DATABASE_URL) {
     console.error('DATABASE_URL is not set.');

@@ -36,6 +36,12 @@ const backfillDataSource = new DataSource({
   logging: process.env.LOG_LEVEL === 'debug'
 });
 
+/**
+ * Backfills nonempty Wi-Fi passwords, leaving versioned values unchanged.
+ * Legacy ciphertext gains a version prefix; plaintext is encrypted.
+ * Exits if encryption is not configured; database and encryption failures
+ * reject the promise and cause the script to exit unsuccessfully.
+ */
 async function run() {
   if (!isEncryptionConfigured()) {
     console.error('WIFI_ENCRYPTION_KEY is not set - nothing to do.');

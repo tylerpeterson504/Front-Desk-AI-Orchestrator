@@ -19,6 +19,11 @@ let apiBaseUrlOverride: string | null = null;
 // Reject non-HTTPS remote origins so a bad storage value cannot
 // redirect API calls somewhere unexpected, and drop trailing slashes so callers
 // can always append '/api'.
+/**
+ * Returns an API base URL without query, fragment, or trailing slashes.
+ * Accepts HTTPS or local-loopback HTTP; returns null for invalid inputs and
+ * non-HTTPS remote URLs. Preserves a supplied path after the origin.
+ */
 function normalizeApiBaseUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {

@@ -140,6 +140,7 @@ export const auditAPI = {
     user_id?: string | number;
     action?: string;
   }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
+  /** Requests a page of audit logs and the total count; HTTP errors reject. */
   list: (params: {
     page: number;
     limit?: number;

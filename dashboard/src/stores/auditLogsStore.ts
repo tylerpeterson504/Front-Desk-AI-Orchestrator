@@ -35,6 +35,11 @@ export const useAuditLogsStore = create<AuditLogsState>((set) => ({
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
   filter: {},
 
+  /**
+   * Loads a page of audit logs and its total count into the store. Defaults to
+   * page 1 with 20 records per page. On request failure, stores the error and
+   * rethrows it to the caller.
+   */
   fetchAuditLogs: async (params = {}) => {
     set({ isLoading: true, error: null, filter: { user_id: params.user_id, action: params.action } });
     try {

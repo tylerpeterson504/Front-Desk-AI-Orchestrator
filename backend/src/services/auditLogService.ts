@@ -20,6 +20,12 @@ export class AuditLogService {
   private auditLogRepository = getRepository<AuditLog>(AuditLog);
   private propertyRepository = getRepository<Property>(Property);
 
+  /**
+   * Returns newest-first logs for one user, with property names when available.
+   * The optional limit defaults to 100 and is capped at 500; offset defaults
+   * to 0. `total` counts all matching logs, not just the returned page.
+   * Database errors propagate to the caller.
+   */
   async getAll(userId: string, options?: { limit?: number; offset?: number }): Promise<{ data: AuditLogWithProperty[]; total: number }> {
     const limit = Math.min(options?.limit || 100, 500);
     const offset = options?.offset || 0;

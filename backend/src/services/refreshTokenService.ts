@@ -85,6 +85,11 @@ export class RefreshTokenService {
     );
   }
 
+  /**
+   * Deletes tokens with expiry strictly before now, regardless of revocation.
+   * Returns the number of deleted rows (or 0 when none are reported).
+   * Database errors propagate to the caller.
+   */
   async cleanupExpired(): Promise<number> {
     const result = await this.refreshTokenRepository.delete({
       expires_at: LessThan(new Date())
