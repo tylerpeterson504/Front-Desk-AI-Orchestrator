@@ -14,6 +14,7 @@ interface FormFieldProps {
   hint?: string;
 }
 
+/** Renders a controlled form field with validation feedback from react-hook-form. */
 export function FormField({
   name,
   label,
