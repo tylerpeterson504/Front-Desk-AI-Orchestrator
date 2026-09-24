@@ -2,10 +2,10 @@
 // Relays messages between content scripts and the side panel
 // Enhanced with type safety and error handling
 
-import type { MessageType, GuestInfo, ChatContext } from './types';
+import type { MessageType } from './types';
 
 // Message handler with type safety
-function handleMessage(message: MessageType, sender: chrome.runtime.MessageSender): void {
+function handleMessage(message: MessageType): void {
   // Forward guest info and chat context updates from content scripts to any open side panel
   if (message.type === 'GUEST_INFO_UPDATED' || message.type === 'CHAT_CONTEXT_UPDATED') {
     // Broadcast to all open side panels
@@ -23,7 +23,7 @@ function handleMessage(message: MessageType, sender: chrome.runtime.MessageSende
 
 // Set up message listener with error handling
 try {
-  chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message: unknown) => {
     try {
       // Validate message has a type
       if (!message || typeof message !== 'object' || !('type' in message)) {
@@ -32,7 +32,7 @@ try {
       }
       
       const typedMessage = message as MessageType;
-      handleMessage(typedMessage, sender);
+      handleMessage(typedMessage);
     } catch (error) {
       console.error('Error handling message:', error, message);
     }
@@ -50,7 +50,4 @@ chrome.runtime.onSuspend.addListener(() => {
   console.log('Front Desk AI extension suspended');
 });
 
-// Handle runtime errors globally
-if (chrome.runtime.onMessage.hasListeners) {
-  chrome.runtime.lastError; // Clear any existing errors
-}
+
