@@ -1,15 +1,15 @@
 import express from 'express';
 import { shiftNoteService } from '../services/shiftNoteService';
-import { authenticateToken } from '../config/auth';
+import { requireAuth } from '../middleware/requireAuth';
 import { requestId } from '../middleware/errorHandler';
 import logger from '../lib/logger';
 
 const router = express.Router();
 
 // Get shift notes for today
-router.get('/', requestId, authenticateToken, async (req, res, next) => {
+router.get('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const shiftNotes = await shiftNoteService.getAll(userId);
     res.json(shiftNotes);
   } catch (err) {
@@ -18,9 +18,9 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Create shift note
-router.post('/', requestId, authenticateToken, async (req, res, next) => {
+router.post('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const shiftNote = await shiftNoteService.create(req.body, userId);
 
     logger.info('Shift note created', { shift_note_id: shiftNote.id, user_id: userId, request_id: req.requestId });
@@ -31,9 +31,9 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Update shift note
-router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
+router.put('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
     if (isNaN(id)) {
@@ -54,9 +54,9 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Delete shift note
-router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
+router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
     if (isNaN(id)) {
