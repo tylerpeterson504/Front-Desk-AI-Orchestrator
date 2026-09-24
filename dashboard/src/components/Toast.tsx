@@ -19,6 +19,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 let nextToastId = 1;
 const DEFAULT_TTL_MS = 5000;
 
+/** Provides dismissible notifications that automatically disappear after five seconds. */
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -72,6 +73,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+/** Returns the toast controls and active notifications from the nearest ToastProvider. */
 export function useToasts(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {

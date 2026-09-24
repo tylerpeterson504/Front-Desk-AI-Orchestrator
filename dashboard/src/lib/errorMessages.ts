@@ -22,6 +22,7 @@ export interface ApiErrorShape {
   requestId?: string;
 }
 
+/** Converts an API error to a user-facing message, preferring the server's error text. */
 export function toUserMessage(err: unknown): string {
   const status = (err as { response?: { status?: number } })?.response?.status;
   const data = (err as { response?: { data?: ApiErrorShape } })?.response?.data;
@@ -35,8 +36,7 @@ export function toUserMessage(err: unknown): string {
   return DEFAULT_ERROR_MESSAGE;
 }
 
-// Convenience hook: surface any API error as a toast, optionally prefixed
-// with the action that failed ("Save template: ...").
+/** Returns a handler that shows API errors as toasts, optionally prefixed with an action. */
 export function useApiErrorToast() {
   const { pushToast } = useToasts();
   return useCallback(
