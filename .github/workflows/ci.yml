@@ -46,6 +46,7 @@ jobs:
         env:
           HUSKY: "0"
         run: |
+          set -o pipefail
           npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee /tmp/install.log
           cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee -a /tmp/install.log
           cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee -a /tmp/install.log
