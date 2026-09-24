@@ -5,8 +5,12 @@ import { requestId } from '../middleware/errorHandler';
 
 const router = express.Router();
 
-// Get audit logs for the authenticated user
-router.get('/', requestId, authenticateToken, async (req, res, next) => {
+/**
+ * Returns the authenticated user's audit logs with a total count when `page`
+ * is supplied, or the legacy array response otherwise. Forwards errors to
+ * Express's error handler.
+ */
+async function getAuditLogs(req: express.Request, res: express.Response, next: express.NextFunction) {
   try {
     const userId = (req as any).user.userId;
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 100, 500);
@@ -19,6 +23,8 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+}
+
+router.get('/', requestId, authenticateToken, getAuditLogs);
 
 export default router;
