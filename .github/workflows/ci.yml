@@ -103,4 +103,3 @@ jobs:
         run: npm run build:dashboard
         env:
           CI: true
-          NODE_ENV: production
