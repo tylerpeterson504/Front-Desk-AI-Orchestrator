@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import api, { authAPI } from '../src/services/api';
+import api, { authAPI, setOnUnauthorized } from '../src/services/api';
 import { useAuthStore } from '../src/stores/authStore';
 
 const originalAdapter = api.defaults.adapter;
@@ -50,5 +50,34 @@ describe('dashboard auth API', () => {
     });
     expect(useAuthStore.getState().token).toBe('new-access');
     expect(localStorage.getItem('refresh_token')).toBeNull();
+  });
+
+  it('clears credentials and notifies once when the refresh cookie is rejected', async () => {
+    const onUnauthorized = vi.fn();
+    setOnUnauthorized(onUnauthorized);
+    useAuthStore.getState().setCredentials({ id: '1', email: 'agent@example.com', name: 'Agent', role: 'agent' }, 'expired-access');
+    vi.spyOn(axios, 'post').mockRejectedValue(new Error('Refresh denied'));
+    api.defaults.adapter = async (config) => {
+      throw new AxiosError('Unauthorized', 'ERR_BAD_RESPONSE', config, undefined,
+        { config, data: {}, status: 401, statusText: 'Unauthorized', headers: {} });
+    };
+    await expect(api.get('/properties')).rejects.toMatchObject({ response: { status: 401 } });
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+    expect(useAuthStore.getState().token).toBeNull();
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('does not repeatedly refresh a request that still returns 401 after retry', async () => {
+    useAuthStore.getState().setCredentials({ id: '1', email: 'agent@example.com', name: 'Agent', role: 'agent' }, 'expired-access');
+    const refresh = vi.spyOn(axios, 'post').mockResolvedValue({ data: { token: 'new-access' } });
+    let attempts = 0;
+    api.defaults.adapter = async (config) => {
+      attempts += 1;
+      throw new AxiosError('Unauthorized', 'ERR_BAD_RESPONSE', config, undefined,
+        { config, data: {}, status: 401, statusText: 'Unauthorized', headers: {} });
+    };
+    await expect(api.get('/properties')).rejects.toMatchObject({ response: { status: 401 } });
+    expect(attempts).toBe(2);
+    expect(refresh).toHaveBeenCalledOnce();
   });
 });

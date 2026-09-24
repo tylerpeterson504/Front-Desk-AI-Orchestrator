@@ -24,11 +24,14 @@ export interface ApiErrorShape {
 
 /** Converts an API error to a user-facing message, preferring the server's error text. */
 export function toUserMessage(err: unknown): string {
-  const response = (err as { response?: { status?: number; data?: ApiErrorShape } })?.response;
-  if (!response) {
+  const { response, request } = (err as {
+    response?: { status?: number; data?: ApiErrorShape };
+    request?: unknown;
+  }) ?? {};
+  if (!response && request) {
     return 'Unable to connect. Please check your internet connection and try again.';
   }
-  const { status, data } = response;
+  const { status, data } = response ?? {};
 
   if (data?.error) {
     return data.error;
