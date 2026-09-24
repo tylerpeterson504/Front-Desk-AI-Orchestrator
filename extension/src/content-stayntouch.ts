@@ -93,6 +93,10 @@ interface GuestInfo {
     return null;
   }
 
+  /** Reads guest and reservation text from the current page's main content.
+   * Tries known selectors before label-based fields; missing fields are empty
+   * strings, and check-in/check-out values retain their page text formatting.
+   */
   function extractGuestInfo(): GuestInfo {
     const root = getRoot();
     const guestName = 

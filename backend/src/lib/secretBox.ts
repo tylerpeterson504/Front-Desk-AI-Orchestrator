@@ -18,6 +18,7 @@ function getEncryptionKey(): Buffer {
   return crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
 }
 
+/** Encrypts text as versioned ciphertext suitable for storage as a Wi-Fi secret. */
 export function encryptSecret(plaintext: string): string {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -36,6 +37,9 @@ export function encryptSecret(plaintext: string): string {
   return CIPHERTEXT_PREFIX + combined.toString('base64');
 }
 
+/** Decrypts versioned or unprefixed legacy ciphertext.
+ * Throws if authentication fails, such as with corrupted data or the wrong key.
+ */
 export function decryptSecret(encrypted: string): string {
   const key = getEncryptionKey();
 
@@ -58,10 +62,14 @@ export function decryptSecret(encrypted: string): string {
   return decrypted;
 }
 
+/** Checks for the v1 prefix; does not authenticate the ciphertext. */
 export function isEncrypted(value: string): boolean {
   return value.startsWith(CIPHERTEXT_PREFIX);
 }
 
+/** Decrypts unprefixed legacy ciphertext, or returns null for prefixed or
+ * undecryptable values (including plaintext).
+ */
 export function tryDecryptLegacySecret(value: string): string | null {
   if (isEncrypted(value)) return null;
   try {
@@ -71,6 +79,9 @@ export function tryDecryptLegacySecret(value: string): string | null {
   }
 }
 
+/** Leaves versioned secrets intact, prefixes authentic legacy ciphertext, or
+ * encrypts other input as plaintext. Encryption failures propagate.
+ */
 export function migrateSecret(value: string): string {
   if (isEncrypted(value)) return value;
   return tryDecryptLegacySecret(value) !== null
@@ -78,6 +89,7 @@ export function migrateSecret(value: string): string {
     : encryptSecret(value);
 }
 
+/** Checks whether an explicit Wi-Fi key of at least 32 characters is configured. */
 export function isEncryptionConfigured(): boolean {
   return Boolean(config.WIFI_ENCRYPTION_KEY && config.WIFI_ENCRYPTION_KEY.length >= 32);
 }

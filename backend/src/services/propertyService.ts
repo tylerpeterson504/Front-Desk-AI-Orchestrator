@@ -156,6 +156,11 @@ export class PropertyService {
     await this.propertyRepository.remove(property);
   }
 
+  /** Retrieves a property's Wi-Fi credentials, decrypting versioned or valid
+   * legacy ciphertext and returning undecryptable legacy text unchanged.
+   * Returns null for an absent password or SSID; throws NotFoundError for an
+   * unknown property and propagates versioned-ciphertext decryption failures.
+   */
   async getWifiPassword(id: number, requestId?: string): Promise<{ ssid: string | null; password: string | null }> {
     const log = createRequestLogger(requestId || '');
 

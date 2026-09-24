@@ -5,7 +5,11 @@ import { requestId } from '../middleware/errorHandler';
 
 const router = express.Router();
 
-// Get audit logs for the authenticated user
+/** Returns the authenticated user's logs as an array, or as { data, total }
+ * when a page query parameter is present. Uses a 100-item default and a
+ * 500-item limit; page takes precedence over offset when both are supplied.
+ * Forwards service failures to the error handler.
+ */
 router.get('/', requestId, authenticateToken, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;

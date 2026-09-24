@@ -38,6 +38,9 @@ export const pruneDataSource = new DataSource({
   logging: process.env.LOG_LEVEL === 'debug'
 });
 
+/** Deletes refresh tokens expiring strictly before the current time, then exits.
+ * Reports a failure with exit code 1 if the database operation fails.
+ */
 async function run() {
   try {
     await pruneDataSource.initialize();

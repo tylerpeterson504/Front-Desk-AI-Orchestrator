@@ -33,6 +33,7 @@ function run(command: string, args: string[]): Promise<void> {
   });
 }
 
+/** Runs migrations before the seed runner; fails if DATABASE_URL is unset or either command fails. */
 async function main() {
   if (!process.env.DATABASE_URL) {
     console.error('DATABASE_URL is not set.');
