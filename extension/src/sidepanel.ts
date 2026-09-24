@@ -280,6 +280,9 @@ function updateChatContext(data: ChatContext | null): void {
 }
 
 // ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/**
+ * Fetch today's shift notes and render them into the shift notes block.
+ */
 async function loadShiftNotes(): Promise<void> {
   try {
     const notes = await apiRequest('GET', '/shift-notes');
