@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { useToasts } from '../components/Toast';
 
+const DEFAULT_ERROR_MESSAGE = 'Something went wrong on our side. Please try again.';
+
 // Single mapping from API error payloads to user-facing messages. The backend
 // returns { error, code, requestId }; the UI shows the server message when
 // present and falls back to a plain-language default per status.
@@ -11,7 +13,7 @@ const STATUS_DEFAULTS: Record<number, string> = {
   404: 'That item could not be found.',
   409: 'This conflicts with an existing record.',
   429: 'Too many requests. Please wait a moment and try again.',
-  500: 'Something went wrong on our side. Please try again.'
+  500: DEFAULT_ERROR_MESSAGE
 };
 
 export interface ApiErrorShape {
@@ -30,7 +32,7 @@ export function toUserMessage(err: unknown): string {
   if (status && STATUS_DEFAULTS[status]) {
     return STATUS_DEFAULTS[status];
   }
-  return STATUS_DEFAULTS[500];
+  return DEFAULT_ERROR_MESSAGE;
 }
 
 // Convenience hook: surface any API error as a toast, optionally prefixed

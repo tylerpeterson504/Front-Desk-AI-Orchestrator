@@ -9,7 +9,7 @@ export { default as Pagination } from './Pagination';
 export { default as SearchInput } from './SearchInput';
 export { Sidebar } from './Sidebar';
 export { default as Table } from './Table';
-export { ToastProvider, useToast, useSuccessToast, useErrorToast, useWarningToast, useInfoToast } from './Toast';
+export { ToastProvider, useToasts } from './Toast';
 
 // Re-export icons
 export * from './icons';
