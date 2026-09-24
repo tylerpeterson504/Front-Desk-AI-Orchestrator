@@ -39,8 +39,8 @@ const backfillDataSource = new DataSource({
 /**
  * Backfills nonempty Wi-Fi passwords, leaving versioned values unchanged.
  * Legacy ciphertext gains a version prefix; plaintext is encrypted.
- * Exits if encryption is not configured; database and encryption failures
- * reject the promise and cause the script to exit unsuccessfully.
+ * Returns true on success; exits if encryption is not configured. Database
+ * and encryption failures reject the promise and cause an unsuccessful exit.
  */
 async function run() {
   if (!isEncryptionConfigured()) {

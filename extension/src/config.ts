@@ -16,13 +16,9 @@ const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 
 let apiBaseUrlOverride: string | null = null;
 
-// Reject non-HTTPS remote origins so a bad storage value cannot
-// redirect API calls somewhere unexpected, and drop trailing slashes so callers
-// can always append '/api'.
-/**
- * Returns an API base URL without query, fragment, or trailing slashes.
- * Accepts HTTPS or local-loopback HTTP; returns null for invalid inputs and
- * non-HTTPS remote URLs. Preserves a supplied path after the origin.
+/** Normalizes an HTTPS URL or a local HTTP URL (localhost and loopback IPs).
+ * Returns the origin and path without trailing slashes, query, or fragment;
+ * returns null for invalid input or other protocols and HTTP hosts.
  */
 function normalizeApiBaseUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;

@@ -158,8 +158,9 @@ export class PropertyService {
 
   /**
    * Returns a property's Wi-Fi SSID and decrypted password, or a null password
-   * when none is stored. Unprefixed values that cannot be decrypted are returned
-   * as plaintext; versioned values must decrypt successfully.
+   * when none is stored (and a null SSID when absent). Unprefixed values that
+   * cannot be decrypted are returned as plaintext; versioned values must
+   * decrypt successfully.
    * @throws NotFoundError if the property does not exist; decryption and database
    * errors propagate to the caller.
    */

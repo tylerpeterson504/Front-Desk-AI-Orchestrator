@@ -7,7 +7,8 @@ const router = express.Router();
 
 /**
  * Returns the authenticated user's audit logs with a total count when `page`
- * is supplied, or the legacy array response otherwise. Forwards errors to
+ * is supplied, or the legacy array response otherwise. Defaults to 100 items
+ * (at most 500); page takes precedence over offset. Forwards errors to
  * Express's error handler.
  */
 async function getAuditLogs(req: express.Request, res: express.Response, next: express.NextFunction) {

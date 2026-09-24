@@ -97,7 +97,7 @@ interface GuestInfo {
    * Reads guest and reservation details from the page's main content, falling
    * back to the document body when no main container exists.
    * Checks known fields and labels, including check-in/check-out date classes;
-   * missing details are returned as empty strings.
+   * missing details are empty strings, and dates retain their page formatting.
    */
   function extractGuestInfo(): GuestInfo {
     const root = getRoot();
