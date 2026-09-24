@@ -1,52 +1,33 @@
 # 🧪 Comprehensive Test Plan for Front-Desk-AI-Orchestrator
 
-This document provides a step-by-step guide to rigorously test the entire project after the recent improvements.
+Step-by-step guide to verify the whole project after a change.
 
 ---
 
 ## 📋 Prerequisites
 
-Before starting, ensure you have:
-1. **Node.js v20+** installed
-2. **npm v10+** or **pnpm v8+** installed
-3. **PostgreSQL** database (for backend)
-4. **Mistral API Key** (required for AI features)
-5. **Chrome browser** (for extension testing)
+1. **Node.js v22+** and **npm v10+**
+2. **PostgreSQL** reachable via `DATABASE_URL` (local or Neon)
+3. **Mistral API key** (a placeholder works for everything except live copilot tests)
+4. **Chrome** for extension testing
 
 ---
 
-## 🛠 Step 1: Environment Setup
-
-### 1.1 Clone and Install Dependencies
+## 🛠️ Step 1: Environment Setup
 
 ```bash
-# Clone the repository (if not already done)
 git clone https://github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git
 cd Front-Desk-AI-Orchestrator
 
-# Install all dependencies using npm
 npm install
-
-# Or using pnpm (recommended for speed)
-pnpm install
+cd backend   && npm install && cd ..
+cd dashboard && npm install && cd ..
+cd extension && npm install && cd ..
 ```
 
-### 1.2 Configure Environment Variables
-
-#### Backend Environment (.env)
-Create a `.env` file in the `backend` directory:
-
-```bash
-cd backend
-cp .env.example .env
-```
-
-Edit `.env` with your actual values:
+Create `backend/.env` (copy from `backend/.env.example`):
 
 ```env
-# Required
-NODE_ENV=development
-PORT=3001
 DATABASE_URL=postgresql://user:password@localhost:5432/frontdesk_ai
 JWT_SECRET=your_very_strong_jwt_secret_here
 MISTRAL_API_KEY=your_mistral_api_key_here
@@ -55,419 +36,205 @@ WIFI_ENCRYPTION_KEY=your_32_byte_base64_encryption_key_here
 # Optional
 CORS_ORIGIN=http://localhost:5173
 REGISTRATION_MODE=open
-REGISTRATION_INVITE_TOKEN=
 ```
 
-> **⚠️ IMPORTANT**: Generate a 32-byte base64 key for `WIFI_ENCRYPTION_KEY`:
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-> ```
+Generate secrets:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Full setup details: [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md).
 
 ---
 
 ## 🔍 Step 2: Code Quality Verification
 
-### 2.1 Type Checking
+### 2.1 Type checking
 
 ```bash
-# Backend type checking
-cd backend
-npm run typecheck
+npm run typecheck        # root: backend + dashboard
+cd extension && npx tsc --noEmit   # extension (no root script)
 ```
 
-**Expected**: No errors. If there are errors, they should be fixed before proceeding.
+**Expected**: no errors.
 
 ### 2.2 Linting
 
 ```bash
-# Backend linting
-cd backend
-npm run lint
-
-# Auto-fix linting issues
-npm run lint:fix
+npm run lint             # root
+npm run lint:fix         # auto-fix
 ```
 
-**Expected**: No linting errors after running `lint:fix`.
-
-### 2.3 Verify No `as any` Casts
+### 2.3 Formatting
 
 ```bash
-# Search for remaining 'as any'
- casts
-grep -r "as any" backend/src/ || echo "✅ No 'as any' casts found"
+npm run format:check
 ```
-
-**Expected**: No results (all `as any` casts should have been removed).
 
 ---
 
-## 🧪 Step 3: Backend Testing
-
-### 3.1 Run Unit Tests
+## 🧪 Step 3: Backend Tests
 
 ```bash
 cd backend
-npm test
+npm test                 # Jest, --runInBand
+npm run test:coverage    # with coverage report
 ```
 
-**Expected**: All tests pass. Check for:
-- ✅ All test suites pass
-- ✅ No test failures
-- ✅ Coverage report (if configured)
+The suite needs `JWT_SECRET`, `MISTRAL_API_KEY`, and `DATABASE_URL` in the
+environment (CI sets placeholder values). Route tests that touch the database
+require a reachable Postgres; the rest mock the repository layer.
 
-### 3.2 Test Database Connection
+### Start the dev server
 
 ```bash
-# Start PostgreSQL and ensure it's running
-# Then test the connection
-cd backend
-node -e "require('./src/config/database').testConnection()"
+cd backend && npm run dev
 ```
 
-**Expected**: Database connection successful.
-
-### 3.3 Start Backend Dev Server
+**Expected**: server starts on port 3001, logs `Database connected` and
+`Migrations applied`, then:
 
 ```bash
-cd backend
-npm run dev
-```
-
-**Expected**:
-- ✅ Server starts without errors
-- ✅ Logs show: `Server running on port 3001`
-- ✅ Environment validation passes
-- ✅ No `as any` type errors
-
-**Test the server manually**:
-```bash
-# In a new terminal
 curl http://localhost:3001/health
-```
-
-**Expected Response**:
-```json
-{
-  "status": "ok",
-  "timestamp": "...",
-  "version": "..."
-}
+# {"status":"ok"}
 ```
 
 ---
 
-## 🖥️ Step 4: Dashboard Testing
-
-### 4.1 Install Dashboard Dependencies
+## 🖥️ Step 4: Dashboard
 
 ```bash
-cd dashboard
-npm install
+cd dashboard && npm run dev
 ```
 
-**Expected**: All dependencies installed successfully.
+**Expected**: Vite dev server at `http://localhost:5173`.
 
-### 4.2 Start Dashboard Dev Server
+1. Open `http://localhost:5173`
+2. Set `VITE_API_URL` if the backend is not at `http://localhost:3001/api`
+3. Register/login and verify pages render (Properties, Templates, Shift Notes)
+4. DevTools console: no errors, no 404s, no CORS errors
 
-```bash
-cd dashboard
-npm run dev
-```
-
-**Expected**:
-- ✅ Vite dev server starts
-- ✅ Logs show: `Local: http://localhost:5173`
-- ✅ No compilation errors
-
-**Test the dashboard manually**:
-1. Open Chrome and navigate to `http://localhost:5173`
-2. Verify the page loads without errors
-3. Open DevTools (F12) and check for:
-   - ✅ No console errors
-   - ✅ No 404 errors for assets
+Dashboard unit tests: `npm test` (Vitest, jsdom environment).
 
 ---
 
-## 📦 Step 5: Chrome Extension Testing
+## 📦 Step 5: Chrome Extension
 
-### 5.1 Build the Extension
+### 5.1 Build
 
 ```bash
 cd extension
-npm install
-npm run build
+npm run build            # outputs to extension/dist
 ```
 
-**Expected**:
-- ✅ Build completes successfully
-- ✅ Output in `dist/` directory
+**Expected**: build completes; `dist/manifest.json` and `dist/src/*` exist.
 
-### 5.2 Load Extension in Chrome
+### 5.2 Load in Chrome
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable **Developer mode** (toggle in top-right)
-3. Click **Load unpacked**
-4. Select the `extensi
-on/dist` folder
+1. `chrome://extensions/` → enable **Developer mode**
+2. **Load unpacked** → select `extension/dist`
 
-**Expected**:
-- ✅ Extension loads without errors
-- ✅ Extension icon appears in Chrome toolbar
+**Expected**: extension loads, icon appears in toolbar.
 
-### 5.3 Test Extension Functionality
+### 5.3 Extension tests
 
-1. Click the extension icon in Chrome toolbar
-2. Verify the popup opens
-3. Test any extension features (if applicable)
+```bash
+cd extension && npm test   # Vitest — sidepanel, content scripts, debounce
+```
+
+### 5.4 Functional check
+
+1. Click the extension icon → open the side panel
+2. Log in with dashboard credentials
+3. Visit `https://app.us1.stayntouch.com` — guest info should populate
+4. Visit `https://sys.akia.ai` — chat context should populate
+5. Select templates → Generate → review draft → Copy/Inject
+6. In the popup, change **Backend URL** — the side panel should pick it up
+   without a reload
 
 ---
 
-## 🤖 Step 6: Mistral Integration Testing
+## 🤖 Step 6: Copilot (Mistral) Integration
 
-### 6.1 Test Mistral API Connection
-
-```bash
-# Test Mistral client directly
-cd backend
-node -e "
-const { generateWithMistral } = require('./src/services/llm/mistralClient');
-(async () => {
-  try {
-    const result = await generateWithMistral('Hello, Mistral!', process.env.MISTRAL_API_KEY);
-    console.log('✅ Mistral API working:', result);
-  } catch (error) {
-    console.error('❌ Mistral API error:', error.message);
-  }
-})();
-"
-```
-
-**Expected**:
-- ✅ Mistral API responds with generated text
-- ✅ No errors
-
-### 6.2 Test Copilot Service
+The copilot runs server-side via `backend/src/services/llm/mistralClient.ts`
+(`MISTRAL_API_KEY`, optional `MISTRAL_MODEL`, `MISTRAL_BASE_URL`).
 
 ```bash
-# Test the copilot service
-cd backend
-node -e "
-const { CopilotService } = require('./src/services/copilotService');
-const service = new CopilotService();
-(async () => {
-  try {
-    const draft = await service.draft('test property', { prompt: 'Create a welcome message' });
-    console.log('✅ Copilot service working:', draft);
-  } catch (error) {
-    console.error('❌ Copilot service error:', error.message);
-  }
-})();
-"
-```
-
-**Expected**:
-- ✅ Copilot service generates a draft using Mistral
-- ✅ No errors
-
----
-
-## 🔌 Step 7: End-to-End Testing
-
-### 7.1 Test API Endpoints
-
-Use `curl` or Postman to test the following endpoints:
-
-#### Health Check
-```bash
-curl http://localhost:3001/health
-```
-**Expected**: `{"status": "ok"}`
-
-#### Authentication
-```bash
-# Register a test user
-curl -X POST http://localhost:3001/api/auth/register \
+# Log in and grab a token
+TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "test123", "name": "Test User"}'
+  -d '{"email":"demo@example.com","password":"password123"}' | jq -r .token)
 
-# Login
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "test123"}'
-```
-**Expected**:
-
-- ✅ Registration succeeds (or fails with clear error if email exists)
-- ✅ Login returns a JWT token
-
-#### Copilot Endpoint
-```bash
-# Get a JWT token from login, then:
+# Draft — templates must belong to the authenticated user
 curl -X POST http://localhost:3001/api/copilot/draft \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"prompt": "Create a welcome message for a hotel guest"}'
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"property_id":1,"tone":"professional","template_ids":[1],"guest_info":{"guestName":"Jane Doe","roomNumber":"204"}}'
 ```
-**Expected**:
-- ✅ Returns a generated draft from Mistral
-- ✅ No errors
 
-### 7.2 Test Dashboard API Connectivity
+**Expected**: `{ draft, meta: { provider: "mistral", template_count, property, tone } }`.
 
-1. Open the dashboard at `http://localhost:5173`
-2. Register/login using the dashboard UI
-3. Test the copilot features in the dashboard
-
-**Expected**:
-- ✅ Dashboard can communicate with backend
-- ✅ Copilot features work end-to-end
-- ✅ No CORS errors
+Without a valid `MISTRAL_API_KEY`, the route errors and the extension falls back
+to local template stitching — verify the side panel still produces a draft.
 
 ---
 
-## 📊 Step 8: Performance Testing
-
-### 8.1 Backend Performance
+## 🔗 Step 7: End-to-End API Checks
 
 ```bash
-# Test response time
-curl -w "@curl-format.txt" -o /dev/null -s http://localhost:3001/health
+# Health
+curl http://localhost:3001/health
+
+# Register (respect REGISTRATION_MODE; include X-Invite-Token when invite)
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"testpassword123","name":"Test User"}'
+
+# Refresh (single-use rotation: returns a NEW refresh token)
+curl -X POST http://localhost:3001/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"<from login>"}'
+
+# Current user
+curl http://localhost:3001/api/auth/me -H "Authorization: Bearer $TOKEN"
+
+# Templates (scoped to caller)
+curl http://localhost:3001/api/templates -H "Authorization: Bearer $TOKEN"
 ```
 
-Create `curl-format.txt`:
-```
-Time: %{time_total}s
-```
+**Expected**: 2xx with the documented response shapes; 4xx errors carry
+`code` + `requestId`; unknown `/api` routes return a JSON 404 with `requestId`.
 
-**Expected**: Response time < 500ms
+---
 
-### 8.2 Memory Usage
+## 📊 Step 8: Performance & Operational Checks
 
 ```bash
-# Check Node.js memory usage
-ps aux | grep node
-```
+# Response time
+curl -w "%{time_total}s\n" -o /dev/null -s http://localhost:3001/health
+# Expected: well under 500ms locally
 
-**Expected**: Memory usage is stable (no leaks)
+# Rate limiting (auth limiter: 20 req/15min)
+for i in $(seq 1 25); do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:3001/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"x@example.com","password":"wrong"}'
+done
+# Expected: eventually 429 with the too-many-requests message
+```
 
 ---
 
-## 🔒 Step 9: Security Testing
+## ✅ Final Checklist
 
-### 9.1 Test Environment Validation
-
-```bash
-# Start backend without MISTRAL_API_KEY
-cd backend
-MISTRAL_API_KEY= npm run dev
-```
-
-**Expected**: Backend fails to start with error about missing `MISTRAL_API_KEY`
-
-### 9.2 Test CSP Headers
-
-```bash
-curl -I http://localhost:3001/health
-```
-
-**Expected**: Response headers include:
-```
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; ...
-```
-
-### 9.3 Test Rate Limiting
-
-```bash
-# Send multiple requests quickly
-for i in {1..20}; do curl -s http://localhost:3001/health > /dev/null; done
-```
-
-**Expected**: After 200 requests in the rate limit window, subsequent requests return 429 Too Many Requests
-
----
-
-## 📝 Step 10: Final Verification Checklist
-
-- [ ] ✅ All dependencies installed successfully
-- [ ] ✅ Type checking passes (`npm run typecheck`
-)
-- [ ] ✅ Linting passes (`npm run lint`)
-- [ ] ✅ No `as any` casts in codebase
-- [ ] ✅ Backend starts without errors
-- [ ] ✅ Backend health endpoint works
-- [ ] ✅ Database connection successful
-- [ ] ✅ Mistral API integration works
-- [ ] ✅ Copilot service generates drafts
-- [ ] ✅ Dashboard starts without errors
-- [ ] ✅ Dashboard loads in browser
-- [ ] ✅ Extension builds successfully
-- [ ] ✅ Extension loads in Chrome
-- [ ] ✅ Authentication works (register/login)
-- [ ] ✅ Copilot endpoint works with auth
-- [ ] ✅ Dashboard can communicate with backend
-- [ ] ✅ Environment validation prevents startup without required vars
-- [ ] ✅ CSP headers are present
-- [ ] ✅ Rate limiting works
-
----
-
-## 🐛 Common Issues and Fixes
-
-### Issue: Backend fails to start with `LLM_NOT_CONFIGURED`
-**Fix**: Ensure `MISTRAL_API_KEY` is set in `.env`
-
-### Issue: Database connection fails
-**Fix**: 
-1. Ensure PostgreSQL is running
-2. Verify `DATABASE_URL` in `.env`
-3. Run migrations: `npm run migrate`
-
-### Issue: Dashboard shows blank page
-**Fix**: 
-1. Check browser console for errors
-2. Ensure Vite dev server is running
-3. Verify `CORS_ORIGIN` in backend `.env` includes `http://localhost:5173`
-
-### Issue: Extension fails to load
-**Fix**:
-1. Ensure `manifest.json` is valid
-2. Check Chrome console for errors
-3. Rebuild extension: `npm run build`
-
-### Issue: Mistral API returns errors
-**Fix**:
-1. Verify `MISTRAL_API_KEY` is correct
-2. Check Mistral API status
-3. Test with a simple prompt first
-
----
-
-## 🎯 Success Criteria
-
-The project is considered **fully tested and ready for use** when:
-
-1. ✅ All code quality checks pass (type checking, linting)
-2. ✅ All unit tests pass
-3. ✅ Backend starts and all API endpoints work
-4. ✅ Dashboard loads and can communicate with backend
-5. ✅ Chrome extension builds and loads
-6. ✅ Mistral integration works end-to-end
-7. ✅ Security features (CSP, rate limiting, env validation) work
-8. ✅ No `as any` casts remain in the codebase
-
----
-
-## 📞 Support
-
-If you encounter any i
-ssues during testing:
-1. Check the **console logs** for errors
-2. Review the **network requests** in DevTools
-3. Verify **environment variables** are set correctly
-4. Consult the **documentation** in this repository
-
----
-
-**Last Updated**: 2026-09-19
-**Author**: Tyler Peterson
+- [ ] `npm run typecheck` passes
+- [ ] `npm run lint` passes
+- [ ] Backend tests pass (`cd backend && npm test`)
+- [ ] Dashboard tests pass (`cd dashboard && npm test`)
+- [ ] Extension tests pass (`cd extension && npm test`)
+- [ ] `/health` returns `{"status":"ok"}`
+- [ ] Dashboard login and CRUD work
+- [ ] Extension builds and loads from `dist/`
+- [ ] Copilot draft works with a real Mistral key (and falls back without one)
+- [ ] No secrets in logs or client bundles

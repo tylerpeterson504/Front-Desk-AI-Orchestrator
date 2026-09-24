@@ -279,8 +279,7 @@ function updateChatContext(data: ChatContext | null): void {
   if (block) block.textContent = lines.join('\n');
 }
 
-// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-━━━━━━━
+// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function loadShiftNotes(): Promise<void> {
   try {
     const notes = await apiRequest('GET', '/shift-notes');

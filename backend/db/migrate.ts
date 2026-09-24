@@ -5,7 +5,7 @@ import 'dotenv';
 import { DataSource } from 'typeorm';
 import path from 'path';
 import { getDatabaseConfig } from '../src/config/index';
-import logger from '../src/config/database';
+import logger from '../src/lib/logger';
 
 const dbConfig = getDatabaseConfig();
 

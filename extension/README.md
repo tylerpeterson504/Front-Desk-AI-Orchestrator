@@ -1,75 +1,108 @@
-# Front Desk AI Chrome Extension Guide
+# Front Desk AI Chrome Extension
+
+AI copilot for hotel front desk agents. Captures guest context from Stayntouch
+and chat context from Akia, drafts guest replies with backend templates + LLM,
+and injects reviewed text into the chat.
 
 ## Installation
 
-### Development
-1. Open Chrome → Settings → Extensions
-2. Enable "Developer mode" (top-right)
-3. Click "Load unpacked"
-4. Select the `extension/` folder
+### Prerequisites
+
+- Chrome with a running backend (see the root [README](../README.md) for setup)
+
+### Build & load
+
+```bash
+cd extension
+npm install
+npm run build     # outputs to extension/dist
+```
+
+1. Open `chrome://extensions/`
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked**
+4. Select the `extension/dist` folder
 
 ### Configuration
-Edit `extension/src/config.js` with your properties:
-```javascript
-const PROPERTIES = {
-  'yourdomain.stayntouch.com': {
-    id: 1,
-    name: 'Your Property',
-    urlPattern: 'yourproperty',
-    toneGuidelines: 'Professional',
-    checkoutTime: '11:00 AM',
-    wifiSSID: 'YourProperty-Guest',
-    apiEndpoint: 'http://localhost:3001'
-  }
-};
-```
+
+The API base URL defaults to `http://localhost:3001` (see
+`src/config.ts`). To point an install at a deployed backend:
+
+1. Click the extension icon to open the popup
+2. Enter the backend URL under **Backend URL** and save
+
+The value is stored in `chrome.storage.local` as `apiBaseUrl`, validated as an
+`http(s)` origin, and picked up live by the side panel and content scripts.
+Saving a non-default origin triggers a Chrome runtime permission request for
+just that origin (`optional_host_permissions`). Clearing the field restores the
+default — no code edit or repackaging needed.
+
+Property records (name, tone guidelines, checkout time, Wi-Fi SSID) come from
+the authenticated user's backend records; the local `PROPERTIES` map in
+`src/config.ts` only maps the Stayntouch host for property detection.
 
 ## Features
 
-### Pipeline A: Guest Information
-Automatically extracts from Stayntouch:
+### Pipeline A: Guest information (Stayntouch)
+
+Automatically extracts from `https://app.us1.stayntouch.com`:
+
 - Guest name
 - Room number
 - Check-in/out dates
 - Reservation status
+- Confirmation number
 
-### Pipeline B: Chat Context
-Captures from Akia:
-- Active messages
-- Sender names
-- Allows message injection (review before send)
+### Pipeline B: Chat context (Akia)
 
-### Template System
-- Search templates by name/tags
+Captures from `https://sys.akia.ai`:
+
+- Active messages and sender names
+- Message injection (review before send)
+
+### Template system
+
+- Search templates by name/tags (from the backend, scoped to your account)
 - Multi-select templates
 - Combine into one response
 - Toggle tone (Professional/Friendly)
 - Copy or inject to chat
+- Server-side draft via `/api/copilot/draft` with local template stitching as
+  fallback when the server AI is unavailable
 
-### Shift Notes
-Display today's shift notes with facility updates and special instructions
+### Shift notes
+
+Display today's shift notes with facility updates and special instructions.
 
 ## Usage
 
-1. Click extension icon → "Open Sidepanel"
-2. Login with dashboard credentials
-3. Guest info auto-populates in Stayntouch
-4. Chat context auto-captures in Akia
-5. Select templates → Review response → Copy or Inject
+1. Click the extension icon → **Open Sidepanel**
+2. Log in with dashboard credentials
+3. Guest info auto-populates while on Stayntouch
+4. Chat context auto-captures while on Akia
+5. Select templates → Generate → review the draft → Copy or Inject
+
+## Development
+
+```bash
+npm run dev       # Vite dev build
+npm run build     # Production build to dist/
+npm test          # Vitest suite
+npm run lint      # ESLint
+```
+
+Entry points (resolved from `manifest.json` by `vite-plugin-web-extension`):
+background service worker, popup, side panel, and two content scripts
+(`content-stayntouch.ts`, `content-akia.ts`).
 
 ## Troubleshooting
 
-**Extension doesn't load:**
-- Check manifest.json syntax
-- Verify all file paths correct
-- Check Chrome DevTools console
+**Extension doesn't load:** check `dist/manifest.json` exists (run
+`npm run build`), and look for errors on the `chrome://extensions/` card.
 
-**Data not appearing:**
-- Verify you're on supported domain
-- Check content script in DevTools
-- Verify CSS selectors match your PMS
+**Data not appearing:** verify you are on a supported domain
+(`app.us1.stayntouch.com` or `sys.akia.ai`) and check the page console for
+content-script errors.
 
-**Auth fails:**
-- Verify backend is running
-- Check credentials
-- Clear extension storage
+**Auth fails:** verify the backend is running and reachable at the configured
+Backend URL, check credentials, and clear extension storage via the popup.

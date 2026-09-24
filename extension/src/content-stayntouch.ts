@@ -128,6 +128,7 @@ interface GuestInfo {
     const checkIn = 
       firstText(root, [
         '.check-in',
+        '.check-in-date',
         '.checkIn',
         '#checkIn',
         '[data-test="check-in"]',
@@ -144,6 +145,7 @@ interface GuestInfo {
     const checkOut = 
       firstText(root, [
         '.check-out',
+        '.check-out-date',
         '.checkOut',
         '#checkOut',
         '[data-test="check-out"]',

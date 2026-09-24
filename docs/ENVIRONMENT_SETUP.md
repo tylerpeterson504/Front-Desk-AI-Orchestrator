@@ -1,293 +1,206 @@
 # 🚀 Environment Setup Guide
 
-This guide will help you set up the **Front-Desk-AI-Orchestrator** project for development and testing.
+This guide walks you through setting up **Front-Desk-AI-Orchestrator** for
+development and testing.
 
 ---
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following installed:
-
-| Tool | Version | Download Link | Verification Command |
-|------|---------|---------------|---------------------|
-| **Node.js** | v20+ | [https://nodejs.org](https://nodejs.org) | `node --version` |
-| **npm** | v10+ | (Included with Node.js) | `npm --version` |
-| **Git** | Latest | [https://git-scm.com](https://git-scm.com) | `git --version` |
-| **Docker** (Optional) | v24+ | [https://docker.com](https://docker.com) | `docker --version` |
-| **Chrome Browser** | Latest | [https://chrome.com](https://chrome.com) | `chrome --version` |
+| Tool | Version | Verification Command |
+|------|---------|---------------------|
+| **Node.js** | v22+ (CI uses 24) | `node --version` |
+| **npm** | v10+ | `npm --version` |
+| **Git** | Latest | `git --version` |
+| **PostgreSQL** | 14+ (or a Neon connection string) | `psql --version` |
+| **Chrome** | Latest | — (for the extension) |
 
 ---
 
-## 🛠️ Quick Setup (Recommended)
+## 🛠️ Quick Setup (Local Development)
 
-### Option 1: Using Docker (Easiest)
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git
-   cd Front-Desk-AI-Orchestrator
-   ```
-
-2. **Create a `.env` file for Mistral API key:**
-   ```bash
-   echo MISTRAL_API_KEY=your_mistral_api_key_here > backend/.env
-   ```
-
-3. **Start all services with Docker Compose:**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Access the services:**
-   - Backend API: [http://localhost:3001](http://localhost:3001)
-   - Dashboard: [http://localhost:5173](http://localhost:5173)
-   - PGAdmin (Database): [http://localhost:5050](http://localhost:5050)
-
-5. **Stop all services:**
-   ```bash
-   docker-compose down
-   ```
-
----
-
-### Option 2: Local Development Setup
-
-#### Step 1: Clone and Install Dependencies
+### 1. Clone and install
 
 ```bash
-# Clone the repository
 git clone https://github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git
 cd Front-Desk-AI-Orchestrator
 
-# Install all dependencies
-npm install
-cd backend && npm install && cd ..
+npm install              # root dev tooling
+cd backend   && npm install && cd ..
 cd dashboard && npm install && cd ..
 cd extension && npm install && cd ..
 ```
 
-#### Step 2: Configure Environment Variables
+### 2. Configure backend environment
 
-Create a `.env` file in the `backend` directory:
-
-```bas
-h
-cd backend
-cp .env.example .env
+```bash
+cp backend/.env.example backend/.env
 ```
 
-Edit `backend/.env` with your actual values:
+Edit `backend/.env`:
 
 ```env
 # Required
 MISTRAL_API_KEY=your_mistral_api_key_here
-JWT_SECRET=your_very_strong_jwt_secret_here
+JWT_SECRET=at_least_32_random_characters
 DATABASE_URL=postgresql://username:password@localhost:5432/frontdesk_ai
 
-# Optional
+# Local dev conveniences
 PORT=3001
 NODE_ENV=development
-WIFI_ENCRYPTION_KEY=your_aes_256_gcm_key_here
-CORS_ORIGIN=http://localhost:5173
 REGISTRATION_MODE=open
+
+# Recommended
+WIFI_ENCRYPTION_KEY=base64_or_hex_32_bytes
+CORS_ORIGIN=http://localhost:5173
 ```
 
-> **💡 Tip:** You can generate a strong JWT secret with:
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-> ```
+Generate strong secrets:
 
-#### Step 3: Set Up PostgreSQL Database
-
-You have two options:
-
-**Option A: Use Docker (Recommended)**
 ```bash
-docker run --name frontdesk-postgres -e POSTGRES_USER=frontdesk -e POSTGRES_PASSWORD=frontdesk123 -e POSTGRES_DB=frontdesk_ai -p 5432:5432 -d postgres:15-alpine
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"          # JWT_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"       # WIFI_ENCRYPTION_KEY
 ```
 
-**Option B: Local PostgreSQL**
-1. Install PostgreSQL from [https://postgresql.org](https://postgresql.org)
-2. Create a database:
-   ```sql
-   CREATE DATABASE frontdesk_ai;
-   CREATE USER frontdesk WITH PASSWORD 'frontdesk123';
-   GRANT ALL PRIVILEGES ON DATABASE frontdesk_ai TO frontdesk;
-   ```
-3. Update `DATABASE_URL` in your `.env` file
+> The server refuses to boot without `MISTRAL_API_KEY`, `JWT_SECRET`, and
+> `DATABASE_URL`. A placeholder Mistral key is fine when you are not testing the
+> copilot locally.
 
-#### Step 4: Run Database Migrations
+### 3. Provide a database
+
+**Option A: Local PostgreSQL**
+
+```bash
+# Create database and user, then set DATABASE_URL in backend/.env
+createdb frontdesk_ai
+```
+
+**Option B: Neon (recommended — the app is Neon-compatible)**
+
+1. Create a project at [console.neon.tech](https://console.neon.tech).
+2. Copy the **pooled** connection string from Connection Details.
+3. Set it as `DATABASE_URL` (keep `sslmode=require`).
+
+Use a dev branch in the Neon console so you never point local work at production.
+
+**Option C: Docker Compose (all-local stack)**
+
+```bash
+docker-compose up -d
+# backend :3001, dashboard :5173, postgres :5432, pgadmin :5050
+```
+
+### 4. Run migrations and seed
+
+Schema migrations run automatically when the backend starts. To set up
+explicitly (migrations + demo data, seeding is skipped when users exist):
 
 ```bash
 cd backend
-npx prisma migrate dev
+npm run db-setup
 ```
 
-#### Step 5: Start Development Servers
+Demo login: `demo@example.com` / `password123`.
 
-Open **three separate terminal windows** and run:
+### 5. Start the dev servers
 
-**Terminal 1: Backend Server**
 ```bash
-cd backend
-npm run dev
+# Terminal 1 — backend (port 3001)
+cd backend && npm run dev
+
+# Terminal 2 — dashboard (Vite, port 5173, proxies /api → :3001)
+cd dashboard && npm run dev
 ```
 
-**Terminal 2: Dashboard**
+Or both from the root: `npm run dev`.
+
+> The dashboard reads its API base URL from `VITE_API_URL` (default
+> `http://localhost:3001/api`). Set it in `dashboard/.env` when the backend is
+> elsewhere.
+
+### 6. Load the Chrome extension
+
 ```bash
-cd dashboard
-npm run dev
+cd extension && npm run build   # outputs to extension/dist
 ```
 
-**Terminal 3: Build Extension**
-```bash
-cd extension
-npm run build
-```
+1. Open `chrome://extensions/` → enable **Developer mode**
+2. **Load unpacked** → select the `extension/dist` folder
+3. Open the side panel, log in with dashboard credentials, and (for a deployed
+   backend) set the **Backend URL** in the popup
 
 ---
 
-## 🧪 Testing the Project
-
-### Run All Tests
+## 🧪 Testing
 
 ```bash
-# From project root
-./test-all.sh  # Linux/macOS
-# OR
-.\test-all.bat  # Windows
+# Backend (Jest) — requires JWT_SECRET, MISTRAL_API_KEY, DATABASE_URL in env
+cd backend && npm test
+
+# Dashboard (Vitest)
+cd dashboard && npm test
+
+# Extension (Vitest)
+cd extension && npm test
 ```
 
-### Manual Testing
+CI runs `npm run typecheck`, lint, and the backend suite with placeholder env
+values — see `.github/workflows/ci.yml`.
 
-#### 1. Test Backend API
+### Smoke test the API
 
-**Health Check:**
 ```bash
 curl http://localhost:3001/health
-# Expected: {"status":"ok"}
-```
+# {"status":"ok"}
 
-**Register a User:**
-```bash
-curl -X POST http://localhost:3001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","
-password":"test123","name":"Test User"}'
-```
-
-**Login:**
-```bash
+# Login (seeded demo user)
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123"}'
-# Save the returned token for authenticated requests
-```
+  -d '{"email":"demo@example.com","password":"password123"}'
+# → { token, expires_in, refresh_token, refresh_expires_at, user }
 
-**Test Copilot (Mistral):**
-```bash
+# Draft with the copilot (needs a real MISTRAL_API_KEY)
 curl -X POST http://localhost:3001/api/copilot/draft \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"prompt":"Create a welcome message for hotel guests"}'
+  -H "Authorization: Bearer <token>" \
+  -H "X-Invite-Token: <token if REGISTRATION_MODE=invite>" \
+  -d '{"template_ids":[1],"tone":"professional"}'
 ```
-
-#### 2. Test Dashboard
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-- Test user registration and login
-- Test the copilot functionality
-- Verify all UI components render correctly
-
-#### 3. Test Chrome Extension
-
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer mode** (toggle in top right)
-3. Click **Load unpacked** and select the `extension/dist` folder
-4. Test the extension with the dashboard
 
 ---
 
 ## 📊 Expected Results
 
-| Component | URL | Expected Status |
-|-----------|-----|-----------------|
-| Backend API | http://localhost:3001/health | `{"status":"ok"}` |
-| Dashboard | http://localhost:5173 | Loads without errors |
-| API Docs | http://localhost:3001/api-docs | Swagger UI loads |
-| Database | localhost:5432 | Connection successful |
+| Component | URL | Expected |
+|-----------|-----|----------|
+| Backend health | http://localhost:3001/health | `{"status":"ok"}` |
+| Dashboard | http://localhost:5173 | Login page renders |
+| Database | localhost:5432 (or Neon) | Backend logs `Database connected` |
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Common Issues and Solutions
+**Port already in use**
 
-#### 1. Port Already in Use
-```
-Error: listen EADDRINUSE: address already in use :::3001
-```
-**Solution:**
 ```bash
-# Find and kill the process using port 3001
-lsof -i :3001  # macOS/Linux
-# OR
-netstat -ano | findstr :3001  # Windows
-# Then kill the process
-kill -9 <PID>  # macOS/Linux
-# OR
-taskkill /PID <PID> /F  # Windows
+lsof -i :3001            # macOS/Linux
+netstat -ano | findstr :3001   # Windows
 ```
 
-#### 2. Missing Environment Variables
-```
-Error: LLM_NOT_CONFIGURED
-```
-**Solution:**
-Ensure `MISTRAL_API_KEY` is set in `backend/.env`
+**Missing environment variables** — the server exits at boot naming the missing
+vars; add them to `backend/.env`.
 
-#### 3. Database Connection Failed
-```
-Error: Connection refused to localhost:5432
-```
-**Solution:**
-- Ensure PostgreSQL is running
-- Verify database credential
-s in `DATABASE_URL`
-- Test connection: `psql -U frontdesk -d frontdesk_ai`
+**Database connection failed** — verify `DATABASE_URL`, that Postgres is running,
+and `sslmode=require` for hosted databases.
 
-#### 4. Node.js Version Too Old
-```
-Error: Unsupported Node.js version
-```
-**Solution:**
-- Install Node.js v20+ from [https://nodejs.org](https://nodejs.org)
-- Use nvm to manage versions:
-  ```bash
-  nvm install 20
-  nvm use 20
-  ```
+**Mistral not configured** — `MISTRAL_API_KEY` missing: the server refuses to
+boot; set at least a placeholder for local dev.
 
-#### 5. Missing Dependencies
-```
-Error: Cannot find module 'express'
-```
-**Solution:**
-```bash
-cd backend
-npm install
-```
+**TypeScript errors** — `npm run typecheck` from the root.
 
-#### 6. TypeScript Errors
-```
-Error: Type 'X' is not assignable to type 'Y'
-```
-**Solution:**
-```bash
-cd backend
-npm run typecheck
-```
+**Dashboard can't reach the API** — check `VITE_API_URL` and that the backend is
+on 3001; the Vite dev server proxies `/api` automatically.
 
 ---
 
@@ -297,43 +210,48 @@ npm run typecheck
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `MISTRAL_API_KEY` | ✅ Yes | - | Mistral AI API key |
-| `JWT_SECRET` | ✅ Yes | - | Secret for JWT token generation |
-| `DATABASE_URL` | ✅ Yes | - | PostgreSQL connection URL |
-| `PORT` | ❌ No | 3001 | Backend server port |
-| `NODE_ENV` | ❌ No | development | Node.js environment |
-| `WIFI_ENCRYPTION_KEY` | ❌ No (Production: ✅ Yes) | - | AES-256-GCM key for WiFi password encryption |
-| `CORS_ORIGIN` | ❌ No | * | Allowed origins for CORS |
-| `REGISTRATION_MODE` | ❌ No | open | User registration mode (open, invite, closed) |
-| `REGISTRATION_INVITE_TOKEN` | ❌ No | - | Required if REGISTRATION_MODE=invite |
+| `MISTRAL_API_KEY` | ✅ | — | Mistral AI API key (boot requirement) |
+| `JWT_SECRET` | ✅ | — | ≥32 chars; signs access tokens |
+| `DATABASE_URL` | ✅ | — | Postgres/Neon connection string (overrides `DB_*`) |
+| `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` | alt | — | Individual DB settings when `DATABASE_URL` is unset |
+| `PORT` | ❌ | 3001 | Backend port |
+| `NODE_ENV` | ❌ | development | development / test / production |
+| `JWT_TTL` | ❌ | 15m | Access-token lifetime |
+| `REFRESH_TOKEN_TTL_DAYS` | ❌ | 30 | Session lifetime |
+| `WIFI_ENCRYPTION_KEY` | prod ✅ | JWT_SECRET fallback | AES-256-GCM key (≥32 chars) |
+| `CORS_ORIGIN` | prod ✅ | localhost regexes | Comma-separated allowed origins |
+| `REGISTRATION_MODE` | ❌ | invite | open / invite / closed |
+| `REGISTRATION_INVITE_TOKEN` | when invite | — | Invite token for registration |
+| `MISTRAL_MODEL` | ❌ | mistral-small-latest | Model override |
+| `MISTRAL_BASE_URL` | ❌ | https://api.mistral.ai | Endpoint override |
+| `DATABRICKS_HOST`/`DATABRICKS_TOKEN`/`DATABRICKS_WAREHOUSE_ID` | ❌ | — | Databricks integration |
+| `GITHUB_TOKEN` | ❌ | — | GitHub integration |
+| `LOG_LEVEL` | ❌ | info | error/warn/info/debug/silly |
+| `RUN_SEEDS` | ❌ | — | Enables seeding in db scripts |
 
 ### Dashboard (`dashboard/.env`)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `VITE_API_URL` | ❌ No | http://localhost:3001 | Backend API URL |
+| `VITE_API_URL` | ❌ | http://localhost:3001/api | Backend API base URL (routes are under `/api`) |
 
 ---
 
-## 🎯 Getting Mistral API Key
+## 🗝️ Getting a Mistral API Key
 
-1. Go to [https://mistral.ai](https://mistral.ai)
-2. Sign up for an account
-3. Navigate to **API Keys** in your account settings
-4. Create a new API key
-5. Copy the key and add it to your `.env` file:
-   ```env
-   MISTRAL_API_KEY=your_api_key_here
-   ```
+1. Sign up at [console.mistral.ai](https://console.mistral.ai/)
+2. Create an API key under **API Keys**
+3. Add it to `backend/.env` as `MISTRAL_API_KEY` (never commit it)
 
 ---
 
 ## 📚 Additional Resources
 
+- [README.md](../README.md) — architecture and security model
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — scripts and PR guidelines
+- [docs/TEST_PLAN.md](TEST_PLAN.md) — manual test walkthrough
+- [docs/neon-branch-workflow.md](neon-branch-workflow.md) — PR preview databases
 - [Mistral Documentation](https://docs.mistral.ai/)
-- [Node.js Documentation](https://nodejs.org/docs/latest/api/)
-- [Express.js
- Documentation](https://expressjs.com/)
 - [Vite Documentation](https://vitejs.dev/)
 - [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
 
@@ -341,15 +259,8 @@ npm run typecheck
 
 ## 🙏 Support
 
-If you encounter any issues not covered in this guide:
+If you hit an issue not covered here, open a GitHub issue with:
 
-1. Check the [CONTRIBUTING.md](CONTRIBUTING.md) file
-2. Review the [FINAL_MERGE_VERIFICATION.md](FINAL_MERGE_VERIFICATION.md) for additional setup details
-3. Open an issue on GitHub with:
-   - Steps to reproduce
-   - Error messages
-   - Your environment (Node.js version, OS, etc.)
-
----
-
-**Happy Coding! 🚀**
+- Steps to reproduce
+- Error messages and logs
+- Your environment (Node.js version, OS, database)

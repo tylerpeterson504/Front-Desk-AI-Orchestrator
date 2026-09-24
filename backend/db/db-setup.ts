@@ -42,10 +42,10 @@ async function main() {
   }
   
   console.log('Running migrations...');
-  await run('node', ['db/migrate.ts']);
+  await run('npx', ['ts-node', 'db/migrate.ts']);
   
   console.log('Running seeds (skipped automatically if users exist)...');
-  await run('node', ['db/seed-runner.ts']);
+  await run('npx', ['ts-node', 'db/seed-runner.ts']);
   
   console.log('Neon database setup complete.');
 }

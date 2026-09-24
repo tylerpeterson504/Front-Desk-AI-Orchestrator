@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { LessThan } from 'typeorm';
 import { getRepository } from '../config/database';
 import { RefreshToken } from '../entities/RefreshToken';
 import { User } from '../entities/User';
@@ -86,7 +87,7 @@ export class RefreshTokenService {
 
   async cleanupExpired(): Promise<number> {
     const result = await this.refreshTokenRepository.delete({
-      expires_at: new Date()
+      expires_at: LessThan(new Date())
     });
     return result.affected || 0;
   }

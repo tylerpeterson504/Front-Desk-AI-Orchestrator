@@ -56,3 +56,15 @@ export function decryptSecret(encrypted: string): string {
 
   return decrypted;
 }
+
+// True when a value was produced by encryptSecret. Values that fail this check
+// are treated as legacy plaintext and passed through unchanged by callers.
+export function isEncrypted(value: string): boolean {
+  if (!value) return false;
+  const combined = Buffer.from(value, 'base64');
+  return combined.length > IV_LENGTH + AUTH_TAG_LENGTH;
+}
+
+export function isEncryptionConfigured(): boolean {
+  return Boolean(config.WIFI_ENCRYPTION_KEY && config.WIFI_ENCRYPTION_KEY.length >= 32);
+}

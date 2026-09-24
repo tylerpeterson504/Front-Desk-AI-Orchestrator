@@ -1,7 +1,7 @@
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { AppError, NotFoundError, ValidationError } from '../lib/errors';
-import { encryptSecret, decryptSecret } from '../lib/secretBox';
+import { encryptSecret, decryptSecret, isEncrypted } from '../lib/secretBox';
 import { createRequestLogger } from '../lib/logger';
 
 export interface CreatePropertyDto {
@@ -170,7 +170,9 @@ export class PropertyService {
 
     let password: string | null = null;
     if (property.wifi_password) {
-      password = decryptSecret(property.wifi_password);
+      password = isEncrypted(property.wifi_password)
+        ? decryptSecret(property.wifi_password)
+        : property.wifi_password;
     }
 
     log.info('WiFi password retrieved', { property_id: id });

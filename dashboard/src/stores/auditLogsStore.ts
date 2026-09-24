@@ -47,10 +47,16 @@ export const useAuditLogsStore = create<AuditLogsState>((set) => ({
         user_id: params.user_id,
         action: params.action
       });
-      
-      // Assuming response includes data and pagination info
-      const data = Array.isArray(response) ? response : [];
-      const total = data.length;
+
+      // The API may return a bare array or a paginated { data, total } envelope.
+      const data = Array.isArray(response)
+        ? response
+        : Array.isArray((response as { data?: unknown[] }).data)
+          ? ((response as { data: unknown[] }).data as AuditLog[])
+          : [];
+      const total = Array.isArray(response)
+        ? data.length
+        : Number((response as { total?: number }).total ?? data.length);
       const totalPages = Math.ceil(total / limit);
       
       set({

@@ -10,6 +10,7 @@
 import 'dotenv';
 import path from 'path';
 import { DataSource } from 'typeorm';
+import { Not } from 'typeorm';
 import { getDatabaseConfig } from '../src/config/index';
 import { Property } from '../src/entities';
 import { encryptSecret, isEncrypted, isEncryptionConfigured } from '../src/lib/secretBox';
@@ -50,7 +51,7 @@ async function run() {
     
     // Find all properties with wifi_password
     const properties = await propertyRepo.find({
-      where: { wifi_password: { not: '' } }
+      where: { wifi_password: Not('') }
     });
     
     console.log(`Found ${properties.length} properties with wifi_password`);
