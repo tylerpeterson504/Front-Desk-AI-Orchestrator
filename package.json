@@ -4,7 +4,6 @@
   "private": true,
   "description": "Front Desk AI Orchestrator: backend API + Vite dashboard + Chrome extension",
   "scripts": {
-    "install": "npm install",
     "build": "npm run build:backend && npm run build:dashboard",
     "build:all": "npm run build:backend && npm run build:dashboard",
     "build:backend": "cd backend && tsc",

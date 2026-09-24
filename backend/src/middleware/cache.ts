@@ -85,7 +85,7 @@ function cleanupExpired() {
 
 // Run cleanup every 5 minutes
 
-setInterval(cleanupExpired, 5 * 60 * 1000);
+setInterval(cleanupExpired, 5 * 60 * 1000).unref();
 
 // Run cleanup on startup
 cleanupExpired();

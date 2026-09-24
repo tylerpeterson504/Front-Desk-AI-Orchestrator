@@ -203,10 +203,7 @@ toBeNull();
         { id: 2, action: 'UPDATE', resource: 'Property' }
       ];
       
-      auditAPI.getAll.mockResolvedValue({
-        data: mockAuditLogs,
-        total: 2
-      });
+      auditAPI.getAll.mockResolvedValue(mockAuditLogs);
 
       const { result } = renderHook(() => useAuditLogsStore());
 
