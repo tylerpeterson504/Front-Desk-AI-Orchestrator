@@ -4,7 +4,10 @@
 
 import type { MessageType } from './types';
 
-// Message handler with type safety
+/**
+ * Handle an incoming runtime message, forwarding guest info/chat context
+ * updates to the side panel and logging content-script errors.
+ */
 function handleMessage(message: MessageType): void {
   // Forward guest info and chat context updates from content scripts to any open side panel
   if (message.type === 'GUEST_INFO_UPDATED' || message.type === 'CHAT_CONTEXT_UPDATED') {

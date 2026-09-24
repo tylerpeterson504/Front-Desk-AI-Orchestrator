@@ -68,6 +68,10 @@ sendMessage(payload);
     ) || document.body;
   }
 
+  /**
+   * Return the trimmed text of the first element under root that matches any
+   * of the given selectors, or null if none match.
+   */
   function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
       let el: Element | null = null;
@@ -112,6 +116,10 @@ sendMessage(payload);
     '[contenteditable="true"]'
   ];
 
+  /**
+   * Scan the DOM for chat messages and derive the current chat context
+   * (messages, active guest, and conversation id).
+   */
   function extractChatContext(): ChatContext {
     const root = getRoot();
     const collected: Element[] = [];
@@ -173,6 +181,10 @@ sendMessage(payload);
     catch (e: unknown) { log.warn('sendChatContext failed:', (e as Error)?.message); }
   }
 
+  /**
+   * Log counts of candidate selectors for messages, senders, and composers to
+   * help find new selectors when the site markup changes.
+   */
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
@@ -190,6 +202,9 @@ sendMessage(payload);
     });
   }
 
+  /**
+   * Find the message composer element using the first matching selector.
+   */
   function findComposer(): Element | null {
     for (let i = 0; i < COMPOSER_SELECTORS.length; i++) {
       let el: Element | null = null; try { el = document.querySelector(COMPOSER_SELECTORS[i] as string); } catch (_) {}
@@ -198,6 +213,10 @@ sendMessage(payload);
     return null;
   }
 
+  /**
+   * Inject drafted text into the chat composer, handling both contenteditable
+   * elements and standard input/textarea fields.
+   */
   function injectMessage(text: string): boolean {
     if (!text || typeof text !== 'string') { log.warn('inject: invalid text input, must be a non-empty string'); return false; }
     if (text.length > 10000) { log.warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
@@ -293,6 +312,10 @@ sendMessage(payload);
   init();
 
   // Import createLogger dynamically to avoid circular dependency
+  /**
+   * Create a lightweight logger scoped to prefix, with debug logging gated by
+   * setDebug.
+   */
   function createLogger(prefix: string): {
     log: (...parts: unknown[]) => void;
     warn: (message: string, data?: unknown) => void;
@@ -305,6 +328,9 @@ sendMessage(payload);
       debug = enabled;
     }
 
+    /**
+     * Log to the console when debug mode is enabled.
+     */
     function log(...parts: unknown[]): void {
       if (!debug) return;
       console.log(`[${new Date().toISOString()}] [${prefix}]`, ...parts);

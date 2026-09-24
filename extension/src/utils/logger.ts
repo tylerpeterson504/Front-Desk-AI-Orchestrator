@@ -70,6 +70,10 @@ export function createLogger(prefix: string): {
  */
 let globalDebug = false;
 
+/**
+ * Read the fdao-debug flag from chrome.storage.local (callback or promise
+ * API, depending on the environment) and update the shared globalDebug flag.
+ */
 function checkDebugFlag(): void {
   try {
     if (chrome.storage.local.get.length > 1) {

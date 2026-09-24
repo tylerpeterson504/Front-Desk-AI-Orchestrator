@@ -50,6 +50,10 @@ interface GuestInfo {
     return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
   }
 
+  /**
+   * Return the trimmed text of the first element under root that matches any
+   * of the given selectors, or null if none match.
+   */
   function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
       let el: Element | null = null; try { el = root.querySelector(selectors[i] as string); } catch (_) {}
@@ -58,6 +62,10 @@ interface GuestInfo {
     return null;
   }
 
+  /**
+   * Find a form value by matching a <label> element's text and reading the
+   * associated input's value.
+   */
   function textForLabel(root: Element, labelText: string): string | null {
     try {
       const labels = root.querySelectorAll('label');
@@ -83,6 +91,9 @@ interface GuestInfo {
     return null;
   }
 
+  /**
+   * Extract guest and reservation details from the page DOM.
+   */
   function extractGuestInfo(): GuestInfo {
     const root = getRoot();
     const guestName = 
@@ -220,6 +231,11 @@ interface GuestInfo {
     }
   }
 
+  /**
+   * Log counts of candidate selectors for guest, room, date, confirmation,
+   * and status fields to help find new selectors when the site markup
+   * changes.
+   */
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'guest-like': ['[class*="guest" i]', '[data-test*="guest" i]', '[name*="guest" i]', '[id*="guest" i]'],
