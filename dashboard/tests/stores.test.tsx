@@ -225,7 +225,6 @@ toBeNull();
 
       expect(result.current.user).toBeNull();
       expect(result.current.token).toBeNull();
-      expect(result.current.refreshToken).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
     });
 
@@ -235,15 +234,14 @@ toBeNull();
       act(() => {
         result.current.setCredentials(
           { id: '1', email: 'test@example.com', name: 'Test', role: 'agent' },
-          'token',
-          'refresh_token'
+          'token'
         );
       });
 
       expect(result.current.user).toEqual({ id: '1', email: 'test@example.com', name: 'Test', role: 'agent' });
       expect(result.current.token).toBe('token');
-      expect(result.current.refreshToken).toBe('refresh_token');
       expect(result.current.isAuthenticated).toBe(true);
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty('refreshToken');
     });
 
     it('should clear credentials', async () => {
@@ -252,8 +250,7 @@ toBeNull();
       act(() => {
         result.current.setCredentials(
           { id: '1', email: 'test@example.com', name: 'Test', role: 'agent' },
-          'token',
-          'refresh_token'
+          'token'
         );
       });
 
@@ -263,8 +260,21 @@ toBeNull();
 
       expect(result.current.user).toBeNull();
       expect(result.current.token).toBeNull();
-      expect(result.current.refreshToken).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('removes legacy refresh tokens from persisted state', async () => {
+      localStorage.setItem('auth-storage', JSON.stringify({
+        state: { user: null, token: 'old-token', refreshToken: 'old-refresh', isAuthenticated: true },
+        version: 0
+      }));
+
+      await act(async () => {
+        await useAuthStore.persist.rehydrate();
+      });
+
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty('refreshToken');
+      act(() => useAuthStore.getState().clearCredentials());
     });
   });
 });

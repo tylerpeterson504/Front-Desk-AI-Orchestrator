@@ -55,6 +55,7 @@ if (!corsOrigins.length) {
 }
 
 app.use(cors({
+  credentials: true,
   origin: corsOrigins.length
     ? corsOrigins
     : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]

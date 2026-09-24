@@ -55,7 +55,7 @@ services:
     container_name: frontdesk-dashboard
     environment:
       NODE_ENV: development
-      VITE_API_URL: http://localhost:3001
+      VITE_API_URL: http://localhost:3001/api
     ports:
       - "5173:5173"
     volumes:
