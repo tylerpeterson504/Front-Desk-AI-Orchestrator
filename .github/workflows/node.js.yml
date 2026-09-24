@@ -33,3 +33,9 @@ jobs:
         cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
     - run: npm run build --if-present
     - run: npm test
+      env:
+        JWT_SECRET: ci-only-secret-not-for-production
+        MISTRAL_API_KEY: ci-dummy-key-not-used-by-tests
+        DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+        NODE_ENV: test
+        CI: "true"
