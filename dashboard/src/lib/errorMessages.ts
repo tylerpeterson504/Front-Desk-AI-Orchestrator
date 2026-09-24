@@ -1,8 +1,9 @@
+import { useCallback } from 'react';
 import { useToasts } from '../components/Toast';
 
 // Single mapping from API error payloads to user-facing messages. The backend
-// already returns { error, code } with a requestId; the UI shows the server
-// message when present and falls back to a plain-language default per status.
+// returns { error, code, requestId }; the UI shows the server message when
+// present and falls back to a plain-language default per status.
 const STATUS_DEFAULTS: Record<number, string> = {
   400: 'That request was invalid. Please check the fields and try again.',
   401: 'Your session has expired. Please sign in again.',
@@ -32,6 +33,8 @@ export function toUserMessage(err: unknown): string {
   return STATUS_DEFAULTS[500];
 }
 
+// Convenience hook: surface any API error as a toast, optionally prefixed
+// with the action that failed ("Save template: ...").
 export function useApiErrorToast() {
   const { pushToast } = useToasts();
   return useCallback(
@@ -42,5 +45,3 @@ export function useApiErrorToast() {
     [pushToast]
   );
 }
-
-import { useCallback } from 'react';

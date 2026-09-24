@@ -41,12 +41,14 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
+          // Backend contract (backend/src/routes/auth.ts): request body is
+          // { refresh_token }; response is { token, refresh_token, ... }.
           const res = await axios.post(baseURL + '/auth/refresh', {
-            refreshToken,
+            refresh_token: refreshToken,
           });
-          const data = res.data as { token: string; refreshToken: string };
+          const data = res.data as { token: string; refresh_token: string };
           localStorage.setItem('access_token', data.token);
-          localStorage.setItem('refresh_token', data.refreshToken);
+          localStorage.setItem('refresh_token', data.refresh_token);
           original.headers.Authorization = 'Bearer ' + data.token;
           return api(original);
         } catch {
@@ -85,7 +87,9 @@ export const authAPI = {
   login: (email: string, password: string): Promise<AuthResponse> =>
     postData<AuthResponse>('/auth/login', { email, password }),
   me: (): Promise<User> => getData<User>('/auth/me'),
-  logout: (): Promise<void> => postData<void>('/auth/logout'),
+  logout: (): Promise<void> => postData<void>('/auth/logout', {
+    refresh_token: localStorage.getItem('refresh_token')
+  }),
 };
 
 export const propertyAPI = {
