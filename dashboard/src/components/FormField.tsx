@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFormContext, Controller, FieldError } from 'react-hook-form';
+import { useFormContext, Controller, FieldError, get } from 'react-hook-form';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 interface FormFieldProps {
@@ -27,7 +27,7 @@ export function FormField({
 }: FormFieldProps) {
   const { control, formState } = useFormContext();
   const [showPassword, setShowPassword] = React.useState(false);
-  const error = (formState.errors[name] as FieldError | undefined) ?? undefined;
+  const error = get(formState.errors, name) as FieldError | undefined;
 
   const baseClasses =
     'block w-full rounded-md border shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-1 ';
@@ -57,6 +57,7 @@ export function FormField({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 value={field.value ?? ''}
+                aria-invalid={hasError || undefined}
               >
                 <option value="">Select...</option>
                 {options.map((opt) => (
@@ -80,6 +81,7 @@ export function FormField({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 value={field.value ?? ''}
+                aria-invalid={hasError || undefined}
               />
             );
           }
@@ -95,6 +97,7 @@ export function FormField({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 checked={Boolean(field.value)}
+                aria-invalid={hasError || undefined}
               />
             );
           }
