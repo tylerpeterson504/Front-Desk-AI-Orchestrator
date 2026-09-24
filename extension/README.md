@@ -41,10 +41,11 @@ just that origin (`optional_host_permissions`). Clearing the field restores the
 default — no code edit or repackaging needed.
 
 The local `PROPERTIES` map and `getPropertyConfig()` in `src/config.ts` store
-property names, IDs, and Stayntouch/Akia integration settings for side-panel
-context and host detection. Property-specific operational details (tone
-guidelines, checkout time, Wi-Fi SSID) come from the authenticated user's
-backend records.
+property names, IDs, and Stayntouch/Akia host mappings for content scripts.
+The side panel does not currently look up the active tab's hostname: it calls
+`getPropertyConfig()` with its own extension URL, so it cannot use those IDs
+for property detection. Property-specific operational details (tone guidelines,
+checkout time, Wi-Fi SSID) come from the authenticated user's backend records.
 
 ## Features
 

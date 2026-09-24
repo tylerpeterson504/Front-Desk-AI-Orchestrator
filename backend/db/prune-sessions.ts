@@ -16,6 +16,7 @@ const url = connectionString ? new URL(connectionString) : null;
 const host = url?.hostname || dbConfig.host;
 const remote = Boolean(host && !['localhost', '127.0.0.1', '::1'].includes(host));
 if (remote && url) {
+  url.searchParams.delete('ssl');
   url.searchParams.delete('sslmode');
   url.searchParams.delete('uselibpqcompat');
 }
@@ -38,8 +39,9 @@ export const pruneDataSource = new DataSource({
   logging: process.env.LOG_LEVEL === 'debug'
 });
 
-/** Deletes refresh tokens expiring strictly before the current time, then exits.
- * Reports a failure with exit code 1 if the database operation fails.
+/**
+ * Deletes refresh tokens whose expiry is strictly before the current time,
+ * including revoked tokens. Exits with status 0 on success or 1 on failure.
  */
 async function run() {
   try {

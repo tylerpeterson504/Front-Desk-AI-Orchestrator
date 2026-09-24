@@ -18,13 +18,17 @@ Step-by-step guide to verify the whole project after a change.
 ```bash
 git clone https://github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git
 cd Front-Desk-AI-Orchestrator
-REPO_ROOT="$(pwd)"   # keep this in the shell used for later steps
+REPO_ROOT="$(pwd)"
 
 (cd "$REPO_ROOT" && npm install)
 (cd "$REPO_ROOT/backend"   && npm install)
 (cd "$REPO_ROOT/dashboard" && npm install)
 (cd "$REPO_ROOT/extension" && npm install)
 ```
+
+Run later commands from the repository root. In each new terminal, set
+`REPO_ROOT="$(pwd)"` again before using it; shell variables do not carry over
+to the separate backend and dashboard terminals.
 
 Create `backend/.env` (copy from `backend/.env.example`):
 
@@ -54,6 +58,7 @@ Full setup details: [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md).
 ### 2.1 Type checking
 
 ```bash
+REPO_ROOT="$(pwd)"
 (cd "$REPO_ROOT" && npm run typecheck)              # backend + dashboard
 ```
 
@@ -79,6 +84,7 @@ tsconfig does not pass `npx tsc --noEmit` yet — use its Vitest suite and build
 ## 🧪 Step 3: Backend Tests
 
 ```bash
+REPO_ROOT="$(pwd)"
 (cd "$REPO_ROOT/backend" && npm test)                 # Jest, --runInBand
 (cd "$REPO_ROOT/backend" && npm run test:coverage)    # with coverage report
 ```
@@ -89,7 +95,10 @@ require a reachable Postgres; the rest mock the repository layer.
 
 ### Start the dev server
 
+In a separate terminal, start from the repository root:
+
 ```bash
+REPO_ROOT="$(pwd)"
 (cd "$REPO_ROOT/backend" && npm run dev)
 ```
 
@@ -105,7 +114,10 @@ curl http://localhost:3001/health
 
 ## 🖥️ Step 4: Dashboard
 
+In another terminal, start from the repository root:
+
 ```bash
+REPO_ROOT="$(pwd)"
 (cd "$REPO_ROOT/dashboard" && npm run dev)
 ```
 
@@ -125,6 +137,7 @@ Dashboard unit tests: `(cd "$REPO_ROOT/dashboard" && npm test)` (Vitest, jsdom e
 ### 5.1 Build
 
 ```bash
+REPO_ROOT="$(pwd)"
 (cd "$REPO_ROOT/extension" && npm run build)   # outputs to extension/dist
 ```
 

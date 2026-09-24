@@ -30,6 +30,12 @@ describe('pruning database configuration', () => {
     expect(ssl).toEqual(expect.objectContaining({ rejectUnauthorized: true }));
   });
 
+  it('ignores URL ssl that overrides verified TLS', () => {
+    const { options, ssl } = connection({ connectionString: 'postgresql://user:pass@db.example.com/db?ssl=0&sslmode=disable&uselibpqcompat=true' });
+    expect(new URL(options.url).searchParams.has('ssl')).toBe(false);
+    expect(ssl).toEqual(expect.objectContaining({ rejectUnauthorized: true }));
+  });
+
   it('allows local development without TLS', () => {
     expect(connection({ host: 'localhost' }).ssl).toBe(false);
   });
