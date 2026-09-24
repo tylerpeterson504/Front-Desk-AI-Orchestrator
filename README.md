@@ -41,9 +41,9 @@ or dashboard.
 | `MISTRAL_BASE_URL` | no | `https://api.mistral.ai` | Endpoint override (e.g. gateway) |
 
 The server refuses to boot without `MISTRAL_API_KEY` (it is checked alongside
-`JWT_SECRET` and `DATABASE_URL` at startup). If the key is missing at request time the
-copilot route errors and the extension falls back to local template stitching, so
-offline dev still works.
+`JWT_SECRET` and `DATABASE_URL` at startup). If a Mistral request fails after
+startup, the extension falls back to local template stitching; for offline dev,
+set a dummy key to start the server.
 
 `GOOGLE_API_KEY` / `PERPLEXITY_API_KEY` appear in the env schema for compatibility but
 are **not read** by the current provider chain — the copilot calls Mistral only.
@@ -135,7 +135,9 @@ Decryption happens only inside the audit-logged `GET /api/properties/:id/wifi` r
 cd backend && WIFI_ENCRYPTION_KEY=... npm run encrypt-wifi
 ```
 
-The backfill is idempotent — rows that already look encrypted are skipped.
+Run the backfill with the same key that encrypted any existing passwords. It
+adds a `v1:` marker to authenticated legacy ciphertext without re-encrypting it,
+encrypts legacy plaintext (including Base64 passwords), and skips marked rows.
 
 ## Error responses
 
@@ -176,9 +178,9 @@ token (a known gap; see Security notes).
 ## Testing
 
 ```bash
-cd backend   && npm install && npm test   # Jest — routes, auth, sessions, roles, registration gating, validation, errors, llm client, copilot fencing
-cd extension && npm install && npm test   # Vitest — sidepanel, content scripts, observer debouncing, config override
-cd dashboard && npm install && npm test   # Vitest — stores
+(cd backend   && npm install && npm test)   # Jest — routes, auth, sessions, roles, registration gating, validation, errors, llm client, copilot fencing
+(cd extension && npm install && npm test)   # Vitest — sidepanel, content scripts, observer debouncing, config override
+(cd dashboard && npm install && npm test)   # Vitest — stores
 ```
 
 Backend tests need `JWT_SECRET`, `MISTRAL_API_KEY`, and `DATABASE_URL` in the
@@ -213,7 +215,8 @@ dashboard + PGAdmin) if you prefer it.
    ```bash
    cd backend && npm run db-setup   # migrations + seed; skips when users exist
    ```
-   Demo login: `demo@example.com` / `password123` (`agent` role).
+   Demo login: `demo@example.com` / `password123` (`agent` role) only when
+   `db-setup` creates the demo account (it skips seeding when users exist).
 
 Tailwind is compiled by PostCSS through Vite (`dashboard/tailwind.config.js`,
 `dashboard/src/index.css`) — no CDN script; `npm run build` produces the stylesheet in

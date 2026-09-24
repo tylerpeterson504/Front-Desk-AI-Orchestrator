@@ -32,14 +32,19 @@ The API base URL defaults to `http://localhost:3001` (see
 2. Enter the backend URL under **Backend URL** and save
 
 The value is stored in `chrome.storage.local` as `apiBaseUrl`, validated as an
-`http(s)` origin, and picked up live by the side panel and content scripts.
+HTTPS origin (HTTP is allowed only for `localhost`, `127.0.0.1`, and `[::1]`
+development backends). Content scripts pick up changes live; an already-open
+side panel keeps its initialized API base URL, so reopen it after changing
+Backend URL.
 Saving a non-default origin triggers a Chrome runtime permission request for
 just that origin (`optional_host_permissions`). Clearing the field restores the
 default — no code edit or repackaging needed.
 
-Property records (name, tone guidelines, checkout time, Wi-Fi SSID) come from
-the authenticated user's backend records; the local `PROPERTIES` map in
-`src/config.ts` only maps the Stayntouch host for property detection.
+The local `PROPERTIES` map and `getPropertyConfig()` in `src/config.ts` store
+property names, IDs, and Stayntouch/Akia integration settings for side-panel
+context and host detection. Property-specific operational details (tone
+guidelines, checkout time, Wi-Fi SSID) come from the authenticated user's
+backend records.
 
 ## Features
 
@@ -105,4 +110,5 @@ background service worker, popup, side panel, and two content scripts
 content-script errors.
 
 **Auth fails:** verify the backend is running and reachable at the configured
-Backend URL, check credentials, and clear extension storage via the popup.
+Backend URL and credentials. Use **Sign out** in the side panel to clear the
+stored session tokens, then sign in again.

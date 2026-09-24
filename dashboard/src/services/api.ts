@@ -140,12 +140,12 @@ export const auditAPI = {
     user_id?: string | number;
     action?: string;
   }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
-  list: (params?: {
-    page?: number;
+  list: (params: {
+    page: number;
     limit?: number;
     user_id?: string | number;
     action?: string;
-  }): Promise<AuditLog[]> => getData<AuditLog[]>('/audit-logs', { params }),
+  }): Promise<{ data: AuditLog[]; total: number }> => getData<{ data: AuditLog[]; total: number }>('/audit-logs', { params }),
   getOne: (id: number): Promise<AuditLog> => getData<AuditLog>('/audit-logs/' + id),
 };
 

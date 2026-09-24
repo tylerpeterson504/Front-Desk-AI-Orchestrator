@@ -9,6 +9,7 @@ const IV_LENGTH = 16; // 128 bits for GCM
 const AUTH_TAG_LENGTH = 16; // 128 bits
 const KEY_LENGTH = 32; // 256 bits for AES-256
 const PBKDF2_ITERATIONS = 100000;
+const CIPHERTEXT_PREFIX = 'v1:';
 
 // Derive encryption key from the WIFI_ENCRYPTION_KEY
 function getEncryptionKey(): Buffer {
@@ -30,15 +31,15 @@ export function encryptSecret(plaintext: string): string {
 
   const authTag = cipher.getAuthTag();
 
-  // Return IV + authTag + encrypted data as base64
+  // Return a versioned IV + authTag + encrypted data payload.
   const combined = Buffer.concat([iv, authTag, Buffer.from(encrypted, 'base64')]);
-  return combined.toString('base64');
+  return CIPHERTEXT_PREFIX + combined.toString('base64');
 }
 
 export function decryptSecret(encrypted: string): string {
   const key = getEncryptionKey();
 
-  const combined = Buffer.from(encrypted, 'base64');
+  const combined = Buffer.from(isEncrypted(encrypted) ? encrypted.slice(CIPHERTEXT_PREFIX.length) : encrypted, 'base64');
 
   // Extract IV (first 16 bytes), authTag (next 16 bytes), and encrypted data
   const iv = combined.subarray(0, IV_LENGTH);
@@ -57,12 +58,24 @@ export function decryptSecret(encrypted: string): string {
   return decrypted;
 }
 
-// True when a value was produced by encryptSecret. Values that fail this check
-// are treated as legacy plaintext and passed through unchanged by callers.
 export function isEncrypted(value: string): boolean {
-  if (!value) return false;
-  const combined = Buffer.from(value, 'base64');
-  return combined.length > IV_LENGTH + AUTH_TAG_LENGTH;
+  return value.startsWith(CIPHERTEXT_PREFIX);
+}
+
+export function tryDecryptLegacySecret(value: string): string | null {
+  if (isEncrypted(value)) return null;
+  try {
+    return decryptSecret(value);
+  } catch {
+    return null;
+  }
+}
+
+export function migrateSecret(value: string): string {
+  if (isEncrypted(value)) return value;
+  return tryDecryptLegacySecret(value) !== null
+    ? CIPHERTEXT_PREFIX + value
+    : encryptSecret(value);
 }
 
 export function isEncryptionConfigured(): boolean {

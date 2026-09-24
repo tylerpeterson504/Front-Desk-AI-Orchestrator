@@ -22,9 +22,9 @@ document outlines the guidelines and standards for contributing.
    package installs from its own directory:
    ```bash
    npm install          # root dev tooling (eslint, prettier, husky)
-   cd backend   && npm install
-   cd dashboard && npm install
-   cd extension && npm install
+   (cd backend   && npm install)
+   (cd dashboard && npm install)
+   (cd extension && npm install)
    ```
 3. Set up environment variables:
    - Copy `backend/.env.example` to `backend/.env` and configure `DATABASE_URL`,

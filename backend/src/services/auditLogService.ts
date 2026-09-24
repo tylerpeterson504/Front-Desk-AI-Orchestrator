@@ -20,23 +20,26 @@ export class AuditLogService {
   private auditLogRepository = getRepository<AuditLog>(AuditLog);
   private propertyRepository = getRepository<Property>(Property);
 
-  async getAll(userId: string, options?: { limit?: number; offset?: number }): Promise<AuditLogWithProperty[]> {
+  async getAll(userId: string, options?: { limit?: number; offset?: number }): Promise<{ data: AuditLogWithProperty[]; total: number }> {
     const limit = Math.min(options?.limit || 100, 500);
     const offset = options?.offset || 0;
 
-    const logs = await this.auditLogRepository
+    const [logs, total] = await this.auditLogRepository
       .createQueryBuilder('al')
       .leftJoinAndSelect('al.property', 'property')
       .where('al.user_id = :userId', { userId })
       .orderBy('al.created_at', 'DESC')
       .limit(limit)
       .offset(offset)
-      .getMany();
+      .getManyAndCount();
 
-    return logs.map(log => ({
-      ...log,
-      property_name: log.property?.name
-    }));
+    return {
+      data: logs.map(log => ({
+        ...log,
+        property_name: log.property?.name
+      })),
+      total
+    };
   }
 
   async create(data: CreateAuditLogDto, userId?: string): Promise<AuditLog> {

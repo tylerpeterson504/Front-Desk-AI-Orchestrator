@@ -6,7 +6,7 @@ Step-by-step guide to verify the whole project after a change.
 
 ## 📋 Prerequisites
 
-1. **Node.js v22+** and **npm v10+**
+1. **Node.js v24+** and **npm v10+**
 2. **PostgreSQL** reachable via `DATABASE_URL` (local or Neon)
 3. **Mistral API key** (a placeholder works for everything except live copilot tests)
 4. **Chrome** for extension testing
@@ -18,11 +18,12 @@ Step-by-step guide to verify the whole project after a change.
 ```bash
 git clone https://github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git
 cd Front-Desk-AI-Orchestrator
+REPO_ROOT="$(pwd)"   # keep this in the shell used for later steps
 
-npm install
-cd backend   && npm install && cd ..
-cd dashboard && npm install && cd ..
-cd extension && npm install && cd ..
+(cd "$REPO_ROOT" && npm install)
+(cd "$REPO_ROOT/backend"   && npm install)
+(cd "$REPO_ROOT/dashboard" && npm install)
+(cd "$REPO_ROOT/extension" && npm install)
 ```
 
 Create `backend/.env` (copy from `backend/.env.example`):
@@ -53,8 +54,8 @@ Full setup details: [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md).
 ### 2.1 Type checking
 
 ```bash
-npm run typecheck        # root: backend + dashboard
-cd extension && npx tsc --noEmit   # extension (no root script)
+(cd "$REPO_ROOT" && npm run typecheck)              # backend + dashboard
+(cd "$REPO_ROOT/extension" && npx tsc --noEmit)     # extension (no root script)
 ```
 
 **Expected**: no errors.
@@ -62,14 +63,14 @@ cd extension && npx tsc --noEmit   # extension (no root script)
 ### 2.2 Linting
 
 ```bash
-npm run lint             # root
-npm run lint:fix         # auto-fix
+(cd "$REPO_ROOT" && npm run lint)
+(cd "$REPO_ROOT" && npm run lint:fix)   # auto-fix
 ```
 
 ### 2.3 Formatting
 
 ```bash
-npm run format:check
+(cd "$REPO_ROOT" && npm run format:check)
 ```
 
 ---
@@ -77,9 +78,8 @@ npm run format:check
 ## 🧪 Step 3: Backend Tests
 
 ```bash
-cd backend
-npm test                 # Jest, --runInBand
-npm run test:coverage    # with coverage report
+(cd "$REPO_ROOT/backend" && npm test)                 # Jest, --runInBand
+(cd "$REPO_ROOT/backend" && npm run test:coverage)    # with coverage report
 ```
 
 The suite needs `JWT_SECRET`, `MISTRAL_API_KEY`, and `DATABASE_URL` in the
@@ -89,7 +89,7 @@ require a reachable Postgres; the rest mock the repository layer.
 ### Start the dev server
 
 ```bash
-cd backend && npm run dev
+(cd "$REPO_ROOT/backend" && npm run dev)
 ```
 
 **Expected**: server starts on port 3001, logs `Database connected` and
@@ -105,7 +105,7 @@ curl http://localhost:3001/health
 ## 🖥️ Step 4: Dashboard
 
 ```bash
-cd dashboard && npm run dev
+(cd "$REPO_ROOT/dashboard" && npm run dev)
 ```
 
 **Expected**: Vite dev server at `http://localhost:5173`.
@@ -115,7 +115,7 @@ cd dashboard && npm run dev
 3. Register/login and verify pages render (Properties, Templates, Shift Notes)
 4. DevTools console: no errors, no 404s, no CORS errors
 
-Dashboard unit tests: `npm test` (Vitest, jsdom environment).
+Dashboard unit tests: `(cd "$REPO_ROOT/dashboard" && npm test)` (Vitest, jsdom environment).
 
 ---
 
@@ -124,8 +124,7 @@ Dashboard unit tests: `npm test` (Vitest, jsdom environment).
 ### 5.1 Build
 
 ```bash
-cd extension
-npm run build            # outputs to extension/dist
+(cd "$REPO_ROOT/extension" && npm run build)   # outputs to extension/dist
 ```
 
 **Expected**: build completes; `dist/manifest.json` and `dist/src/*` exist.
@@ -140,7 +139,7 @@ npm run build            # outputs to extension/dist
 ### 5.3 Extension tests
 
 ```bash
-cd extension && npm test   # Vitest — sidepanel, content scripts, debounce
+(cd "$REPO_ROOT/extension" && npm test)   # Vitest — sidepanel, content scripts, debounce
 ```
 
 ### 5.4 Functional check
@@ -150,8 +149,7 @@ cd extension && npm test   # Vitest — sidepanel, content scripts, debounce
 3. Visit `https://app.us1.stayntouch.com` — guest info should populate
 4. Visit `https://sys.akia.ai` — chat context should populate
 5. Select templates → Generate → review draft → Copy/Inject
-6. In the popup, change **Backend URL** — the side panel should pick it up
-   without a reload
+6. In the popup, change **Backend URL** — reopen the side panel to use it
 
 ---
 
@@ -161,19 +159,25 @@ The copilot runs server-side via `backend/src/services/llm/mistralClient.ts`
 (`MISTRAL_API_KEY`, optional `MISTRAL_MODEL`, `MISTRAL_BASE_URL`).
 
 ```bash
-# Log in and grab a token
+# Register an account (REGISTRATION_MODE=open as configured above), then log in
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"copilot-test@example.com","password":"testpassword123","name":"Copilot Tester"}'
+
 TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"password123"}' | jq -r .token)
+  -d '{"email":"copilot-test@example.com","password":"testpassword123"}' | jq -r .token)
 
 # Draft — templates must belong to the authenticated user
 curl -X POST http://localhost:3001/api/copilot/draft \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"property_id":1,"tone":"professional","template_ids":[1],"guest_info":{"guestName":"Jane Doe","roomNumber":"204"}}'
+  -d '{"tone":"professional","guest_info":{"guestName":"Jane Doe","roomNumber":"204"}}'
 ```
 
-**Expected**: `{ draft, meta: { provider: "mistral", template_count, property, tone } }`.
+**Expected**: `{ draft, meta: { provider: "mistral", template_count: 0, property: null, tone } }`
+on a fresh database. Add property/template IDs only after creating records owned by
+this account.
 
 Without a valid `MISTRAL_API_KEY`, the route errors and the extension falls back
 to local template stitching — verify the side panel still produces a draft.
@@ -228,11 +232,11 @@ done
 
 ## ✅ Final Checklist
 
-- [ ] `npm run typecheck` passes
-- [ ] `npm run lint` passes
-- [ ] Backend tests pass (`cd backend && npm test`)
-- [ ] Dashboard tests pass (`cd dashboard && npm test`)
-- [ ] Extension tests pass (`cd extension && npm test`)
+- [ ] `(cd "$REPO_ROOT" && npm run typecheck)` passes
+- [ ] `(cd "$REPO_ROOT" && npm run lint)` passes
+- [ ] Backend tests pass (`(cd "$REPO_ROOT/backend" && npm test)`)
+- [ ] Dashboard tests pass (`(cd "$REPO_ROOT/dashboard" && npm test)`)
+- [ ] Extension tests pass (`(cd "$REPO_ROOT/extension" && npm test)`)
 - [ ] `/health` returns `{"status":"ok"}`
 - [ ] Dashboard login and CRUD work
 - [ ] Extension builds and loads from `dist/`

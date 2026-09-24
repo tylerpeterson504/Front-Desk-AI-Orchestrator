@@ -100,7 +100,8 @@ cd backend
 npm run db-setup
 ```
 
-Demo login: `demo@example.com` / `password123`.
+Demo login: `demo@example.com` / `password123` only when `db-setup` creates
+the demo account (seeding is skipped when users exist).
 
 ### 5. Start the dev servers
 
@@ -135,13 +136,13 @@ cd extension && npm run build   # outputs to extension/dist
 
 ```bash
 # Backend (Jest) — requires JWT_SECRET, MISTRAL_API_KEY, DATABASE_URL in env
-cd backend && npm test
+(cd backend && npm test)
 
 # Dashboard (Vitest)
-cd dashboard && npm test
+(cd dashboard && npm test)
 
 # Extension (Vitest)
-cd extension && npm test
+(cd extension && npm test)
 ```
 
 CI runs `npm run typecheck`, lint, and the backend suite with placeholder env

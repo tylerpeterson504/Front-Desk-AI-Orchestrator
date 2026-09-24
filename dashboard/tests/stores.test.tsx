@@ -30,7 +30,7 @@ vi.mock('../src/services/api', () => ({
     delete: vi.fn()
   },
   auditAPI: {
-    getAll: vi.fn()
+    list: vi.fn()
   }
 }));
 
@@ -203,7 +203,7 @@ toBeNull();
         { id: 2, action: 'UPDATE', resource: 'Property' }
       ];
       
-      auditAPI.getAll.mockResolvedValue({
+      auditAPI.list.mockResolvedValue({
         data: mockAuditLogs,
         total: 2
       });
@@ -216,6 +216,18 @@ toBeNull();
 
       expect(result.current.auditLogs).toEqual(mockAuditLogs);
       expect(result.current.pagination.total).toBe(2);
+    });
+
+    it('keeps further pages available when the first page is full', async () => {
+      auditAPI.list.mockResolvedValue({ data: [{ id: 1 }], total: 23 });
+      const { result } = renderHook(() => useAuditLogsStore());
+
+      await act(async () => {
+        await result.current.fetchAuditLogs({ page: 1, limit: 1 });
+      });
+
+      expect(auditAPI.list).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 1 }));
+      expect(result.current.pagination).toEqual({ page: 1, limit: 1, total: 23, totalPages: 23 });
     });
   });
 

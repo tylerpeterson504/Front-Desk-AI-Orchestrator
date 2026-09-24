@@ -41,22 +41,14 @@ export const useAuditLogsStore = create<AuditLogsState>((set) => ({
       const page = params.page || 1;
       const limit = params.limit || 20;
       
-      const response = await auditAPI.getAll({
+      const response = await auditAPI.list({
         page,
         limit,
         user_id: params.user_id,
         action: params.action
       });
 
-      // The API may return a bare array or a paginated { data, total } envelope.
-      const data = Array.isArray(response)
-        ? response
-        : Array.isArray((response as { data?: unknown[] }).data)
-          ? ((response as { data: unknown[] }).data as AuditLog[])
-          : [];
-      const total = Array.isArray(response)
-        ? data.length
-        : Number((response as { total?: number }).total ?? data.length);
+      const { data, total } = response;
       const totalPages = Math.ceil(total / limit);
       
       set({

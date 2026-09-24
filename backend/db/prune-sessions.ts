@@ -8,10 +8,17 @@
 import { DataSource } from 'typeorm';
 import { LessThan } from 'typeorm';
 import { getDatabaseConfig } from '../src/config/index';
-import { RefreshToken } from '../src/entities';
+import { RefreshToken, User } from '../src/entities';
 
 const dbConfig = getDatabaseConfig();
 const connectionString = dbConfig.connectionString;
+const url = connectionString ? new URL(connectionString) : null;
+const host = url?.hostname || dbConfig.host;
+const remote = Boolean(host && !['localhost', '127.0.0.1', '::1'].includes(host));
+if (remote && url) {
+  url.searchParams.delete('sslmode');
+  url.searchParams.delete('uselibpqcompat');
+}
 const manualConfig = connectionString ? {} : {
   host: dbConfig.host,
   port: dbConfig.port,
@@ -21,11 +28,11 @@ const manualConfig = connectionString ? {} : {
 };
 
 // Create a separate data source so this script never touches the live app
-const pruneDataSource = new DataSource({
+export const pruneDataSource = new DataSource({
   type: 'postgres',
-  ...(connectionString ? { url: connectionString } : manualConfig),
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  entities: [RefreshToken],
+  ...(url ? { url: url.toString() } : manualConfig),
+  ssl: remote ? { rejectUnauthorized: true } : false,
+  entities: [RefreshToken, User],
   migrations: [],
   synchronize: false,
   logging: process.env.LOG_LEVEL === 'debug'
@@ -46,4 +53,4 @@ async function run() {
   }
 }
 
-run();
+if (require.main === module) run();

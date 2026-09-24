@@ -72,10 +72,13 @@ describe('config.js shared module', () => {
 
   it('rejects overrides that are not http(s) URLs', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
-    for (const bad of ['javascript:alert(1)', 'file:///etc/passwd', 'not a url', '', null]) {
+    for (const bad of ['javascript:alert(1)', 'file:///etc/passwd', 'http://api.example.com', 'not a url', '', null]) {
       expect(config.setApiBaseUrlOverride(bad)).toBe('http://localhost:3001');
     }
     expect(config.normalizeApiBaseUrl('https://api.example.com//')).toBe('https://api.example.com');
+    expect(config.normalizeApiBaseUrl('http://localhost:3001')).toBe('http://localhost:3001');
+    expect(config.normalizeApiBaseUrl('http://127.0.0.1:3001')).toBe('http://127.0.0.1:3001');
+    expect(config.normalizeApiBaseUrl('http://[::1]:3001')).toBe('http://[::1]:3001');
   });
 
   it('a storage change updates the cached override without a reload', async () => {

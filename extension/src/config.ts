@@ -10,19 +10,21 @@
 // Content scripts run synchronously, so getApiBaseUrl() has to answer without
 // awaiting storage. The override is cached here: call loadApiBaseUrl() once at
 // startup, after which getApiBaseUrl() returns the configured value. Storage
-// changes are picked up without a reload.
+// changes update this getter without a reload; the side panel's initialized
+// API_BASE still requires reopening the panel to change.
 const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 
 let apiBaseUrlOverride: string | null = null;
 
-// Reject anything that is not an http(s) origin so a bad storage value cannot
+// Reject non-HTTPS remote origins so a bad storage value cannot
 // redirect API calls somewhere unexpected, and drop trailing slashes so callers
 // can always append '/api'.
 function normalizeApiBaseUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
     const url = new URL(value.trim());
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.protocol !== 'https:' && !(url.protocol === 'http:' &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) return null;
     return (url.origin + url.pathname).replace(/\/+$/, '');
   } catch {
     return null;

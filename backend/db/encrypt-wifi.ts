@@ -8,12 +8,11 @@
 //   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 import 'dotenv';
-import path from 'path';
 import { DataSource } from 'typeorm';
 import { Not } from 'typeorm';
 import { getDatabaseConfig } from '../src/config/index';
 import { Property } from '../src/entities';
-import { encryptSecret, isEncrypted, isEncryptionConfigured } from '../src/lib/secretBox';
+import { migrateSecret, isEncrypted, isEncryptionConfigured } from '../src/lib/secretBox';
 
 const dbConfig = getDatabaseConfig();
 
@@ -66,8 +65,7 @@ async function run() {
         continue;
       }
 
-      // Encrypt the password
-      const encryptedPassword = encryptSecret(property.wifi_password || '');
+      const encryptedPassword = migrateSecret(property.wifi_password || '');
       
       // Update the property
       await propertyRepo.update(property.id, {
