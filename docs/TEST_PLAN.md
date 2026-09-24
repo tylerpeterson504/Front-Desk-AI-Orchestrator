@@ -55,10 +55,11 @@ Full setup details: [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md).
 
 ```bash
 (cd "$REPO_ROOT" && npm run typecheck)              # backend + dashboard
-(cd "$REPO_ROOT/extension" && npx tsc --noEmit)     # extension (no root script)
 ```
 
-**Expected**: no errors.
+**Expected**: no errors. The extension has no typecheck script and its strict
+tsconfig does not pass `npx tsc --noEmit` yet — use its Vitest suite and build
+(Step 4) as the extension gate.
 
 ### 2.2 Linting
 
