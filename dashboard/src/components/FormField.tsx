@@ -23,11 +23,11 @@ export function FormField({
   options,
   rows,
   disabled = false,
-  hint,
+  hint
 }: FormFieldProps) {
-  const { control } = useFormContext();
+  const { control, formState } = useFormContext();
   const [showPassword, setShowPassword] = React.useState(false);
-  const error = undefined as FieldError | undefined;
+  const error = (formState.errors[name] as FieldError | undefined) ?? undefined;
 
   const baseClasses =
     'block w-full rounded-md border shadow-sm px-3 py-2 text-sm focus:outline-none focus:ring-1 ';
@@ -112,12 +112,14 @@ export function FormField({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 value={field.value ?? ''}
+                aria-invalid={hasError || undefined}
               />
               {isPassword && (
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
                   onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
@@ -126,6 +128,7 @@ export function FormField({
           );
         }}
       />
+      {error && <p className="mt-1 text-xs text-red-600" role="alert">{error.message}</p>}
       {hint && !error && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
     </div>
   );
