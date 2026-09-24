@@ -79,7 +79,7 @@ function checkDebugFlag(): void {
       return;
     }
 
-    const result = chrome.storage.local.get(['fdao-debug']);
+    const result = chrome.storage.local.get(['fdao-debug']) as unknown;
     if (result && typeof (result as Promise<Record<string, unknown>>).then === 'function') {
       (result as Promise<Record<string, unknown>>).then((r) => {
         globalDebug = r['fdao-debug'] === true;

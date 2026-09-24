@@ -40,9 +40,9 @@ faint: '#6b6478', line: '#332f40', lineStrong: '#45405a', headerFrom: '#1a1620',
 const root = document.documentElement;
 
 function applyTheme(name: string): void {
-  const t = THEMES[name] || THEMES.frenchQuarter;
-  for (const [k, v] of Object.entries(t)) {
-    root.style.setProperty('--' + k, v);
+  const t = (THEMES[name] || THEMES.frenchQuarter) as Theme;
+  for (const [k, v] of Object.entries(t) as [string, string][]) {
+    root.style.setProperty('--' + k, v as string);
   }
   root.setAttribute('data-theme', name);
 }
@@ -51,7 +51,7 @@ function markSwatchActive(name: string | null): void {
   const bar = document.getElementById('theme-row');
   if (!bar) return;
   bar.querySelectorAll('.swatch').forEach((sw) => {
-    sw.classList.toggle('active', sw.dataset.theme === name);
+    sw.classList.toggle('active', (sw as HTMLElement).dataset.theme === name);
   });
 }
 
@@ -106,6 +106,7 @@ function wire(): void {
 
   const toggle = document.getElementById('theme-toggle');
   function setRowOpen(open: boolean): void {
+    if (!bar) return;
     bar.classList.toggle('open', open);
     if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
@@ -118,7 +119,7 @@ function wire(): void {
   // Close the row when clicking anywhere outside it (and outside the toggle).
   document.addEventListener('click', (e) => {
     if (!bar.classList.contains('open')) return;
-    if (bar.contains(e.target) || (toggle && toggle.contains(e.target))) return;
+    if (bar.contains(e.target as Node) || (toggle && toggle.contains(e.target as Node))) return;
     setRowOpen(false);
   });
   document.addEventListener('keydown', (e) => {
@@ -127,9 +128,9 @@ function wire(): void {
 
   bar.querySelectorAll('.swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
-      applyTheme(sw.dataset.theme as string);
-      markSwatchActive(sw.dataset.theme as string);
-      persistTheme(sw.dataset.theme as string);
+      applyTheme((sw as HTMLElement).dataset.theme as string);
+      markSwatchActive((sw as HTMLElement).dataset.theme as string);
+      persistTheme((sw as HTMLElement).dataset.theme as string);
       setRowOpen(false);
     });
   });

@@ -279,8 +279,7 @@ function updateChatContext(data: ChatContext | null): void {
   if (block) block.textContent = lines.join('\n');
 }
 
-// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-━━━━━━━
+// ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function loadShiftNotes(): Promise<void> {
   try {
     const notes = await apiRequest('GET', '/shift-notes');
@@ -384,7 +383,7 @@ document.querySelectorAll('.tone-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tone-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    currentTone = btn.dataset.tone as 'professional' | 'friendly';
+    currentTone = (btn as HTMLElement).dataset.tone as 'professional' | 'friendly';
   });
 });
 

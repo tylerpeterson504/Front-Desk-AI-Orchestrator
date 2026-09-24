@@ -10,7 +10,7 @@
 // by setting chrome.storage.local fdao-debug to true, then watch the console
 // for what was found and the candidate selectors.
 
-import { logger, initDebugMode } from './utils/logger';
+import { initDebugMode } from './utils/logger';
 
 interface GuestInfo {
   guestName: string;
@@ -33,16 +33,6 @@ interface GuestInfo {
   const log = createLogger('FDAO/stayntouch');
   initDebugMode(log);
 
-  function sanitizeText(text: string | null | undefined): string | null | undefined {
-    if (!text || typeof text !== 'string') return text;
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   function safeSend(payload: { type: string; data?: unknown }): void {
     try {
       const result = chrome.runtime.sendMessage(payload);
@@ -62,8 +52,8 @@ interface GuestInfo {
 
   function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
-      let el: Element | null = null; try { el = root.querySelector(selectors[i]); } catch (_) {}
-      if (el) { const t = (el.innerText || el.textContent || '').trim(); if (t) return t; }
+      let el: Element | null = null; try { el = root.querySelector(selectors[i] as string); } catch (_) {}
+      if (el) { const t = ((el as HTMLElement).innerText || el.textContent || '').trim(); if (t) return t; }
     }
     return null;
   }
@@ -72,7 +62,7 @@ interface GuestInfo {
     try {
       const labels = root.querySelectorAll('label');
       for (let i = 0; i < labels.length; i++) {
-        const label = labels[i];
+        const label = labels[i] as Element;
         const text = (label.textContent || '').trim().toLowerCase();
         if (text.includes(labelText.toLowerCase())) {
           const inputId = label.getAttribute('for');
@@ -128,6 +118,7 @@ interface GuestInfo {
     const checkIn = 
       firstText(root, [
         '.check-in',
+        '.check-in-date',
         '.checkIn',
         '#checkIn',
         '[data-test="check-in"]',
@@ -144,6 +135,7 @@ interface GuestInfo {
     const checkOut = 
       firstText(root, [
         '.check-out',
+        '.check-out-date',
         '.checkOut',
         '#checkOut',
         '[data-test="check-out"]',
@@ -239,7 +231,8 @@ interface GuestInfo {
     };
     Object.keys(probes).forEach(function (label) {
       let total = 0; const samples: string[] = [];
-      (probes as Record<string, string[]>)[label].forEach(function (sel) {
+      const sels = (probes as Record<string, string[]>)[label] || [];
+      sels.forEach(function (sel) {
 
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
@@ -286,8 +279,8 @@ interface GuestInfo {
         log.warn('GET_GUEST_INFO failed:', (e as Error)?.message);
         sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', confirmationNumber: '', reservationStatus: '' } });
       }
-      return false;
     }
+    return false;
   });
 
   init();
