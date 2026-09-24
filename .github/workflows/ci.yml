@@ -20,6 +20,21 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +59,8 @@ jobs:
           cat /tmp/typecheck.log
           exit $status
 
+      - name: Extension type check
+        run: cd extension && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run typecheck
       - name: Lint
         run: npm run lint || true
 
