@@ -29,9 +29,18 @@ jobs:
       env:
         HUSKY: "0"
       run: |
-        npm ci --no-audit --no-fund --ignore-scripts
-        cd backend && npm ci --no-audit --no-fund --ignore-scripts
-        cd ../dashboard && npm ci --no-audit --no-fund --ignore-scripts
+        set -o pipefail
+        install() {
+          dir="$1"
+          log="/tmp/npm-ci-$(echo "$dir" | tr '/' '-').log"
+          if ! (cd "$dir" && npm ci --no-audit --no-fund --ignore-scripts 2>&1 | tee "$log"); then
+            echo "::error::npm ci failed in $dir: $(grep -iE 'error|ERESOLVE|EBADENGINE|E404|ENOENT|EUSAGE' "$log" | head -5 | tr '\n' ' | ')"
+            exit 1
+          fi
+        }
+        install .
+        install backend
+        install dashboard
     - name: Build backend
       run: npm run build:backend
     - name: Build dashboard
