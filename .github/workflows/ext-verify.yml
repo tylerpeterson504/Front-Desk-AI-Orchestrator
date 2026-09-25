@@ -1,4 +1,4 @@
-name: Ext typecheck debug
+name: Ext vitest debug
 
 on:
   push:
@@ -20,16 +20,16 @@ jobs:
           node-version: 24
       - name: Install
         run: cd extension && npm ci --no-audit --no-fund --ignore-scripts
-      - name: Typecheck
+      - name: Vitest
         run: |
           set +e
-          cd extension && npx tsc --noEmit > /tmp/tsc.log 2>&1
-          echo "tsc-exit=$?" >> /tmp/tsc.log
+          cd extension && npx vitest run --reporter=verbose > /tmp/vt.log 2>&1
+          echo "vitest-exit=$?" >> /tmp/vt.log
           exit 0
       - name: Publish log
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          B64=$(base64 -w0 /tmp/tsc.log)
-          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-tsc.log -d "{\"message\":\"tsc log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          B64=$(base64 -w0 /tmp/vt.log)
+          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-vt.log -d "{\"message\":\"vt log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
           grep -q '"sha"' /tmp/put.json && echo published
