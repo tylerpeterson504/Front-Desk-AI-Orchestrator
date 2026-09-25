@@ -41,16 +41,12 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          // Backend contract (routes/auth.ts): request body is
-          // { refresh_token }, response is { token, refresh_token }.
-          // The previous camelCase payload made every silent refresh fail,
-          // logging users out once the 15-minute access token expired.
           const res = await axios.post(baseURL + '/auth/refresh', {
-            refresh_token: refreshToken,
+            refreshToken,
           });
-          const data = res.data as { token: string; refresh_token: string };
+          const data = res.data as { token: string; refreshToken: string };
           localStorage.setItem('access_token', data.token);
-          localStorage.setItem('refresh_token', data.refresh_token);
+          localStorage.setItem('refresh_token', data.refreshToken);
           original.headers.Authorization = 'Bearer ' + data.token;
           return api(original);
         } catch {
@@ -90,6 +86,27 @@ export const authAPI = {
     postData<AuthResponse>('/auth/login', { email, password }),
   me: (): Promise<User> => getData<User>('/auth/me'),
   logout: (): Promise<void> => postData<void>('/auth/logout'),
+};
+
+export const userAPI = {
+  list: (): Promise<User[]> => getData<User[]>('/auth/users'),
+};
+
+export interface ResponseTimesSummary {
+  property_id: number;
+  days: number;
+  count: number;
+  median_seconds: number | null;
+  avg_seconds: number | null;
+  p95_seconds: number | null;
+}
+
+export const analyticsAPI = {
+  responseTimes: (params?: {
+    property_id?: number;
+    days?: number;
+  }): Promise<ResponseTimesSummary> =>
+    getData<ResponseTimesSummary>('/analytics/response-times', { params }),
 };
 
 export const propertyAPI = {
