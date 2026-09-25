@@ -10,7 +10,7 @@ import type {
 
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse };
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
 
 let onUnauthorized: (() => void) | null = null;
 

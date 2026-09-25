@@ -1,0 +1,50 @@
+# Render blueprint (no Docker): https://render.com/docs/blueprint-spec
+#
+# Backend runs on Render's native Node runtime; the dashboard is served as a
+# static site. Set the sync:false env vars in the Render dashboard (or with
+# `render blueprint launch`) — they are secrets and must not be committed.
+#
+# DATABASE_URL must be the Neon POOLED connection string (-pooler suffix) so
+# serverless-style connection churn does not exhaust Postgres connections.
+
+services:
+  - type: web
+    name: frontdesk-backend
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run build
+    preDeployCommand: npm run migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: REGISTRATION_MODE
+        value: invite
+      - key: WIFI_ENCRYPTION_KEY
+        sync: false
+
+  - type: web
+    name: frontdesk-dashboard
+    runtime: static
+    rootDir: dashboard
+    buildCommand: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

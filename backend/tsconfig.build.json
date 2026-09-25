@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "noEmitOnError": true
+  },
+  "include": [
+    "src/**/*",
+    "db/migrate.ts",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "db/encrypt-wifi.ts",
+    "db/db-setup.ts",
+    "db/seed-runner.ts",
+    "db/set-role.ts",
+    "db/migrations"
+  ]
+}

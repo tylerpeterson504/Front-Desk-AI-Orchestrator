@@ -79,44 +79,13 @@ node --version  # Should be v20.x.x
 npm --version   # Should be 10.x.x
 ```
 
-### Option 2: Docker (Alternative)
+### Option 2: Render (Recommended, no Docker)
 
-If you prefer Docker, create a `Dockerfile` and `docker-compose.yml`:
-
-**Dockerfile (backend):**
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY backend/package*.json ./
-RUN npm install
-COPY backend/ ./
-RUN npm run build
-EXPOSE 3001
-CMD ["npm", "start"]
-```
-
-**docker-compose.yml:**
-```yaml
-version: '3.8'
-services:
-  backend:
-    build: .
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-    restart: always
-  
-  dashboard:
-    build:
-      context: .
-      dockerfile: Dockerfile.dashboard
-    ports:
-      - "3000:3000"
-    restart: always
-```
+The repository ships a Render blueprint (`render.yaml`) that deploys the
+backend on Render's native Node runtime and the dashboard as a static site,
+with migrations running automatically before each deploy. See
+[docs/DEPLOYMENT_NO_DOCKER.md](docs/DEPLOYMENT_NO_DOCKER.md) for the
+step-by-step guide.
 
 ---
 
