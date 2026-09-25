@@ -1,0 +1,37 @@
+name: Ext verify
+
+on:
+  push:
+    branches: [vibe/ext-test-debug]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: vibe/dashboard-lockfile-sync-b4377a
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install ext deps
+        run: cd extension && npm ci --no-audit --no-fund --ignore-scripts
+      - name: Run ext tests
+        run: |
+          cd extension
+          set +e
+          npx vitest run > /tmp/ext.log 2>&1
+          code=$?
+          echo "vitest-exit=$code" >> /tmp/ext.log
+          exit 0
+      - name: Publish log
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          B64=$(base64 -w0 /tmp/ext.log)
+          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test2.log -d "{\"message\":\"verify log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          grep -q '"sha"' /tmp/put.json && echo published
