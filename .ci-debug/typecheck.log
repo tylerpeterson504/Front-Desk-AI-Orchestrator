@@ -2,18 +2,17 @@
 > front-desk-ai-orchestrator@1.0.0 typecheck
 > cd backend && npx tsc --noEmit && cd ../dashboard && npx tsc --noEmit
 
-src/routes/auditLogs.ts(3,29): error TS2307: Cannot find module '../middleware/requireAuth' or its corresponding type declarations.
-src/routes/auditLogs.ts(11,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/properties.ts(3,29): error TS2307: Cannot find module '../middleware/requireAuth' or its corresponding type declarations.
-src/routes/properties.ts(102,76): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/shiftNotes.ts(3,29): error TS2307: Cannot find module '../middleware/requireAuth' or its corresponding type declarations.
-src/routes/shiftNotes.ts(12,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/shiftNotes.ts(23,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/shiftNotes.ts(36,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/shiftNotes.ts(59,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/templates.ts(3,29): error TS2307: Cannot find module '../middleware/requireAuth' or its corresponding type declarations.
-src/routes/templates.ts(12,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/templates.ts(29,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/templates.ts(50,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/templates.ts(63,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
-src/routes/templates.ts(86,24): error TS2339: Property 'auth' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+tests/services.test.ts(174,1): error TS1005: ',' expected.
+tests/services.test.ts(228,50): error TS1002: Unterminated string literal.
+tests/services.test.ts(229,1): error TS1005: ',' expected.
+tests/services.test.ts(229,6): error TS1005: ',' expected.
+tests/services.test.ts(229,18): error TS1002: Unterminated string literal.
+tests/services.test.ts(230,9): error TS1005: ':' expected.
+tests/services.test.ts(230,15): error TS1005: ':' expected.
+tests/services.test.ts(230,83): error TS1005: ',' expected.
+tests/services.test.ts(231,24): error TS1005: '{' expected.
+tests/services.test.ts(231,36): error TS1005: ',' expected.
+tests/services.test.ts(232,8): error TS1005: ',' expected.
+tests/services.test.ts(339,1): error TS1005: ',' expected.
+tests/services.test.ts(340,1): error TS1005: ',' expected.
+tests/services.test.ts(340,7): error TS1005: ':' expected.
