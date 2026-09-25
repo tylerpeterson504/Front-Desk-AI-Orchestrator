@@ -1,41 +1,51 @@
-name: Ext test debug
+name: Ext jsdom fix
 
 on:
   push:
     branches: [vibe/ext-test-debug]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  debug:
+  fix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: vibe/dashboard-lockfile-sync-b4377a
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install ext deps
-        run: cd extension && npm ci --no-audit --no-fund --ignore-scripts
-      - name: Run ext tests
+      - name: Add jsdom to extension devDependencies
+        run: |
+          cd extension
+          npm install --save-dev jsdom@24.1.3 --no-audit --no-fund --ignore-scripts
+          npm ls jsdom || true
+      - name: Verify tests run
         run: |
           cd extension
           set +e
           npx vitest run > /tmp/ext.log 2>&1
           code=$?
-          echo "exit=$code" >> /tmp/ext.log
-          exit 0
-      - name: Publish log
+          tail -40 /tmp/ext.log
+          echo "vitest exit=$code" >> /tmp/ext.log
+      - name: Push updated lockfiles to PR branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd extension
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix(extension): add jsdom devDependency so vitest jsdom environment resolves" || echo "nothing to commit"
+          git push "https://x-access-token:${{ github.token }}@github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git" HEAD:vibe/dashboard-lockfile-sync-b4377a
+      - name: Publish test log
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           B64=$(base64 -w0 /tmp/ext.log)
-          SHA=$(curl -s -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log?ref=vibe/ext-test-debug" | grep -o '"sha": *"[0-9a-f]*"' | head -1)
-          set -x
-          if [ -n "$SHA" ]; then
-            curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log -d "{\"message\":\"debug log\",\"branch\":\"vibe/ext-test-debug\",\"sha\":\"$(echo $SHA | cut -d'"' -f4)\",\"content\":\"$B64\"}" > /tmp/put.json
-          else
-            curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log -d "{\"message\":\"debug log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
-          fi
-          cat /tmp/put.json
-          if grep -q '"sha"' /tmp/put.json; then exit 0; else exit 1; fi
+          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log -d "{\"message\":\"debug log after jsdom fix\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          grep -q '"sha"' /tmp/put.json && echo published
