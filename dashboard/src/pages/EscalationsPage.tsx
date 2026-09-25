@@ -1,8 +1,8 @@
 import React from 'react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
-import { escalationAPI, propertyAPI } from '../services/api';
-import { Escalation, Property } from '../types';
+import { escalationAPI, propertyAPI, userAPI } from '../services/api';
+import { Escalation, Property, User } from '../types';
 
 interface EscalationsPageProps {
   embedded?: boolean;
@@ -27,6 +27,7 @@ const STATUS_BADGE: Record<string, string> = {
 export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = false }) => {
   const [escalations, setEscalations] = React.useState<Escalation[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
+  const [users, setUsers] = React.useState<User[]>([]);
   const [statusFilter, setStatusFilter] = React.useState<(typeof STATUS_FILTERS)[number]>('all');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -44,12 +45,14 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const loadAll = React.useCallback(async () => {
     try {
       setLoading(true);
-      const [escRes, propsRes] = await Promise.all([
+      const [escRes, propsRes, usersRes] = await Promise.all([
         escalationAPI.getAll(statusFilter === 'all' ? undefined : statusFilter),
-        propertyAPI.getAll()
+        propertyAPI.getAll(),
+        userAPI.list().catch(() => [] as User[])
       ]);
       setEscalations(escRes);
       setProperties(propsRes);
+      setUsers(usersRes);
       const first = propsRes[0];
       if (first) setPropertyId((current) => current || String(first.id));
       setError('');
@@ -105,9 +108,8 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   };
 
   const handleAssign = async (esc: Escalation) => {
-    const userId = assignTo.trim();
-    if (!userId) return;
-    await handleUpdate(esc.id, { assigned_to: userId } as Partial<Escalation>);
+    if (!assignTo) return;
+    await handleUpdate(esc.id, { assigned_to: assignTo } as Partial<Escalation>);
     setAssignTo('');
   };
 
@@ -124,13 +126,19 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const propertyName = (id: number): string =>
     properties.find((p) => p.id === id)?.name || 'Property #' + id;
 
+  const userName = (id: string | null): string => {
+    if (!id) return '';
+    const user = users.find((u) => u.id === id);
+    return user?.name || user?.email || id.slice(0, 8);
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className={embedded ? '' : 'flex h-screen'}>
       <div className={embedded ? '' : 'flex-1 bg-gray-50 overflow-auto'}>
         <div className="p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Escalations</h1>
+          <h1 className="text-3xm font-bold text-gray-800 mb-2">Escalations</h1>
           <p className="text-gray-500 mb-6">
             Flag guest issues that need follow-up, assign them to another agent, and track them to resolution.
           </p>
@@ -237,7 +245,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                     <p className="text-gray-800 break-words">{esc.reason}</p>
                     <p className="text-sm text-gray-500 mt-1">
                       {esc.guest_name ? esc.guest_name + (esc.room_number ? ' · Room ' + esc.room_number : '') : esc.room_number ? 'Room ' + esc.room_number : ''}
-                      {esc.assigned_to ? ' · assigned to ' + esc.assigned_to.slice(0, 8) : ''}
+                      {esc.assigned_to ? ' · assigned to ' + userName(esc.assigned_to) : ''}
                       {' · ' + new Date(esc.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -259,16 +267,21 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                     )}
                     {esc.status !== 'resolved' && (
                       <div className="flex gap-1">
-                        <input
-                          type="text"
-                          placeholder="Assign to user id"
+                        <select
+                           aria-label={'Assign escalation ' + esc.id}
                           value={assignTo}
-                          onChange={(e) => setAssignTo(e.target.value)}
-                          className="w-32 px-2 py-1 border border-gray-300 rounded text-xs"
-                        />
+                           onChange={(e) => setAssignTo(e.target.value)}
+                           className="w-36 px-2 py-1 border border-gray-300 rounded text-xs bg-white"
+                        >
+                          <option value="">Assign to…</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                          ))}
+                        </select>
                         <button
                           onClick={() => handleAssign(esc)}
-                          className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                          disabled={!assignTo}
+                          className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                         >
                           Assign
                         </button>
