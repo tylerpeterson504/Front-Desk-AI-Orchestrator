@@ -18,6 +18,12 @@ let currentTone: 'professional' | 'friendly' = 'professional';
 let guestInfo: GuestInfo | null = null;
 let chatContext: ChatContext | null = null;
 
+// Response-time analytics (issue #327): remember when a conversation first
+// appeared in the panel; when the agent injects a reply, report the pair.
+// Keyed by a short hash of the guest + last message, capped so a long shift
+// cannot grow the map without bound.
+const seenConversations = new Map<string, number>();
+
 interface Template {
   id: number;
   name: string;
@@ -173,8 +179,7 @@ function showAuthPrompt(): void {
 async function showMainPanel(): Promise<void> {
   hide('auth-prompt');
   show('main-panel');
-  await Promise.all([loadTemplates(), loadShiftNotes()
-]);
+  await Promise.all([loadTemplates(), loadShiftNotes()]);
   detectProperty();
   requestPageData();
 }
@@ -266,6 +271,7 @@ function updateGuestInfo(data: GuestInfo | null): void {
 
 function updateChatContext(data: ChatContext | null): void {
   chatContext = data;
+  noteConversationSeen(data);
   const block = document.getElementById('chat-context-block');
   if (!data?.messages?.length && !data?.activeGuest) {
     if (block) block.textContent = 'No active chat';
@@ -277,6 +283,54 @@ function updateChatContext(data: ChatContext | null): void {
     lines.push(`${m.sender || 'Guest'}: ${m.text}`);
   });
   if (block) block.textContent = lines.join('\n');
+}
+
+// ━━━━━━ Response-time analytics ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Stable short hash of the conversation (guest + last message) so a reply can
+// be paired with the moment the conversation first appeared in the panel.
+function conversationHash(data: ChatContext | null): string | null {
+  if (!data || (!data.activeGuest && !data.messages?.length)) return null;
+  const tail = data.messages?.length ? data.messages[data.messages.length - 1].text : '';
+  const key = `${data.activeGuest || ''}|${tail}`;
+  let h = 0;
+  for (let i = 0; i < key.length; i++) {
+    h = ((h * 31) + key.charCodeAt(i)) | 0;
+  }
+  return h.toString(36);
+}
+
+function noteConversationSeen(data: ChatContext | null): void {
+  const hash = conversationHash(data);
+  if (!hash || seenConversations.has(hash)) return;
+  seenConversations.set(hash, Date.now());
+  // FIFO cap: drop the oldest entry so the map stays bounded.
+  if (seenConversations.size > 50) {
+    const oldest = seenConversations.keys().next().value;
+    if (oldest !== undefined) seenConversations.delete(oldest);
+  }
+}
+
+function noteReplySent(): void {
+  const hash = conversationHash(chatContext);
+  if (!hash) return;
+  const firstSeenAt = seenConversations.get(hash);
+  if (!firstSeenAt) return;
+  seenConversations.delete(hash);
+
+  // The server requires a property the caller owns; without one there is
+  // nothing useful to report.
+  const propertyId = resolvePropertyId();
+  if (!propertyId) return;
+
+  // Fire-and-forget: analytics must never block or break the panel.
+  apiRequest('POST', '/analytics/response-events', {
+    events: [{
+      property_id: propertyId,
+      conversation_hash: hash,
+      first_seen_at: new Date(firstSeenAt).toISOString(),
+      replied_at: new Date().toISOString()
+    }]
+  }).catch(() => {});
 }
 
 // ━━━━━━ Shift notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -478,6 +532,7 @@ document.getElementById('btn-inject')?.addEventListener('click', () => {
     if (!tab) return;
     chrome.tabs.sendMessage(tab.id as number, { type: 'INJECT_MESSAGE', text }, (res) => {
       if (res?.success) {
+        noteReplySent();
         const btn = document.getElementById('btn-inject');
         if (btn) {
           btn.textContent = 'Injected!';
