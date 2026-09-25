@@ -40,7 +40,8 @@ local template stitching so dev/test still work.
 ### Getting a key
 
 1. Create an API key in the [Mistral console](https://console.mistral.ai/api-keys).
-2. Add it to the backend environment as `MISTRAL_API_KEY` (never commit it).
+2. Add i
+t to the backend environment as `MISTRAL_API_KEY` (never commit it).
 ### Security properties
 
 - The prompt builder (`buildPrompt`) never includes `wifi_password`; the
@@ -78,12 +79,11 @@ CI keep working while a deployed instance is closed by default.
 ## Secrets at rest
 
 `properties.wifi_password` is encrypted with AES-256-GCM before insert
-(`backend/src/lib/
-secretBox.js`, stored as `v
-1:<iv>:<tag>:<ciphertext>`) and
+(`backend/src/lib/secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
 decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route.
 
-Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production,
+Set `WIFI_ENCRYP
+TION_KEY` (32 bytes, base64 or hex) — required in production,
 warned about in dev. To rewrite rows written before this change:
 
 ```bash
@@ -128,11 +128,11 @@ branch directly.
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
    (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate
 :
-   it validates any stor
-ed token against `GET /api/auth/me` before rendering, and
+   it validates any stored token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
 
-### Sessions
+##
+# Sessions
 
 Authentication is a short-lived access token plus a revocable refresh token.
 
@@ -172,7 +172,8 @@ expires, so revocation takes
 effect within one access-
 token lifetime (15 minutes
 by default) rather than instantly. Making it instant means checking a blocklist
-on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
+on every request;
+ that trade is deliberate, and shortening `JWT_TTL` narrows the
 window if you want it tighter.
 
 Styling is Tailwind, compiled by PostCSS through CRA (`dashboard/tailwind.config.js`,
@@ -214,7 +215,8 @@ Add this key in the project's **Keys** tab:
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 ```
 
-Create or select a project in the [Neon Console](https://console.neon.tech), open **Connection Details**, and copy the pooled connection string. Keep `sslmode=require` enabled for hosted connections. Never commit this value.
+Create or select a project in the [Neon Console](https://console.neon.tech), open **Connection Details**, and 
+copy the pooled connection string. Keep `sslmode=require` enabled for hosted connections. Never commit this value.
 
 ## Databricks integration
 
@@ -250,7 +252,8 @@ Create a least-privilege token with only the repository permissions your deploym
   `DATABASE_URL` / DB env vars, `JWT_SECRET`, `CORS_ORIGIN`,
   `WIFI_ENCRYPTION_KEY`, a registration policy
   (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and `MISTRAL_API_KEY`. The server refuses to boot without
-  `CORS_ORIGIN` in production rather than reflecting every origin.
+  `CORS_ORIGIN` in produc
+tion rather than reflecting every origin.
 - Dashboard: static React build (CRA `npm run build`).
 - Extension: load unpacked from `extension/` (no build step).
 
@@ -299,8 +302,7 @@ Root workspace:
 - npm run format - Format all files
 - npm run typecheck - Type check all workspaces
 
-B
-ackend:
+Backend:
 - npm run dev - Start development server
 - npm run build - Build for production
 - npm run start - Start production server
@@ -329,7 +331,8 @@ Extension:
  
  dashboard/         # Web dashboard
   src/
-   components/   # Reusable UI components
+   components/   # Reusable UI c
+omponents
    pages/        # Page components
    hooks/        # Custom React hooks
    services/     # API services
