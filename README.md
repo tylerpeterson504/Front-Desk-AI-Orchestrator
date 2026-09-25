@@ -15,33 +15,36 @@ Akia messaging → side panel assembles property + templates + context → backe
 `/api/copilot/draft` enriches with authoritative property/template records and
 calls the LLM → draft rendered in the side panel for review → copy or inject.
 
-## AI Copilot (Mistral)
+## AI Copilot (Gemini)
 
 Draft generation runs **server-side only** via `backend/src/services/copilotService.ts`
-calling Mistral through `backend/src/services/llm/mistralClient.ts`. The API key is
-never shipped to the extension or dashboard.
+using the configured LLM provider. API keys are never shipped to
+the extension or dashboard. API keys are never shipped to
+the extension or dashboard.
 
 ### Configuration
 
 Set the following env vars on the backend (e.g. `backend/.env` or the hosting
 provider's environment settings):
 
-| Variable         | Required | Default | Description                              |
-|------------------|----------|---------|------------------------------------------|
-| `MISTRAL_API_KEY` | yes | — | Mistral API key (required at boot) |
-| `MISTRAL_BASE_URL` | no | Mistral API | Base URL override (proxy/self-host) |
-| `CORS_ORIGIN` | no | localhost in dev | Comma-separated allowed browser origins |
+| Variable         | Required | Default            | Description                              |
+|------------------|----------|--------------------|------------------------------------------|
+| `GOOGLE_API_KEY` | yes      | —                  | Google AI Studio API key (Gemini)        |
+| `GEMINI_MODEL`   | no       | `gemini-1.5-flash` | Model override                           |
+| `PERPLEXITY_API_KEY` | no | Perplexity Sonar API key (primary when set) |
+| `PERPLEXITY_MODEL` | no | `sonar` | Perplexity model override |
+| `CORS_ORIGIN` | no | unrestricted | Comma-separated allowed browser origins |
 
-`MISTRAL_API_KEY` is a required environment variable (the server exits at
-startup without it), so the copilot route reports `MISTRAL_NOT_CONFIGURED`
-only when the key is removed after boot; the extension then falls back to
-local template stitching so dev/test still work.
+When `GOOGLE_API_KEY` is absent the copilot route returns `503
+LLM_NOT_CONFIGURED` and the extension falls back to local template stitching,
+so dev/test still w
+ork without a key.
 
 ### Getting a key
 
-1. Create an API key in the [Mistral console](https://console.mistral.ai/api-keys).
-2. Add i
-t to the backend environment as `MISTRAL_API_KEY` (never commit it).
+1. Create an API key at [Google AI Studio](https://aistudio.google.com/apikey).
+2. Add it to the backend environment as `GOOGLE_API_KEY` (never commit it).
+
 ### Security properties
 
 - The prompt builder (`buildPrompt`) never includes `wifi_password`; the
@@ -79,11 +82,12 @@ CI keep working while a deployed instance is closed by default.
 ## Secrets at rest
 
 `properties.wifi_password` is encrypted with AES-256-GCM before insert
-(`backend/src/lib/secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
+(`backend/src/lib/
+secretBox.js`, stored as `v
+1:<iv>:<tag>:<ciphertext>`) and
 decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route.
 
-Set `WIFI_ENCRYP
-TION_KEY` (32 bytes, base64 or hex) — required in production,
+Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production,
 warned about in dev. To rewrite rows written before this change:
 
 ```bash
@@ -128,11 +132,11 @@ branch directly.
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
    (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate
 :
-   it validates any stored token against `GET /api/auth/me` before rendering, and
+   it validates any stor
+ed token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
 
-##
-# Sessions
+### Sessions
 
 Authentication is a short-lived access token plus a revocable refresh token.
 
@@ -172,8 +176,7 @@ expires, so revocation takes
 effect within one access-
 token lifetime (15 minutes
 by default) rather than instantly. Making it instant means checking a blocklist
-on every request;
- that trade is deliberate, and shortening `JWT_TTL` narrows the
+on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
 window if you want it tighter.
 
 Styling is Tailwind, compiled by PostCSS through CRA (`dashboard/tailwind.config.js`,
@@ -187,7 +190,7 @@ string.
 
 1. Open `chrome://extensions/` → Developer mode → **Load unpacked**
 2. Select the `extension/` folder
-3. The API base URL is centralized in `extension/src/config.ts`
+3. The API base URL is centralized in `extension/src/config.js`
    (`http://localhost:3001` by default). To point an install at a deployed
    backend, open the extension popup, enter the URL under **Backend URL** and
    save — no code edit and no repackaging. The value is stored in
@@ -205,6 +208,26 @@ Content-script host matches (MV3 manifest):
 - `https://app.us1.stayntouch.com/*` — Pipeline A (guest info)
 - `https://sys.akia.ai/*` — Pipeline B (chat context + injection)
 
+## Perplexity AI integration
+
+The copilot supports Perplexity's Sonar API for web-grounded responses. It is called only from the backend, so the API key is never exposed to the extension or dashboard. When configured, Perplexity takes priority over Gemini; Gemini remains the fallback when `PERPLEXITY_API_KEY` is absent.
+
+Add this key in
+ the project's **Keys** 
+tab:
+
+```text
+PERPLEXITY_API_KEY=your_perplexity_api_key
+```
+
+Optional model override:
+
+```text
+PERPLEXITY_MODEL=sonar
+```
+
+Create the key in the [Perplexity API settings](https://www.perplexity.ai/settings/api), then add it to the Keys tab. Never commit it.
+
 ## Neon database integration
 
 The backend accepts a Neon PostgreSQL connection string through `DATABASE_URL`. When present, it takes precedence over the individual `DB_*` settings and works with the existing `pg-promise` data layer and migrations.
@@ -215,12 +238,11 @@ Add this key in the project's **Keys** tab:
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 ```
 
-Create or select a project in the [Neon Console](https://console.neon.tech), open **Connection Details**, and 
-copy the pooled connection string. Keep `sslmode=require` enabled for hosted connections. Never commit this value.
+Create or select a project in the [Neon Console](https://console.neon.tech), open **Connection Details**, and copy the pooled connection string. Keep `sslmode=require` enabled for hosted connections. Never commit this value.
 
 ## Databricks integration
 
-The backend includes a server-side Databricks SQL Statement Execution API client at `backend/src/services/databricksService.ts`. It keeps the personal access token out of the browser and exposes an authenticated configuration check at `GET /api/databricks/status`.
+The backend includes a server-side Databricks SQL Statement Execution API client at `backend/src/services/databricks.js`. It keeps the personal access token out of the browser and exposes an authenticated configuration check at `GET /api/databricks/status`.
 
 Add these values in the project's **Keys** tab (or the backend hosting environment):
 
@@ -234,7 +256,7 @@ The integration does not log or return token values. Create the workspace and to
 
 ## GitHub integration
 
-The backend includes a server-side GitHub REST API client at `backend/src/services/githubService.ts` and an authenticated configuration check at `GET 
+The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated configuration check at `GET 
 /api/github/status`. The token stays on the server and is never returned to the browser.
 
 Add this key in the project's **Keys** tab:
@@ -251,9 +273,9 @@ Create a least-privilege token with only the repository permissions your deploym
   `npm install`, start `npm run start` on port 3001). Production requires
   `DATABASE_URL` / DB env vars, `JWT_SECRET`, `CORS_ORIGIN`,
   `WIFI_ENCRYPTION_KEY`, a registration policy
-  (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and `MISTRAL_API_KEY`. The server refuses to boot without
-  `CORS_ORIGIN` in produc
-tion rather than reflecting every origin.
+  (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and at least one AI key:
+  `PERPLEXITY_API_KEY` or `GOOGLE_API_KEY`. The server refuses to boot without
+  `CORS_ORIGIN` in production rather than reflecting every origin.
 - Dashboard: static React build (CRA `npm run build`).
 - Extension: load unpacked from `extension/` (no build step).
 
@@ -302,7 +324,8 @@ Root workspace:
 - npm run format - Format all files
 - npm run typecheck - Type check all workspaces
 
-Backend:
+B
+ackend:
 - npm run dev - Start development server
 - npm run build - Build for production
 - npm run start - Start production server
@@ -331,8 +354,7 @@ Extension:
  
  dashboard/         # Web dashboard
   src/
-   components/   # Reusable UI c
-omponents
+   components/   # Reusable UI components
    pages/        # Page components
    hooks/        # Custom React hooks
    services/     # API services
