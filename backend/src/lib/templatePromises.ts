@@ -10,7 +10,7 @@
 // Each entry matches a phrasing family that commits the hotel to an outcome
 // or a timeline. Patterns are case-insensitive.
 const PROMISE_PATTERNS: RegExp[] = [
-  /\b(?:we|i|you)(?:\s+will|'ll|\s+are\s+going\s+to|\s+am\s+going\s+to)\s+(?:fix|repair|resolve|replace|take\s+care\s+of|address|handle|follow\s+up|get\s+back\s+to|reach\s+back\s+out|check\s+back)\b/i,
+  /\b(?:we|i|you)(?:\s+will|['’](?:ll|re|m)|\s+are\s+going\s+to|\s+am\s+going\s+to)\s+(?:fix|repair|resolve|replace|take\s+care\s+of|address|handle|follow\s+up|get\s+back\s+to|reach\s+back\s+out|check\s+back)\b/i,
   /\b(?:we|i|you)(?:\s+will|'ll|\s+are\s+going\s+to|\s+am\s+going\s+to)\s+(?:send|bring|deliver|provide)\s+(?:it|this|one|a\s+\w+|the\s+\w+)\s+(?:right\s+)?(?:up|over|out)?\s*(?:shortly|immediately|right\s+away|soon|asap)?\b/i,
   /\b(?:our|the)\s+(?:team|staff|housekeeping|maintenance)\b[^.]*\b(?:is\s+going\s+to|will)\s+(?:fix|repair|resolve|replace|take\s+care\s+of|address|handle)\b[^.]*\b(?:today|tomorrow|tonight|immediately|right\s+away|shortly|soon|by\s+the\s+end\s+of\s+the\s+(?:day|shift))\b/i,
   /\b(?:consider\s+it\s+done|it'?s\s+as\s+good\s+as\s+done|done\s+deal|rest\s+assured)\b/i,
