@@ -1,4 +1,4 @@
-name: Port CI fixes
+name: Port CI fixes v2
 
 on:
   push:
@@ -14,18 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: vibe/fix-ci-v2
           fetch-depth: 0
-      - name: Port verified files from lockfile-sync branch
+      - name: Port extension jsdom files
         run: |
           git fetch origin vibe/dashboard-lockfile-sync-b4377a
           git checkout origin/vibe/dashboard-lockfile-sync-b4377a -- \
-            dashboard/package-lock.json \
-            extension/tests/sidepanel.test.ts \
-            backend/tests/services.test.ts
-          git checkout -b vibe/fix-ci-v2
+            extension/package.json \
+            extension/package-lock.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "fix(ci): port regenerated dashboard lockfile and verified test repairs from lockfile-sync branch"
-          git push "https://x-access-token:${{ github.token }}@github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git" vibe/fix-ci-v2
+          git commit -m "fix(extension): add jsdom devDependency and synced lockfile so vitest jsdom environment resolves"
+          git push "https://x-access-token:${{ github.token }}@github.com/tylerpeterson504/Front-Desk-AI-Orchestrator.git" HEAD:vibe/fix-ci-v2
