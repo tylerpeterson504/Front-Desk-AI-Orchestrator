@@ -10,7 +10,7 @@
 // by setting chrome.storage.local fdao-debug to true, then watch the console
 // for what was found and the candidate selectors.
 
-import { logger, initDebugMode } from './utils/logger';
+import { initDebugMode } from './utils/logger';
 
 interface GuestInfo {
   guestName: string;
@@ -33,16 +33,6 @@ interface GuestInfo {
   const log = createLogger('FDAO/stayntouch');
   initDebugMode(log);
 
-  function sanitizeText(text: string | null | undefined): string | null | undefined {
-    if (!text || typeof text !== 'string') return text;
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   function safeSend(payload: { type: string; data?: unknown }): void {
     try {
       const result = chrome.runtime.sendMessage(payload);
@@ -60,19 +50,27 @@ interface GuestInfo {
     return document.querySelector('main, [role="main"], #app, [data-app-root]') || document.body;
   }
 
+  /**
+   * Return the trimmed text of the first element under root that matches any
+   * of the given selectors, or null if none match.
+   */
   function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
-      let el: Element | null = null; try { el = root.querySelector(selectors[i]); } catch (_) {}
-      if (el) { const t = (el.innerText || el.textContent || '').trim(); if (t) return t; }
+      let el: Element | null = null; try { el = root.querySelector(selectors[i] as string); } catch (_) {}
+      if (el) { const t = ((el as HTMLElement).innerText || el.textContent || '').trim(); if (t) return t; }
     }
     return null;
   }
 
+  /**
+   * Find a form value by matching a <label> element's text and reading the
+   * associated input's value.
+   */
   function textForLabel(root: Element, labelText: string): string | null {
     try {
       const labels = root.querySelectorAll('label');
       for (let i = 0; i < labels.length; i++) {
-        const label = labels[i];
+        const label = labels[i] as Element;
         const text = (label.textContent || '').trim().toLowerCase();
         if (text.includes(labelText.toLowerCase())) {
           const inputId = label.getAttribute('for');
@@ -93,6 +91,9 @@ interface GuestInfo {
     return null;
   }
 
+  /**
+   * Extract guest and reservation details from the page DOM.
+   */
   function extractGuestInfo(): GuestInfo {
     const root = getRoot();
     const guestName = 
@@ -128,6 +129,7 @@ interface GuestInfo {
     const checkIn = 
       firstText(root, [
         '.check-in',
+        '.check-in-date',
         '.checkIn',
         '#checkIn',
         '[data-test="check-in"]',
@@ -144,6 +146,7 @@ interface GuestInfo {
     const checkOut = 
       firstText(root, [
         '.check-out',
+        '.check-out-date',
         '.checkOut',
         '#checkOut',
         '[data-test="check-out"]',
@@ -228,6 +231,11 @@ interface GuestInfo {
     }
   }
 
+  /**
+   * Log counts of candidate selectors for guest, room, date, confirmation,
+   * and status fields to help find new selectors when the site markup
+   * changes.
+   */
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'guest-like': ['[class*="guest" i]', '[data-test*="guest" i]', '[name*="guest" i]', '[id*="guest" i]'],
@@ -239,7 +247,8 @@ interface GuestInfo {
     };
     Object.keys(probes).forEach(function (label) {
       let total = 0; const samples: string[] = [];
-      (probes as Record<string, string[]>)[label].forEach(function (sel) {
+      const sels = (probes as Record<string, string[]>)[label] || [];
+      sels.forEach(function (sel) {
 
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
@@ -286,8 +295,8 @@ interface GuestInfo {
         log.warn('GET_GUEST_INFO failed:', (e as Error)?.message);
         sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', confirmationNumber: '', reservationStatus: '' } });
       }
-      return false;
     }
+    return false;
   });
 
   init();

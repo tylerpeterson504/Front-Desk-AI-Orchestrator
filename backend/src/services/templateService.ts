@@ -3,6 +3,7 @@ import { Template } from '../entities/Template';
 import { User } from '../entities/User';
 import { AppError, NotFoundError, ValidationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
+import { findTemplatePromises } from '../lib/templatePromises';
 
 export interface CreateTemplateDto {
   name: string;
@@ -42,6 +43,15 @@ export class TemplateService {
       throw new ValidationError(`content must be at most ${MAX_CONTENT_LENGTH} characters`);
     }
 
+    // No-promise rule (ADR-002): templates must not promise a follow-up or
+    // guarantee request fulfillment. Agents may still send such wording by
+    // typing it at send time; it just cannot be baked into a saved template.
+    if (findTemplatePromises(content).hasPromise) {
+      throw new ValidationError(
+        'content must not promise a follow-up or guarantee request fulfillment; state the action taken instead (e.g. "I have shared this with our maintenance team")'
+      );
+    }
+
     if (category != null && (typeof category !== 'string' || category.length > MAX_CATEGORY_LENGTH)) {
       throw new ValidationError(`category must be a string of at most ${MAX_CATEGORY_LENGTH} characters`);
     }
@@ -55,8 +65,7 @@ export class TemplateService {
         throw new ValidationError(`tags must contain at most ${MAX_TAGS} entries`);
       }
       if (tags.some((tag) => typeof tag !== 'string' || tag.length > MAX_TAG_LENGTH)) {
- 
-       throw new ValidationError(`each tag must be a string of at most ${MAX_TAG_LENGTH} characters`);
+        throw new ValidationError(`each tag must be a string of at most ${MAX_TAG_LENGTH} characters`);
       }
     }
 

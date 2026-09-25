@@ -4,6 +4,7 @@ import request from 'supertest';
 import { getRepository } from '../src/config/database';
 import { User } from '../src/entities/User';
 import { Property } from '../src/entities/Property';
+import { RefreshToken } from '../src/entities/RefreshToken';
 import { createMockRepository, createMockUser, createMockProperty } from './utils';
 
 // Create a test user for the auth tests
@@ -24,10 +25,19 @@ async function createTestApp(userRepoMock?: any, propertyRepoMock?: any) {
   const propertyRepo = propertyRepoMock || defaultPropertyRepo;
   
   // Mock database
+  const refreshTokenRepo = createMockRepository<RefreshToken>();
+  refreshTokenRepo.create.mockImplementation((data: any) => ({ ...data, id: 1 }));
+  refreshTokenRepo.save.mockImplementation(async (entity: any) => entity);
+
+  // Mock database. jest.resetModules() re-imports entities for the app, so
+  // identity comparison against this file's imports would never match;
+  // dispatch by entity class name instead.
   jest.doMock('../src/config/database', () => ({
     getRepository: jest.fn((entity: any) => {
-      if (entity === User) return userRepo;
-      if (entity === Property) return propertyRepo;
+      const name = entity?.name;
+      if (name === 'User') return userRepo;
+      if (name === 'Property') return propertyRepo;
+      if (name === 'RefreshToken') return refreshTokenRepo;
       return createMockRepository();
     })
   }));
