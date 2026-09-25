@@ -151,8 +151,10 @@ be revoked.
 
 - `POST /api/auth/login`, `POST /api/auth/register` → `{ token, expires_in, refresh_token, user }`
 - `POST /api/auth/refresh` → new `token` **and** a new `refresh_token`
-- `POST /api/auth/logout` → 204, revokes the session
+- `POST /api/auth/logout` → 200, revokes the session
 - `POST /api/auth/logout-all` → revokes every session for the caller
+
+The dashboard opts into refresh-token cookies with `X-Refresh-Token-Transport: cookie` on login, refresh, and logout. Those responses omit `refresh_token` and instead set/rotate an HttpOnly, Secure, SameSite=None cookie scoped to `/api/auth`. Dashboard requests send credentials, and the backend must allow its exact origin through `CORS_ORIGIN`. Run the dashboard/API over HTTPS outside localhost. Extension clients without the header continue to use the JSON refresh-token contract.
 
 Refresh tokens are **single-use**. Refreshing revokes the presented token and
 returns a successor in the same family, so a client must store what it gets back.
