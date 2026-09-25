@@ -46,9 +46,11 @@ function generateCacheKey(req: Request, prefix: string = ''): string {
     req.query ? JSON.stringify(req.query) : ''
   ];
   
-  // Add authentication context if available
-  if ((req as any).user?.userId) {
-    keyParts.push((req as any).user.userId);
+  // Add authentication context if available. requireAuth attaches req.auth
+  // (the old req.user field no longer exists); without the user in the key,
+  // one user's cached GET response could be served to another.
+  if (req.auth?.userId) {
+    keyParts.push(req.auth.userId);
   }
   
   return `${prefix}:${keyParts.join(':')}`;
@@ -85,7 +87,7 @@ function cleanupExpired() {
 
 // Run cleanup every 5 minutes
 
-setInterval(cleanupExpired, 5 * 60 * 1000);
+setInterval(cleanupExpired, 5 * 60 * 1000).unref();
 
 // Run cleanup on startup
 cleanupExpired();
@@ -147,7 +149,8 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
           data,
           expiresAt: Date.now() + effectiveTtl * 1000
         });
-        logger.debug('Cache set', { key: cacheKey, ttl: effectiveTtl });
+        logger.debug('Cache set', { key: cacheKey, ttl
+: effectiveTtl });
         res.set('X-Cache', 'MISS');
       } else {
         res.set('X-Cache', 'BYPASS');
@@ -251,7 +254,8 @@ export function etagCache() {
       return next();
     }
     
-    // Generate ETag based on request
+    // Ge
+nerate ETag based on request
     const cacheKey = generateCacheKey(req, 'etag');
     const cached = cache.get(cacheKey);
     
