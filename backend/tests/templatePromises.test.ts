@@ -5,6 +5,7 @@ describe('findTemplatePromises (ADR-002 no-promise rule)', () => {
     expect(findTemplatePromises('I have shared this with our maintenance team.').hasPromise).toBe(false);
     expect(findTemplatePromises('I have logged your request with housekeeping.').hasPromise).toBe(false);
     expect(findTemplatePromises('Thank you for letting us know about the thermostat.').hasPromise).toBe(false);
+    expect(findTemplatePromises('Rest assured, maintenance has been notified.').hasPromise).toBe(false);
   });
 
   it('rejects future-tense fix promises', () => {
@@ -13,9 +14,17 @@ describe('findTemplatePromises (ADR-002 no-promise rule)', () => {
     expect(findTemplatePromises('Our team is going to resolve this by the end of the day.').hasPromise).toBe(true);
   });
 
-  it('rejects guarantee phrasing', () => {
-    expect(findTemplatePromises('Rest assured, your room will be ready by 3:00 pm.').hasPromise).toBe(true);
+  it('rejects guarantee and reassurance phrasing', () => {
     expect(findTemplatePromises('Consider it done!').hasPromise).toBe(true);
+    expect(findTemplatePromises("It's as good as done.").hasPromise).toBe(true);
+    expect(findTemplatePromises('Done deal.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We guarantee it.').hasPromise).toBe(true);
+  });
+
+  it('rejects passive promises with or without a deadline', () => {
+    expect(findTemplatePromises('The leak will be fixed.').hasPromise).toBe(true);
+    expect(findTemplatePromises('The leak will be fixed tomorrow.').hasPromise).toBe(true);
+    expect(findTemplatePromises('Your key will be ready.').hasPromise).toBe(true);
   });
 
   it('rejects follow-up promises', () => {
