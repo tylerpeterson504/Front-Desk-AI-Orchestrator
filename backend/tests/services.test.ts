@@ -118,9 +118,7 @@ describe('Service Layer', () => {
     describe('findByEmail', () => {
       it('should find user by email', async () => {
         const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
-        const mockRep
-o
- = createMockRepository<User>();
+        const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
@@ -171,8 +169,7 @@ o
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         mockRepo.save.mockResolvedValue(mockUser);
-        (getRepository as jest.Mock).mockReturnValue(m
-ockRepo);
+        (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
         const updatedUser = await userService.updateUser('1', {
           name: 'Updated Name'
@@ -226,8 +223,7 @@ ockRepo);
 
       it('should return false for invalid password', async () => {
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-        const user = { password_hash: 'hashed_pas
-sword' } as User;
+        const user = { password_hash: 'hashed_password' } as User;
         const isValid = await userService.validatePassword(user, 'wrong_password');
         expect(isValid).toBe(false);
       });
@@ -336,9 +332,7 @@ sword' } as User;
 
     describe('refresh', () => {
       it('should refresh token', async () => {
-        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' 
-as 
-const } as User;
+        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);

@@ -122,7 +122,7 @@ export class EscalationService {
       where: { id, created_by: userId }
     });
     if (!escalation) {
-      throw new NotFoundError('Escalation not found');
+      throw new NotFoundError('Escalation', id);
     }
     await this.escalationRepository.delete(id);
   }
@@ -133,7 +133,7 @@ export class EscalationService {
       .where('e.id = :id AND (e.created_by = :userId OR e.assigned_to = :userId)', { id, userId })
       .getOne();
     if (!escalation) {
-      throw new NotFoundError('Escalation not found');
+      throw new NotFoundError('Escalation', id);
     }
     return escalation;
   }

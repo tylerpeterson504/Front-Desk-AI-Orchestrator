@@ -1,10 +1,4 @@
-import { getRepository } from '../src/config/database';
-import { Escalation } from '../src/entities/Escalation';
-import { Property } from '../src/entities/Property';
-import { escalationService } from '../src/services/escalationService';
 import { AuthorizationError, NotFoundError, ValidationError } from '../src/lib/errors';
-
-jest.mock('../src/config/database', () => ({ getRepository: jest.fn() }));
 
 const escRepo: any = {
   create: jest.fn(),
@@ -23,11 +17,22 @@ const qb: any = {
 };
 const propRepo: any = { findOne: jest.fn() };
 
+jest.mock('../src/config/database', () => ({
+  getRepository: jest.fn((entity: any) =>
+    entity.name === 'Property' ? propRepo : escRepo
+  )
+}));
+
+// Imported dynamically: the service captures repositories as class fields at
+// module load, so the mock repos above must be initialized first.
+let escalationService: typeof import('../src/services/escalationService')['escalationService'];
+
+beforeAll(async () => {
+  ({ escalationService } = await import('../src/services/escalationService'));
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
-  (getRepository as jest.Mock).mockImplementation((entity: any) =>
-    entity === Property ? propRepo : escRepo
-  );
 });
 
 describe('EscalationService', () => {

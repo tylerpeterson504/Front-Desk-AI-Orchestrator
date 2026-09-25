@@ -68,8 +68,7 @@ export class AuditLogService {
       resourceId?: string | number;
       metadata?: Record<string, unknown>;
       propertyId?: number;
-      ipAddre
-ss?: string;
+      ipAddress?: string;
       userAgent?: string;
     }
   ): Promise<AuditLog> {
