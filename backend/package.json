@@ -2,15 +2,15 @@
   "name": "front-desk-ai-backend",
   "version": "1.0.0",
   "description": "Backend API for Front Desk AI Orchestrator",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
-    "migrate": "node db/migrate.js",
+    "migrate": "node dist/db/migrate.js",
     "seed": "node db/seed-runner.js",
     "db-setup": "node db/db-setup.js",
     "encrypt-wifi": "node db/encrypt-wifi.js",

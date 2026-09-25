@@ -10,7 +10,7 @@
     "lib": [
       "ES2022"
     ],
-    "outDir": "../dist/backend",
+    "outDir": "dist",
     "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
@@ -61,6 +61,7 @@
   },
   "include": [
     "src/**/*",
+    "db/migrate.ts",
     "tests/**/*"
   ],
   "exclude": [

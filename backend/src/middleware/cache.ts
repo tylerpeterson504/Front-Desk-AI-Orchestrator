@@ -254,8 +254,7 @@ export function etagCache() {
       return next();
     }
     
-    // Ge
-nerate ETag based on request
+    // Generate ETag based on request
     const cacheKey = generateCacheKey(req, 'etag');
     const cached = cache.get(cacheKey);
     

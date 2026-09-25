@@ -1,21 +1,23 @@
-import { getRepository } from '../src/config/database';
-import { AuditLog } from '../src/entities/AuditLog';
-import { Property } from '../src/entities/Property';
 import { auditLogService } from '../src/services/auditLogService';
 
-jest.mock('../src/config/database', () => ({ getRepository: jest.fn() }));
+jest.mock('../src/config/database', () => {
+  const auditRepo: any = { create: jest.fn(), save: jest.fn() };
+  const propertyRepo: any = {};
+  return {
+    getRepository: jest.fn((entity: any) =>
+      entity?.name === 'Property' ? propertyRepo : auditRepo
+    ),
+    __mocks: { auditRepo }
+  };
+});
 jest.mock('../src/lib/logger', () => ({
   createRequestLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }))
 }));
 
-const auditRepo: any = { create: jest.fn(), save: jest.fn() };
-const propertyRepo: any = {};
+const { auditRepo } = jest.requireMock('../src/config/database').__mocks;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (getRepository as jest.Mock).mockImplementation((entity: any) =>
-    entity === Property ? propertyRepo : auditRepo
-  );
   auditRepo.create.mockImplementation((data: any) => ({ ...data }));
   auditRepo.save.mockImplementation(async (e: any) => e);
 });

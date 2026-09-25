@@ -71,11 +71,11 @@ gainst the fresh PR branch (unpooled connection).
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Run Migrations
         working-directory: backend
-        run: npm ci && npm run migrate
+        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
           DATABASE_URL: "${{ steps.reset_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"

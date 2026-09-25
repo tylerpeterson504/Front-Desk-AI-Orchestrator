@@ -5,7 +5,7 @@ import 'dotenv';
 import { DataSource } from 'typeorm';
 import path from 'path';
 import { getDatabaseConfig } from '../src/config/index';
-import logger from '../src/config/database';
+import logger from '../src/lib/logger';
 
 const dbConfig = getDatabaseConfig();
 
@@ -24,7 +24,7 @@ const migrationDataSource = new DataSource({
   ...(connectionString ? { url: connectionString } : manualConfig),
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   entities: [],
-  migrations: [path.join(__dirname, '../src/migrations/**/*.ts')],
+  migrations: [path.join(__dirname, '../src/migrations/*.{ts,js}')],
   synchronize: false,
   logging: process.env.LOG_LEVEL === 'debug'
 });

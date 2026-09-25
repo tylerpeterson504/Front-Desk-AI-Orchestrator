@@ -1,33 +1,35 @@
-import { getRepository } from '../src/config/database';
-import { Escalation } from '../src/entities/Escalation';
-import { Property } from '../src/entities/Property';
 import { escalationService } from '../src/services/escalationService';
 import { AuthorizationError, NotFoundError, ValidationError } from '../src/lib/errors';
 
-jest.mock('../src/config/database', () => ({ getRepository: jest.fn() }));
+jest.mock('../src/config/database', () => {
+  const qb: any = {
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
+    getMany: jest.fn()
+  };
+  const escRepo: any = {
+    create: jest.fn(),
+    save: jest.fn(),
+    merge: jest.fn((e: any, p: any) => ({ ...e, ...p })),
+    findOne: jest.fn(),
+    delete: jest.fn(),
+    createQueryBuilder: jest.fn(() => qb)
+  };
+  const propRepo: any = { findOne: jest.fn() };
+  return {
+    getRepository: jest.fn((entity: any) =>
+      entity?.name === 'Property' ? propRepo : escRepo
+    ),
+    __mocks: { escRepo, propRepo, qb }
+  };
+});
 
-const escRepo: any = {
-  create: jest.fn(),
-  save: jest.fn(),
-  merge: jest.fn((e: any, p: any) => ({ ...e, ...p })),
-  findOne: jest.fn(),
-  delete: jest.fn(),
-  createQueryBuilder: jest.fn(() => qb)
-};
-const qb: any = {
-  where: jest.fn().mockReturnThis(),
-  andWhere: jest.fn().mockReturnThis(),
-  orderBy: jest.fn().mockReturnThis(),
-  getOne: jest.fn(),
-  getMany: jest.fn()
-};
-const propRepo: any = { findOne: jest.fn() };
+const { escRepo, propRepo, qb } = jest.requireMock('../src/config/database').__mocks;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  (getRepository as jest.Mock).mockImplementation((entity: any) =>
-    entity === Property ? propRepo : escRepo
-  );
 });
 
 describe('EscalationService', () => {
