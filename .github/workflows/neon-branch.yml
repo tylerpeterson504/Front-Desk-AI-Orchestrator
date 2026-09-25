@@ -22,7 +22,10 @@ env:
 jobs:
   prepare_neon_branch:
     name: Prepare Neon Branch
+    # Skip entirely when the Neon credentials are not configured, so PRs
+    # don't show a failing preview-database job on every repository.
     if: |
+      secrets.NEON_API_KEY != '' &&
       github.event_name == 'pull_request' && (
       github.event.action == 'synchronize'
       || github.event.action == 'opened'
@@ -58,7 +61,8 @@ jobs:
           parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
 
-      # Run schema migrations against the fresh PR branch (unpooled connection).
+      # Run schema migrations a
+gainst the fresh PR branch (unpooled connection).
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -79,7 +83,7 @@ jobs:
 
   delete_neon_branch:
     name: Delete Neon Branch
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: secrets.NEON_API_KEY != '' && github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Delete Neon Branch
