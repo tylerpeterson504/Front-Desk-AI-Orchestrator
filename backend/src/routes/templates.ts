@@ -1,15 +1,15 @@
 import express from 'express';
 import { templateService } from '../services/templateService';
-import { authenticateToken } from '../config/auth';
+import { requireAuth } from '../middleware/requireAuth';
 import { requestId } from '../middleware/errorHandler';
 import logger from '../lib/logger';
 
 const router = express.Router();
 
 // Get all templates for the authenticated user
-router.get('/', requestId, authenticateToken, async (req, res, next) => {
+router.get('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const { category, search } = req.query;
 
     const templates = await templateService.getAll(userId, {
@@ -24,9 +24,9 @@ router.get('/', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Get a single template
-router.get('/:id', requestId, authenticateToken, async (req, res, next) => {
+router.get('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
     if (isNaN(id)) {
@@ -45,9 +45,9 @@ router.get('/:id', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Create a template
-router.post('/', requestId, authenticateToken, async (req, res, next) => {
+router.post('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const template = await templateService.create(req.body, userId);
 
     logger.info('Template created', { template_id: template.id, user_id: userId, request_id: req.requestId });
@@ -58,9 +58,9 @@ router.post('/', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Update a template
-router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
+router.put('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
     if (isNaN(id)) {
@@ -81,9 +81,9 @@ router.put('/:id', requestId, authenticateToken, async (req, res, next) => {
 });
 
 // Delete a template
-router.delete('/:id', requestId, authenticateToken, async (req, res, next) => {
+router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
     if (isNaN(id)) {

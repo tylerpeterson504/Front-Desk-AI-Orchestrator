@@ -10,13 +10,13 @@
 // Each entry matches a phrasing family that commits the hotel to an outcome
 // or a timeline. Patterns are case-insensitive.
 const PROMISE_PATTERNS: RegExp[] = [
-  /wes+(?:will|'ll|ares+goings+to)s+(?:fix|repair|resolve|replace|takes+cares+of|address|handle)/i,
-  /wes+(?:will|'ll|ares+goings+to)s+(?:send|bring|deliver|provide)s+(?:it|this|one|as+w+|thes+w+)s+(?:rights+)?(?:up|over|out)?s*(?:shortly|immediately|rights+away|soon|asap)?/i,
-  /(?:considers+its+done|it'?ss+ass+goods+ass+done|dones+deal)/i,
-  /(?:guarantee|guaranteed|rests+assured)/i,
-  /wills+bes+(?:fixed|repaired|resolved|replaced|ready|completed|takens+cares+of)s+(?:today|tomorrow|tonight|immediately|rights+away|bys+(?:thes+)?(?:ends+ofs+(?:thes+)?(?:day|shift)|d+(?::d+)?(?:s*(?:am|pm))?))/i,
-  /yours+w+s+(?:will|would|'ll)s+bes+(?:ready|available|resolved|fixed)/i,
-  /(?:we|i)s+(?:will|'ll)s+(?:follows+up|gets+backs+tos+you|reachs+backs+out|checks+back)/i
+  /\b(?:we|our\s+team|our\s+staff|our\s+crew)\s*(?:will|'ll|is\s+going\s+to|are\s+going\s+to)\s+(?:fix|repair|resolve|replace|take\s+care\s+of|address|handle)\b/i,
+  /\bwe\s*(?:will|'ll|are\s+going\s+to)\s+(?:send|bring|deliver|provide)\s+(?:it|this|one|a\w+|the\w+)\s+(?:right\s+)?(?:up|over|out)?\s*(?:shortly|immediately|right\s+away|soon|asap)?\b/i,
+  /\b(?:consider\s+it\s+done|it'?s\s+as\s+good\s+as\s+done|done\s+deal)\b/i,
+  /\b(?:guarantee|guaranteed|rest\s+assured)\b/i,
+  /\bwill\s+be\s+(?:fixed|repaired|resolved|replaced|ready|completed|taken\s+care\s+of)\s+(?:today|tomorrow|tonight|immediately|right\s+away|by\s+(?:the\s+)?(?:end\s+of\s+(?:the\s+)?(?:day|shift)|\d+(?::\d+)?(?:\s*(?:am|pm))?))\b/i,
+  /\byour\w+\s+(?:will|would|'ll)\s+be\s+(?:ready|available|resolved|fixed)\b/i,
+  /\b(?:we|i)\s*(?:will|'ll)\s+(?:follow\s+up|get\s+back\s+to\s+you|reach\s+back\s+out|check\s+back)\b/i
 ];
 
 export interface PromiseCheckResult {

@@ -20,6 +20,21 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -31,9 +46,9 @@ jobs:
         env:
           HUSKY: "0"
         run: |
-          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee /tmp/install.log
-          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee -a /tmp/install.log
-          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts | tee -a /tmp/install.log
+          npm ci --no-audit --no-fund --ignore-scripts
+          cd backend && npm ci --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm ci --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: TypeScript type check
@@ -44,6 +59,8 @@ jobs:
           cat /tmp/typecheck.log
           exit $status
 
+      - name: Extension type check
+        run: cd extension && npm ci --no-audit --no-fund --ignore-scripts && npm run typecheck
       - name: Lint
         run: npm run lint || true
 
@@ -61,21 +78,6 @@ jobs:
           NODE_ENV: test
           CI: "true"
 
-      - name: Attach debug logs on failure
-        if: failure()
-        run: |
-          git config user.name "ci-debug"
-          git config user.email "ci-debug@users.noreply.github.com"
-          git fetch origin ${{ github.head_ref }}
-          git checkout FETCH_HEAD
-          mkdir -p .ci-debug
-          cp /tmp/typecheck.log .ci-debug/typecheck.log 2>/dev/null || true
-          cp /tmp/backend-test.log .ci-debug/backend-test.log 2>/dev/null || true
-          cp /tmp/install.log .ci-debug/install.log 2>/dev/null || true
-          git add -f .ci-debug
-          git commit -m "ci: attach debug logs [skip ci]"
-          git push origin HEAD:refs/heads/ci-debug-log-${{ github.run_id }} --force || echo "failed to push debug logs"
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -91,9 +93,9 @@ jobs:
         env:
           HUSKY: "0"
         run: |
-          npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd backend && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-          cd ../dashboard && npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+          npm ci --no-audit --no-fund --ignore-scripts
+          cd backend && npm ci --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm ci --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: Build backend

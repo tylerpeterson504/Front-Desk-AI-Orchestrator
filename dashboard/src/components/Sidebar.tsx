@@ -1,11 +1,12 @@
 import React from 'react';
-import { FileText, ClipboardList, LogOut, Building2, StickyNote } from './icons';
+import { FileText, ClipboardList, LogOut, Building2, StickyNote, AlertTriangle } from './icons';
 import { User, PageType } from '../types';
 
 const NAV_ITEMS: Array<{ id: PageType; label: string; icon: typeof FileText }> = [
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'properties', label: 'Properties', icon: Building2 },
   { id: 'shift-notes', label: 'Shift Notes', icon: StickyNote },
+  { id: 'escalations', label: 'Escalations', icon: AlertTriangle },
   { id: 'audit', label: 'Audit Logs', icon: ClipboardList }
 ];
 
