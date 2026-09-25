@@ -1,4 +1,4 @@
-name: Main install debug
+name: Ext typecheck debug
 
 on:
   push:
@@ -14,34 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: vibe/fix-ci-v2
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Run installs like CI
+      - name: Install
+        run: cd extension && npm ci --no-audit --no-fund --ignore-scripts
+      - name: Typecheck
         run: |
           set +e
-          {
-            echo '== root'
-            npm ci --no-audit --no-fund --ignore-scripts 2>&1
-            echo "root exit=$?"
-            echo '== backend'
-            cd backend && npm ci --no-audit --no-fund --ignore-scripts 2>&1
-            echo "backend exit=$?"
-            cd ..
-            echo '== dashboard'
-            cd dashboard && npm ci --no-audit --no-fund --ignore-scripts 2>&1
-            echo "dashboard exit=$?"
-            cd ..
-            echo '== extension'
-            cd extension && npm ci --no-audit --no-fund --ignore-scripts 2>&1
-            echo "extension exit=$?"
-          } > /tmp/inst.log 2>&1
+          cd extension && npx tsc --noEmit > /tmp/tsc.log 2>&1
+          echo "tsc-exit=$?" >> /tmp/tsc.log
           exit 0
       - name: Publish log
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          B64=$(base64 -w0 /tmp/inst.log)
-          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-install-main2.log -d "{\"message\":\"install log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          B64=$(base64 -w0 /tmp/tsc.log)
+          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-tsc.log -d "{\"message\":\"tsc log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
           grep -q '"sha"' /tmp/put.json && echo published
