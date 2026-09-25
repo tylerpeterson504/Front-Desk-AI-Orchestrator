@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   release:
@@ -19,26 +18,42 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            dashboard/package-lock.json
+            extension/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        env:
+          HUSKY: '0'
+        run: |
+          npm ci --no-audit --no-fund --ignore-scripts
+          cd backend && npm ci --no-audit --no-fund --ignore-scripts
+          cd ../dashboard && npm ci --no-audit --no-fund --ignore-scripts
+          cd ../extension && npm ci --no-audit --no-fund --ignore-scripts
 
       - name: Build all packages
-        run: npm run build
+        run: |
+          npm run build:backend
+          npm run build:dashboard
+          cd extension && npm run build
 
       - name: Run tests
-        run: npm run test
+        run: npm run test:backend
         env:
           JWT_SECRET: ci-only-secret-not-for-production
+          MISTRAL_API_KEY: ci-dummy-key-not-used-by-tests
           NODE_ENV: test
+          CI: 'true'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            backend/build/**
-            dashboard/build/**
-            extension/build/**
+            dist/backend/**
+            dashboard/dist/**
+            extension/dist/**
