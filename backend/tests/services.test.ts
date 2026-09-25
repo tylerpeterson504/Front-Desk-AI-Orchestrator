@@ -63,6 +63,7 @@ describe('Service Layer', () => {
 
   describe('UserService', () => {
     describe('createUser',
+
  () => {
       it('should create a user with valid data', async () => {
         const mockRepo = createMockRepository<User>();
@@ -117,7 +118,8 @@ describe('Service Layer', () => {
     describe('findByEmail', () => {
       it('should find user by email', async () => {
         const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
-        const mockRepo
+        const mockRep
+o
  = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
@@ -169,7 +171,8 @@ describe('Service Layer', () => {
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         mockRepo.save.mockResolvedValue(mockUser);
-        (getRepository as jest.Mock).mockReturnValue(mockRepo);
+        (getRepository as jest.Mock).mockReturnValue(m
+ockRepo);
 
         const updatedUser = await userService.updateUser('1', {
           name: 'Updated Name'
@@ -223,7 +226,8 @@ describe('Service Layer', () => {
 
       it('should return false for invalid password', async () => {
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-        const user = { password_hash: 'hashed_password' } as User;
+        const user = { password_hash: 'hashed_pas
+sword' } as User;
         const isValid = await userService.validatePassword(user, 'wrong_password');
         expect(isValid).toBe(false);
       });
@@ -278,7 +282,8 @@ describe('Service Layer', () => {
 
         expect(result.token).toBeDefined();
         expect(result.refresh_token).toBeDefined();
-      
+    
+  
   expect(result.expires_in).toBeDefined();
         expect(result.user.email).toBe('test@example.com');
       });
@@ -331,7 +336,8 @@ describe('Service Layer', () => {
 
     describe('refresh', () => {
       it('should refresh token', async () => {
-        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' as 
+        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' 
+as 
 const } as User;
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);

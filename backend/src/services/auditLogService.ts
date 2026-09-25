@@ -39,7 +39,11 @@ export class AuditLogService {
     }));
   }
 
-  async create(data: CreateAuditLogDto, userId?: string): Promise<AuditLog> {
+  async create(
+    data: CreateAuditLogDto,
+    userId?: string,
+    context?: { ipAddress?: string; userAgent?: string }
+  ): Promise<AuditLog> {
     const auditLog = this.auditLogRepository.create({
       user_id: userId || null,
       action: data.action,
@@ -47,8 +51,8 @@ export class AuditLogService {
       resource_id: data.resource_id ? String(data.resource_id) : null,
       metadata: data.metadata || null,
       property_id: data.property_id || null,
-      ip_address: null,
-      user_agent: null
+      ip_address: context?.ipAddress?.slice(0, 45) ?? null,
+      user_agent: context?.userAgent?.slice(0, 500) ?? null
     });
 
     await this.auditLogRepository.save(auditLog);
@@ -64,7 +68,8 @@ export class AuditLogService {
       resourceId?: string | number;
       metadata?: Record<string, unknown>;
       propertyId?: number;
-      ipAddress?: string;
+      ipAddre
+ss?: string;
       userAgent?: string;
     }
   ): Promise<AuditLog> {
@@ -76,7 +81,8 @@ export class AuditLogService {
         metadata: options?.metadata,
         property_id: options?.propertyId
       },
-      userId
+      userId,
+      { ipAddress: options?.ipAddress, userAgent: options?.userAgent }
     );
   }
 }

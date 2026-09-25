@@ -8,3 +8,4 @@ export * from './auditLogService';
 export * from './copilotService';
 export * from './databricksService';
 export * from './githubService';
+export * from './escalationService';
