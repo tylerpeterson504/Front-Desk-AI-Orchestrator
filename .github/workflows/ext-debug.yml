@@ -26,10 +26,16 @@ jobs:
           echo "exit=$code" >> /tmp/ext.log
           exit 0
       - name: Publish log
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          cp /tmp/ext.log debug-ext-test.log
-          git add debug-ext-test.log
-          git commit -m "debug: extension test output" || true
-          git push
+          B64=$(base64 -w0 /tmp/ext.log)
+          SHA=$(curl -s -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log?ref=vibe/ext-test-debug" | grep -o '"sha": *"[0-9a-f]*"' | head -1)
+          set -x
+          if [ -n "$SHA" ]; then
+            curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log -d "{\"message\":\"debug log\",\"branch\":\"vibe/ext-test-debug\",\"sha\":\"$(echo $SHA | cut -d'"' -f4)\",\"content\":\"$B64\"}" > /tmp/put.json
+          else
+            curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test.log -d "{\"message\":\"debug log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          fi
+          cat /tmp/put.json
+          if grep -q '"sha"' /tmp/put.json; then exit 0; else exit 1; fi
