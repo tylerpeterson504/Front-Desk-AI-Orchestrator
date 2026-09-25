@@ -1,0 +1,2 @@
+src/sidepanel.ts(293,92): error TS1005: ':' expected.
+tsc-exit=2
