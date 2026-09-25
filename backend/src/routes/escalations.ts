@@ -1,5 +1,6 @@
 import express from 'express';
 import { escalationService } from '../services/escalationService';
+import { auditLogService } from '../services/auditLogService';
 import { requireAuth } from '../middleware/requireAuth';
 import { requestId } from '../middleware/errorHandler';
 import logger from '../lib/logger';
@@ -25,6 +26,12 @@ router.post('/', requestId, requireAuth, async (req, res, next) => {
     const escalation = await escalationService.create(req.body, userId);
 
     logger.info('Escalation created', { escalation_id: escalation.id, user_id: userId, request_id: req.requestId });
+
+    await auditLogService.logAction('escalation.created', 'escalation', userId, {
+      resourceId: escalation.id,
+      propertyId: escalation.property_id,
+      metadata: { priority: escalation.priority, status: escalation.status }
+    });
     res.status(201).json(escalation);
   } catch (err) {
     next(err);
@@ -48,6 +55,12 @@ router.put('/:id', requestId, requireAuth, async (req, res, next) => {
     const escalation = await escalationService.update(id, req.body, userId);
 
     logger.info('Escalation updated', { escalation_id: escalation.id, user_id: userId, request_id: req.requestId });
+
+    await auditLogService.logAction('escalation.updated', 'escalation', userId, {
+      resourceId: escalation.id,
+      propertyId: escalation.property_id,
+      metadata: { status: escalation.status, priority: escalation.priority, assigned_to: escalation.assigned_to }
+    });
     res.json(escalation);
   } catch (err) {
     next(err);
@@ -60,7 +73,8 @@ router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
     const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
 
-    if (isNaN(id)) {
+ 
+   if (isNaN(id)) {
       return res.status(400).json({
         error: 'Invalid escalation ID',
         code: 'VALIDATION_ERROR',
@@ -71,6 +85,10 @@ router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
     await escalationService.delete(id, userId);
 
     logger.info('Escalation deleted', { escalation_id: id, user_id: userId, request_id: req.requestId });
+
+    await auditLogService.logAction('escalation.deleted', 'escalation', userId, {
+      resourceId: id
+    });
     res.status(204).send();
   } catch (err) {
     next(err);
