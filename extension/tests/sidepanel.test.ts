@@ -511,4 +511,4 @@ describe('copy and inject', () => {
       expect.any(Function)
     );
   });
-}
+});
