@@ -1,0 +1,14 @@
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90m/home/runner/work/Front-Desk-AI-Orchestrator/Front-Desk-AI-Orchestrator/extension[39m
+
+ [32m✓[39m tests/content-context-guard.test.js [2m ([22m[2m8 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32m✓[39m tests/sidepanel.test.ts [2m ([22m[2m27 tests[22m[2m)[22m[33m 369[2mms[22m[39m
+ [32m✓[39m tests/content-observer-debounce.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32m✓[39m tests/content-scripts.test.ts [2m ([22m[2m29 tests[22m[2m)[22m[33m 1716[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m65 passed[39m[22m[90m (65)[39m
+[2m   Start at [22m 04:06:54
+[2m   Duration [22m 2.65s[2m (transform 293ms, setup 72ms, collect 187ms, tests 2.15s, environment 1.77s, prepare 470ms)[22m
+
+vitest-exit=0
