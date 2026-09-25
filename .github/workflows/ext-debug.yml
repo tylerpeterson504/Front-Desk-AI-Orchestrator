@@ -1,0 +1,35 @@
+name: Ext test debug
+
+on:
+  push:
+    branches: [vibe/ext-test-debug]
+
+permissions:
+  contents: write
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install ext deps
+        run: cd extension && npm ci --no-audit --no-fund --ignore-scripts
+      - name: Run ext tests
+        run: |
+          cd extension
+          set +e
+          npx vitest run > /tmp/ext.log 2>&1
+          code=$?
+          echo "exit=$code" >> /tmp/ext.log
+          exit 0
+      - name: Publish log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp /tmp/ext.log debug-ext-test.log
+          git add debug-ext-test.log
+          git commit -m "debug: extension test output" || true
+          git push
