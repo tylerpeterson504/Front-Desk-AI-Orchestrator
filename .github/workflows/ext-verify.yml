@@ -1,4 +1,5 @@
-name: Ext verify
+name: Ext verify (v2)
+# retrigger
 
 on:
   push:
@@ -33,5 +34,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           B64=$(base64 -w0 /tmp/ext.log)
-          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test2.log -d "{\"message\":\"verify log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
+          curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tylerpeterson504/Front-Desk-AI-Orchestrator/contents/debug-ext-test3.log -d "{\"message\":\"verify log\",\"branch\":\"vibe/ext-test-debug\",\"content\":\"$B64\"}" > /tmp/put.json
           grep -q '"sha"' /tmp/put.json && echo published
