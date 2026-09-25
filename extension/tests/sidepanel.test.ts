@@ -297,8 +297,7 @@ describe('guest info and chat context', () => {
 });
 
 describe('property detection', () => {
-  it
-('labels the detected property', async () => {
+  it('labels the detected property', async () => {
     (global as any).getPropertyConfig = () => ({ name: 'St.Pierre Hotel' });
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
@@ -512,4 +511,4 @@ describe('copy and inject', () => {
       expect.any(Function)
     );
   });
-});
+}
