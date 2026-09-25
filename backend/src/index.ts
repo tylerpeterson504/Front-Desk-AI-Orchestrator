@@ -118,7 +118,6 @@ import propertiesRouter from './routes/properties';
 import templatesRouter from './routes/templates';
 import shiftNotesRouter from './routes/shiftNotes';
 import auditLogsRouter from './routes/auditLogs';
-import escalationsRouter from './routes/escalations';
 
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
@@ -129,7 +128,6 @@ app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
 app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
-app.use('/api/escalations', apiLimiter, escalationsRouter);
 app.use('/api/copilot', apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
