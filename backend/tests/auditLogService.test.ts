@@ -1,9 +1,3 @@
-import { getRepository } from '../src/config/database';
-import { AuditLog } from '../src/entities/AuditLog';
-import { Property } from '../src/entities/Property';
-import { auditLogService } from '../src/services/auditLogService';
-
-jest.mock('../src/config/database', () => ({ getRepository: jest.fn() }));
 jest.mock('../src/lib/logger', () => ({
   createRequestLogger: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }))
 }));
@@ -11,11 +5,22 @@ jest.mock('../src/lib/logger', () => ({
 const auditRepo: any = { create: jest.fn(), save: jest.fn() };
 const propertyRepo: any = {};
 
+jest.mock('../src/config/database', () => ({
+  getRepository: jest.fn((entity: any) =>
+    entity.name === 'Property' ? propertyRepo : auditRepo
+  )
+}));
+
+// Imported dynamically: the service captures repositories as class fields at
+// module load, so the mock repos above must be initialized first.
+let auditLogService: typeof import('../src/services/auditLogService')['auditLogService'];
+
+beforeAll(async () => {
+  ({ auditLogService } = await import('../src/services/auditLogService'));
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
-  (getRepository as jest.Mock).mockImplementation((entity: any) =>
-    entity === Property ? propertyRepo : auditRepo
-  );
   auditRepo.create.mockImplementation((data: any) => ({ ...data }));
   auditRepo.save.mockImplementation(async (e: any) => e);
 });

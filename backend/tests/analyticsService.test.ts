@@ -1,10 +1,4 @@
-import { getRepository } from '../src/config/database';
-import { ResponseEvent } from '../src/entities/ResponseEvent';
-import { Property } from '../src/entities/Property';
-import { analyticsService } from '../src/services/analyticsService';
 import { AuthorizationError, ValidationError } from '../src/lib/errors';
-
-jest.mock('../src/config/database', () => ({ getRepository: jest.fn() }));
 
 const eventRepo: any = {
   create: jest.fn((d: any) => ({ ...d })),
@@ -18,11 +12,22 @@ const qb: any = {
 };
 const propRepo: any = { find: jest.fn(), findOne: jest.fn() };
 
+jest.mock('../src/config/database', () => ({
+  getRepository: jest.fn((entity: any) =>
+    entity.name === 'Property' ? propRepo : eventRepo
+  )
+}));
+
+// Imported dynamically: the service captures repositories as class fields at
+// module load, so the mock repos above must be initialized first.
+let analyticsService: typeof import('../src/services/analyticsService')['analyticsService'];
+
+beforeAll(async () => {
+  ({ analyticsService } = await import('../src/services/analyticsService'));
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
-  (getRepository as jest.Mock).mockImplementation((entity: any) =>
-    entity === Property ? propRepo : eventRepo
-  );
 });
 
 const validEvent = {
@@ -73,7 +78,7 @@ describe('AnalyticsService.responseTimes', () => {
     qb.getMany.mockResolvedValue(
       [60, 120, 600].map((s, i) => ({
         first_seen_at: new Date('2026-09-25T10:00:00Z'),
-        replied_at: new Date('2026-09-25T10:00:00Z').getTime() + s * 1000,
+        replied_at: new Date(new Date('2026-09-25T10:00:00Z').getTime() + s * 1000),
         id: i
       }))
     );
