@@ -290,7 +290,7 @@ function updateChatContext(data: ChatContext | null): void {
 // be paired with the moment the conversation first appeared in the panel.
 function conversationHash(data: ChatContext | null): string | null {
   if (!data || (!data.activeGuest && !data.messages?.length)) return null;
-  const tail = data.messages?.length ? data.messages[data.messages.length - 1].text : '';
+  const tail = data.messages?.length ? data.messages[data.messages.length - 1]?.text ??  '';
   const key = `${data.activeGuest || ''}|${tail}`;
   let h = 0;
   for (let i = 0; i < key.length; i++) {
