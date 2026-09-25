@@ -6,9 +6,10 @@ import type {
   ShiftNote,
   AuditLog,
   AuthResponse,
+  Escalation,
 } from '../types';
 
-export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse };
+export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
 
@@ -107,6 +108,16 @@ export const analyticsAPI = {
     days?: number;
   }): Promise<ResponseTimesSummary> =>
     getData<ResponseTimesSummary>('/analytics/response-times', { params }),
+};
+
+export const escalationAPI = {
+  getAll: (status?: string): Promise<Escalation[]> =>
+    getData<Escalation[]>('/escalations', { params: status ? { status } : undefined }),
+  create: (data: Partial<Escalation>): Promise<Escalation> =>
+    postData<Escalation>('/escalations', data),
+  update: (id: number, data: Partial<Escalation>): Promise<Escalation> =>
+    putData<Escalation>('/escalations/' + id, data),
+  delete: (id: number): Promise<void> => deleteData<void>('/escalations/' + id),
 };
 
 export const propertyAPI = {

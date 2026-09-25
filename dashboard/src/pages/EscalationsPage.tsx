@@ -37,7 +37,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   // Create form
   const [propertyId, setPropertyId] = React.useState('');
   const [reason, setReason] = React.useState('');
-  const [priority, setPriority] = React.useState('normal');
+  const [priority, setPriority] = React.useState<Escalation['priority']>('normal');
   const [guestName, setGuestName] = React.useState('');
   const [roomNumber, setRoomNumber] = React.useState('');
   const [assignTo, setAssignTo] = React.useState('');
@@ -212,7 +212,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                 <label className="block text-sm text-gray-600 mb-1">Priority</label>
                 <select
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
+                  onChange={(e) => setPriority(e.target.value as Escalation['priority'])}
                   className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   {PRIORITIES.map((p) => (
