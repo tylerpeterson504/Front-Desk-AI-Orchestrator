@@ -63,6 +63,7 @@ describe('Service Layer', () => {
 
   describe('UserService', () => {
     describe('createUser',
+
  () => {
       it('should create a user with valid data', async () => {
         const mockRepo = createMockRepository<User>();
@@ -117,8 +118,7 @@ describe('Service Layer', () => {
     describe('findByEmail', () => {
       it('should find user by email', async () => {
         const mockUser = { id: '1', email: 'test@example.com', name: 'Test' };
-        const mockRepo
- = createMockRepository<User>();
+        const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
 
@@ -278,7 +278,8 @@ describe('Service Layer', () => {
 
         expect(result.token).toBeDefined();
         expect(result.refresh_token).toBeDefined();
-      
+    
+  
   expect(result.expires_in).toBeDefined();
         expect(result.user.email).toBe('test@example.com');
       });
@@ -331,8 +332,7 @@ describe('Service Layer', () => {
 
     describe('refresh', () => {
       it('should refresh token', async () => {
-        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' as 
-const } as User;
+        const mockUser = { id: '1', email: 'test@example.com', role: 'agent' as const } as User;
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue(mockUser);
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
