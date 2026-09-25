@@ -1,7 +1,7 @@
 import { DataSource, ObjectLiteral, EntityTarget } from 'typeorm';
 import { config, isProduction, getDatabaseConfig } from './index';
 import logger from '../lib/logger';
-import { User, Property, Template, ShiftNote, AuditLog, RefreshToken, Escalation } from '../entities';
+import { User, Property, Template, ShiftNote, AuditLog, RefreshToken } from '../entities';
 
 const dbConfig = getDatabaseConfig();
 
@@ -18,7 +18,7 @@ export const AppDataSource = new DataSource({
   type: 'postgres',
   ...(connectionString ? { url: connectionString } : manualConfig),
   ssl: connectionString?.includes('neon.tech') || isProduction() ? { rejectUnauthorized: false } : false,
-  entities: [User, Property, Template, ShiftNote, AuditLog, RefreshToken, Escalation],
+  entities: [User, Property, Template, ShiftNote, AuditLog, RefreshToken],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   synchronize: false,
   logging: config.LOG_LEVEL === 'debug',
