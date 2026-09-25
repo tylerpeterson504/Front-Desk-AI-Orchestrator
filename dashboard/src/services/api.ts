@@ -5,11 +5,10 @@ import type {
   Template,
   ShiftNote,
   AuditLog,
-  Escalation,
   AuthResponse,
 } from '../types';
 
-export type { User, Property, Template, ShiftNote, AuditLog, Escalation, AuthResponse };
+export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse };
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
@@ -42,12 +41,16 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
+          // Backend contract (routes/auth.ts): request body is
+          // { refresh_token }, response is { token, refresh_token }.
+          // The previous camelCase payload made every silent refresh fail,
+          // logging users out once the 15-minute access token expired.
           const res = await axios.post(baseURL + '/auth/refresh', {
-            refreshToken,
+            refresh_token: refreshToken,
           });
-          const data = res.data as { token: string; refreshToken: string };
+          const data = res.data as { token: string; refresh_token: string };
           localStorage.setItem('access_token', data.token);
-          localStorage.setItem('refresh_token', data.refreshToken);
+          localStorage.setItem('refresh_token', data.refresh_token);
           original.headers.Authorization = 'Bearer ' + data.token;
           return api(original);
         } catch {
@@ -151,13 +154,3 @@ export const auditAPI = {
 };
 
 export default api;
-
-export const escalationAPI = {
-  getAll: (status?: string): Promise<Escalation[]> =>
-    getData<Escalation[]>(status ? '/escalations?status=' + status : '/escalations'),
-  create: (data: Partial<Escalation>): Promise<Escalation> =>
-    postData<Escalation>('/escalations', data),
-  update: (id: number, data: Partial<Escalation>): Promise<Escalation> =>
-    putData<Escalation>('/escalations/' + id, data),
-  delete: (id: number): Promise<void> => deleteData<void>('/escalations/' + id),
-};
