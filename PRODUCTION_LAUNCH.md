@@ -134,7 +134,7 @@ REGISTRATION_INVITE_TOKEN=your_long_random_invite_token_here
 WIFI_ENCRYPTION_KEY=your_32_byte_base64_string_here
 
 # CORS - Set your production domains
-CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://your_extension_id
+CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://hmjpbhiploiaghgnolmlenledgmecblk
 
 # Seeding
 RUN_SEEDS=false
@@ -410,7 +410,7 @@ zip -r frontdesk-extension.zip dist/
 
 After publishing, update your `.env.production`:
 ```env
-CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://YOUR_EXTENSION_ID
+CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://hmjpbhiploiaghgnolmlenledgmecblk
 ```
 
 Get extension ID from Chrome Web Store listing.

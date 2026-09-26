@@ -14,7 +14,7 @@ Request flow: content scripts scrape guest/chat context from Stayntouch PMS and 
 
 ## Quick start
 
-Requires Node.js >= 22 and a Neon PostgreSQL connection string.
+Requires Node.js >= 24 and a Neon PostgreSQL connection string.
 
 ```bash
 npm run install:all
@@ -25,7 +25,7 @@ npm run dev                             # backend :3001 + dashboard :3000
 
 Demo login: `demo@example.com` / `password123`.
 
-Load the extension from `chrome://extensions/` → Developer mode → Load unpacked → `extension/`. Point it at the backend via the popup's **Backend URL** field — no repackaging needed. Details: [extension/README.md](extension/README.md).
+Load the extension (ID: `hmjpbhiploiaghgnolmlenledgmecblk`) from `chrome://extensions/` → Developer mode → Load unpacked → `extension/`. Point it at the backend via the popup's **Backend URL** field — no repackaging needed. Details: [extension/README.md](extension/README.md).
 
 ## AI copilot (Mistral)
 
@@ -94,7 +94,7 @@ Tokens never reach the browser and are never logged.
 
 ## Deployment
 
-- **Backend**: any Node host. Production requires `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `WIFI_ENCRYPTION_KEY`, `MISTRAL_API_KEY`, and a registration policy. The server refuses to boot without `CORS_ORIGIN` in production rather than reflecting every origin.
+ - **Backend**: any Node host. Production requires `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `MISTRAL_API_KEY`, `MISTRAL_MODEL`, `WIFI_ENCRYPTION_KEY`, and a registration policy. The server refuses to boot without `CORS_ORIGIN` in production rather than reflecting every origin.
 - **Dashboard**: static build (`npm run build`), served by the backend in production.
 - **Extension**: load unpacked; no build step.
 
