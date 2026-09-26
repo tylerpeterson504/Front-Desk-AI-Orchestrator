@@ -5,7 +5,9 @@ Front Desk AI Orchestrator — notable changes by date, newest first.
 ## 2026-09 (in progress)
 
 - **Auth refactor**: all routes use the shared `requireAuth` middleware; `req.auth` carries userId/email/role; admin role changes revoke sessions (PR #304).
-- **Documentation & Deployment**: Updated README with Node.js 24 requirement, extension ID (hmjpbhiploiaghgnolmlenledgmecblk), Mistral model configuration; Fixed TypeScript moduleResolution; Updated PRODUCTION_LAUNCH.md with actual extension ID. All tests passing (210 total).
+- Add entry for documentation updates, Mistral config, extension ID
+- Record TypeScript moduleResolution fix
+- Note all tests passing (210 total)
 - **Template no-promise rule**: the backend enforces at save time that templates never promise follow-up unless explicitly allowed (PR #307); promise-detection regexes repaired and covered by tests.
 - **CI repair**: nested lockfiles tracked, `npm ci` everywhere, per-package build matrix, test-job hang fixed with `--forceExit`, Postgres service container, extension typecheck gate (PRs #314, #317); obsolete lockfile-generation workflow removed (#320); workflow audit fixes in flight (#322).
 - **Escalations API**: guest-request escalation and assignment endpoints with ownership scoping and tests (#326).
