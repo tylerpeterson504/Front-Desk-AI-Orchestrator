@@ -2,7 +2,7 @@
 // Uses the OpenAI-compatible endpoint at api.mistral.ai - no SDK dependency needed.
 
 const DEFAULT_TIMEOUT_MS = 30_000;
-const MODEL_NAME = process.env.MISTRAL_MODEL || 'mistral-small-latest';
+const MODEL_NAME = process.env.MISTRAL_MODEL || 'mistral-medium';
 const BASE_URL = process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai';
 
 export interface LLMOptions {
