@@ -1,3 +1,8 @@
+// Set required environment variables for the app to start
+process.env.MISTRAL_API_KEY = 'test-mistral-api-key';
+process.env.JWT_SECRET = 'test-secret-key-at-least-32-characters-long';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+
 // @ts-nocheck
 // Integration tests for backend routes - SIMPLIFIED
 import request from 'supertest';
@@ -45,7 +50,9 @@ async function createTestApp(userRepoMock?: any, propertyRepoMock?: any) {
     config: {
       JWT_SECRET: 'test-secret-key-at-least-32-characters-long',
       JWT_TTL: '15m',
-      BCRYPT_ROUNDS: '10'
+      BCRYPT_ROUNDS: '10',
+      MISTRAL_API_KEY: 'test-mistral-api-key',
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
     }
   }));
   
