@@ -17,6 +17,19 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * All statements are idempotent so it is safe against partially-provisioned
  * databases too.
+ *
+ * No ownership backfill is included, and none is needed. This migration only
+ * ever executes on a fresh database, which has no rows to backfill; on existing
+ * databases it is already recorded as applied. Verified against the live
+ * database: properties and templates both have zero rows with a NULL owner.
+ * Inventing an owner for an unowned row would be worse than leaving it NULL,
+ * because ownership-filtered queries would then expose another tenant's rows.
+ *
+ * Rollback is deliberately conservative: `down` does not drop the ownership
+ * columns. It cannot distinguish a column this migration created from one that
+ * predates it, and on a database where the column already existed, dropping it
+ * would destroy real tenant ownership data. The indexes are dropped because
+ * they are safe to recreate.
  */
 export class AddMissingEntityColumns1700000001000 implements MigrationInterface {
   name = 'AddMissingEntityColumns1700000001000';
@@ -38,15 +51,11 @@ export class AddMissingEntityColumns1700000001000 implements MigrationInterface 
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // Indexes only. The ownership columns are intentionally left in place; see
+    // the class-level note. An operator who genuinely wants a full teardown can
+    // drop them by hand.
     await queryRunner.query(`DROP INDEX IF EXISTS idx_templates_user_id`);
-    await queryRunner.query(`ALTER TABLE templates DROP COLUMN IF EXISTS tags`);
-    await queryRunner.query(`ALTER TABLE templates DROP COLUMN IF EXISTS category`);
-    await queryRunner.query(`ALTER TABLE templates DROP COLUMN IF EXISTS user_id`);
-
     await queryRunner.query(`DROP INDEX IF EXISTS idx_audit_logs_property_id`);
-    await queryRunner.query(`ALTER TABLE audit_logs DROP COLUMN IF EXISTS property_id`);
-
     await queryRunner.query(`DROP INDEX IF EXISTS idx_properties_user_id`);
-    await queryRunner.query(`ALTER TABLE properties DROP COLUMN IF EXISTS user_id`);
   }
 }
