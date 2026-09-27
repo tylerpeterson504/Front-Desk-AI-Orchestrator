@@ -42,7 +42,7 @@ function generateCacheKey(req: Request, prefix: string = ''): string {
   // Don't include headers or body as they may contain sensitive data
   const keyParts = [
     req.method,
-    req.path,
+    `${req.baseUrl}${req.path}`,
     req.query ? JSON.stringify(req.query) : ''
   ];
   
@@ -113,8 +113,16 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
     }
     
     // Don't cache auth, health, or internal endpoints
-    const path = req.path;
+    const path = `${req.baseUrl}${req.path}`;
     if (path.includes('/api/auth') || path.includes('/health') || path.includes('/internal')) {
+      return next();
+    }
+
+    // A global cache middleware runs before route-level auth and therefore has
+    // no trusted user context yet. Never look up or populate API cache entries
+    // until authentication has attached req.auth; route-level caches mounted
+    // after requireAuth remain user-scoped by generateCacheKey.
+    if ((path === '/api' || path.startsWith('/api/')) && !req.auth?.userId) {
       return next();
     }
     

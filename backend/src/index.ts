@@ -9,7 +9,6 @@ import { requestId, notFound, errorHandler } from './middleware/errorHandler';
 import { getMode } from './config/registration';
 import { initializeDatabase } from './config/database';
 import { config } from './config';
-import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
 import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
 
@@ -62,8 +61,10 @@ app.use(cors({
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
 
-// Response cache for idempotent GET endpoints (60s TTL)
-app.use(responseCache(60));
+// Do not install a global response cache here: it would run before route-level
+// authentication and could return a cache hit without authenticating the caller.
+// Cacheable private routes must mount responseCache after requireAuth, when
+// req.auth is available; the middleware bypasses unauthenticated requests.
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
