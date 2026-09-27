@@ -9,7 +9,6 @@ import { requestId, notFound, errorHandler } from './middleware/errorHandler';
 import { getMode } from './config/registration';
 import { initializeDatabase } from './config/database';
 import { config } from './config';
-import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
 import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
 
@@ -62,8 +61,10 @@ app.use(cors({
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
 
-// Response cache for idempotent GET endpoints (60s TTL)
-app.use(responseCache(60));
+// Do not install a global response cache here: it would run before route-level
+// authentication and could return a cache hit without authenticating the caller.
+// Cacheable private routes must mount responseCache after requireAuth, when
+// req.auth is available; the middleware bypasses unauthenticated requests.
 
 // General rate limit for all API routes
 const apiLimiter = rateLimit({
@@ -122,6 +123,8 @@ import auditLogsRouter from './routes/auditLogs';
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
 import githubRouter from './routes/github';
+import analyticsRouter from './routes/analytics';
+import escalationsRouter from './routes/escalations';
 
 app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
@@ -131,6 +134,8 @@ app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
 app.use('/api/copilot', apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
+app.use('/api/analytics', apiLimiter, analyticsRouter);
+app.use('/api/escalations', apiLimiter, escalationsRouter);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

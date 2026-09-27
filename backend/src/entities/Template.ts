@@ -6,8 +6,10 @@ export class Template {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column()
-  user_id: string;
+  // Nullable in the database for the same reason as Property.user_id; existing
+  // rows predate the column. See the AddMissingEntityColumns migration.
+  @Column({ type: 'varchar', nullable: true })
+  user_id: string | null;
 
   @Column()
   name: string;
@@ -15,10 +17,11 @@ export class Template {
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ nullable: true })
+  // Nullable union columns need an explicit `type`; see the note in User.ts.
+  @Column({ type: 'int', nullable: true })
   property_id: number;
 
-  @Column({ nullable: true, length: 100 })
+  @Column({ type: 'varchar', nullable: true, length: 100 })
   category: string | null;
 
   @Column({ nullable: true, type: 'text', array: true })
