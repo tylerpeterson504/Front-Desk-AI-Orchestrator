@@ -19,13 +19,16 @@ export class User {
   @Column()
   password_hash!: string;
 
-  @Column({ nullable: true })
+  // Union types (string | null, 'admin' | 'agent') emit Object as the
+  // reflected design:type, so TypeORM cannot infer a column type from them.
+  // These columns must declare `type` explicitly.
+  @Column({ type: 'varchar', nullable: true })
   name: string | null = null;
 
-  @Column({ default: 'agent' })
+  @Column({ type: 'varchar', default: 'agent' })
   role: 'admin' | 'agent' = 'agent';
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   property_id: number | null = null;
 
   @CreateDateColumn()

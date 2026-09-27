@@ -10,7 +10,8 @@ export class AuditLog {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({ nullable: true })
+  // Nullable union columns need an explicit `type`; see the note in User.ts.
+  @Column({ type: 'varchar', nullable: true })
   user_id: string | null;
 
   @Column()
@@ -19,10 +20,10 @@ export class AuditLog {
   @Column()
   resource: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   resource_id: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   property_id: number | null;
 
   @ManyToOne(() => Property, { nullable: true })
@@ -32,10 +33,10 @@ export class AuditLog {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, unknown> | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   ip_address: string | null;
 
-  @Column({ nullable: true, length: 500 })
+  @Column({ type: 'varchar', nullable: true, length: 500 })
   user_agent: string | null;
 
   @CreateDateColumn()

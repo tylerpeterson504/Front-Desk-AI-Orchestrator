@@ -6,22 +6,26 @@ export class Property {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column()
-  user_id: string;
+  // Nullable in the database: existing rows predate this column, so it cannot
+  // be NOT NULL without a backfill. See the AddMissingEntityColumns migration.
+  // Union/nullable columns need an explicit `type` for TypeORM.
+  @Column({ type: 'varchar', nullable: true })
+  user_id: string | null;
 
   @Column()
   name: string;
 
-  @Column({ nullable: true })
+  // Nullable union columns need an explicit `type`; see the note in User.ts.
+  @Column({ type: 'varchar', nullable: true })
   address: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   checkout_time: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   wifi_ssid: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   wifi_password: string | null;
 
   @Column({ nullable: true, type: 'text' })
