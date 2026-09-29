@@ -208,8 +208,7 @@ npm run build
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **Load unpacked**
-4. Select the `extensi
-on/dist` folder
+4. Select the `extension/dist` folder
 
 **Expected**:
 - ✅ Extension loads without errors
@@ -460,8 +459,7 @@ The project is considered **fully tested and ready for use** when:
 
 ## 📞 Support
 
-If you encounter any i
-ssues during testing:
+If you encounter any issues during testing:
 1. Check the **console logs** for errors
 2. Review the **network requests** in DevTools
 3. Verify **environment variables** are set correctly

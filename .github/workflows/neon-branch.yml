@@ -61,8 +61,7 @@ jobs:
           parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
 
-      # Run schema migrations a
-gainst the fresh PR branch (unpooled connection).
+      # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
         uses: actions/checkout@v4
 

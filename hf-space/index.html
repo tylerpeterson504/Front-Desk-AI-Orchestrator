@@ -126,8 +126,7 @@
     if (CLIENT_ID) localStorage.setItem("hf_oauth_client_id", CLIENT_ID);
 
     function base64url(bytes) {
-      return btoa(String.fromCharCode(...new Uint8Ar
-ray(bytes)))
+      return btoa(String.fromCharCode(...new Uint8Array(bytes)))
         .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     }
 
@@ -185,8 +184,7 @@ ray(bytes)))
 
     function addBubble(role, text) {
       const div = document.createElement("div");
-      div.clas
-sName = "msg " + role;
+      div.className = "msg " + role;
       div.textContent = text;
       chatEl.appendChild(div);
       chatEl.scrollTop = chatEl.scrollHeight;
@@ -254,8 +252,7 @@ sName = "msg " + role;
           const lines = buffer.split("\n");
           buffer = lines.pop();
           for (const line of lines) {
-            if (!lin
-e.startsWith("data: ")) continue;
+            if (!line.startsWith("data: ")) continue;
             const payload = line.slice(6).trim();
             if (payload === "[DONE]") continue;
             try {

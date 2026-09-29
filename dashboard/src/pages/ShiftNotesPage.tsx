@@ -109,8 +109,7 @@ trim()
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="bl
-ock text-sm text-gray-600 mb-1">Note</label>
+                <label className="block text-sm text-gray-600 mb-1">Note</label>
                 <input
                   type="text"
                   placeholder="e.g. Elevator maintenance 2–4 PM"
