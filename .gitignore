@@ -1,8 +1,5 @@
 # Dependencies
 node_modules/
-# Lockfiles are not committed; CI uses `npm install` (not `npm ci`),
-# which regenerates them at install time.
-package-lock.json
 
 # Environment variables
 .env

@@ -16,7 +16,7 @@
     "encrypt-wifi": "node db/encrypt-wifi.js",
     "set-role": "node db/set-role.js",
     "prune-sessions": "node db/prune-sessions.js",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --forceExit",
     "test:api": "jest tests/api.test.ts",
     "test:security": "jest tests/security.test.ts",
     "test:coverage": "jest --runInBand --coverage",
