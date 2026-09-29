@@ -56,13 +56,13 @@ jobs:
         id: reset_neon_branch
         uses: neondatabase/reset-branch-action@v1
         with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
+          project_id
+: ${{ vars.NEON_PROJECT_ID }}
           branch: ${{ env.NEON_BRANCH_NAME }}
           parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
 
-      # Run schema migrations a
-gainst the fresh PR branch (unpooled connection).
+      # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
         uses: actions/checkout@v4
 
