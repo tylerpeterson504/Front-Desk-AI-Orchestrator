@@ -4,6 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { createHash } from 'crypto';
 import logger from '../lib/logger';
 
 /**
@@ -45,6 +46,14 @@ function generateCacheKey(req: Request, prefix: string = ''): string {
     req.path,
     req.query ? JSON.stringify(req.query) : ''
   ];
+
+  // This middleware runs before route-level requireAuth, so req.auth is not
+  // populated yet. Scope the key by the presented credential to prevent one
+  // user's response being served from cache to another.
+  const authorization = req.headers.authorization;
+  if (authorization) {
+    keyParts.push(createHash('sha256').update(authorization).digest('hex'));
+  }
   
   // Add authentication context if available. requireAuth attaches req.auth
   // (the old req.user field no longer exists); without the user in the key,
