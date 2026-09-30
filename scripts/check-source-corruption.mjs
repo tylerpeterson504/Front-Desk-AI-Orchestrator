@@ -55,7 +55,7 @@ for (const f of files) {
   });
   const s = text.match(SPLIT);
   if (s) {
-    soft.push(rel + ' mid-token split "' + s[0].replace('\n', '\\n') + '"');
+    soft.push(rel + ' mid-token split "' + s[0].replace(/\n/g, '\\n') + '"');
   }
 }
 
