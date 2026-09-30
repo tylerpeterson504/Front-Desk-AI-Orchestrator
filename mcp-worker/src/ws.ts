@@ -10,14 +10,17 @@ const SERVER_INFO = { name: "fdao-mcp", version: "1.0.0" };
 
 type RpcId = number | string | null;
 
+/** Serialize a JSON-RPC success response using the caller's request ID. */
 function rpcResult(id: RpcId, result: unknown): string {
   return JSON.stringify({ jsonrpc: "2.0", id, result });
 }
 
+/** Serialize a JSON-RPC error response with its request ID, code, and message. */
 function rpcError(id: RpcId, code: number, message: string): string {
   return JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } });
 }
 
+/** Return public tool metadata for tools/list, omitting handlers and auth flags. */
 function toolDescriptors() {
   return TOOLS.map((t) => ({
     name: t.name,
@@ -26,6 +29,10 @@ function toolDescriptors() {
   }));
 }
 
+/**
+ * Execute a tools/call request and serialize its MCP text result as JSON-RPC.
+ * Tool failures become results with isError set; backend failures include status and body.
+ */
 async function handleCall(ctx: BackendCtx, id: RpcId, params: any): Promise<string> {
   const name = params && typeof params.name === "string" ? params.name : "";
   const args =
@@ -51,6 +58,11 @@ async function handleCall(ctx: BackendCtx, id: RpcId, params: any): Promise<stri
   }
 }
 
+/**
+ * Process newline-delimited JSON-RPC frames and return serialized replies in order.
+ * Handles initialization, ping, and tool requests; skips notifications and response frames.
+ * Invalid JSON receives a parse error, and unknown methods with IDs receive a method error.
+ */
 async function handleMessage(ctx: BackendCtx, raw: string): Promise<string[]> {
   const out: string[] = [];
   // Newline-delimited JSON-RPC frames (matches the reference ws transport behavior).
@@ -101,6 +113,10 @@ async function handleMessage(ctx: BackendCtx, raw: string): Promise<string[]> {
   return out;
 }
 
+/**
+ * Upgrade a WebSocket request and bind incoming messages to the backend context.
+ * @returns A 101 response carrying the client socket, or 426 when the upgrade header is missing or invalid.
+ */
 export function handleWsUpgrade(request: Request, backendCtx: BackendCtx): Response {
   const upgrade = request.headers.get("Upgrade");
   if (!upgrade || upgrade.toLowerCase() !== "websocket") {

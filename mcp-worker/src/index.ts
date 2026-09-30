@@ -15,8 +15,10 @@ export interface Env {
   BACKEND_TOKEN?: string;
 }
 
-// Token precedence: Authorization: Bearer header > ?token= query param (for WS clients
-// that cannot set headers) > BACKEND_TOKEN worker secret (service-token fallback).
+/**
+ * Resolve a token from the Bearer header, then the token query parameter, then BACKEND_TOKEN.
+ * Return null when none is present; a Bearer header with an empty value returns an empty string.
+ */
 function resolveToken(request: Request, env: Env): string | null {
   const header = request.headers.get("Authorization");
   if (header && header.toLowerCase().startsWith("bearer ")) return header.slice(7).trim();
@@ -25,10 +27,12 @@ function resolveToken(request: Request, env: Env): string | null {
   return env.BACKEND_TOKEN || null;
 }
 
+/** Wrap text in the content array expected by an MCP tool result. */
 function textResult(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
 
+/** Create an MCP server whose registered tools use the supplied backend context. */
 function createServer(bctx: BackendCtx): McpServer {
   const server = new McpServer({ name: "fdao-mcp", version: "1.0.0" });
   const zObject = z.record(z.string(), z.unknown());
@@ -87,12 +91,14 @@ const CORS_HEADERS: Record<string, string> = {
   "access-control-expose-headers": "Mcp-Session-Id",
 };
 
+/** Copy a response's body and status while applying the gateway's CORS headers. */
 function withCors(res: Response): Response {
   const headers = new Headers(res.headers);
   for (const key of Object.keys(CORS_HEADERS)) headers.set(key, CORS_HEADERS[key]);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
+/** JSON-encode a response body with the given HTTP status (200 by default). */
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -101,6 +107,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 export default {
+  /** Route requests to service info, health, or an MCP transport; return 404 otherwise. */
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 

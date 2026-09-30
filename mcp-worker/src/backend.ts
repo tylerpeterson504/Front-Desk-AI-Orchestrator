@@ -8,6 +8,7 @@ export interface BackendCtx {
 export class BackendError extends Error {
   status: number;
   body: string;
+  /** Preserve a failed backend response's HTTP status and raw response body. */
   constructor(status: number, body: string) {
     super("Backend request failed with status " + status);
     this.status = status;
@@ -15,10 +16,21 @@ export class BackendError extends Error {
   }
 }
 
+/** Remove one trailing slash so a base URL can be joined to a route path. */
 function trimSlash(url: string): string {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
+/**
+ * Send a JSON request to the backend using the context's optional Bearer token.
+ *
+ * @param ctx - Backend base URL and credential to forward.
+ * @param method - HTTP method to send.
+ * @param path - Backend route beginning with a slash.
+ * @param body - Optional payload to JSON-encode.
+ * @returns The raw response body, without JSON parsing.
+ * @throws {BackendError} When the backend returns a non-OK HTTP status.
+ */
 export async function backendRequest(
   ctx: BackendCtx,
   method: string,

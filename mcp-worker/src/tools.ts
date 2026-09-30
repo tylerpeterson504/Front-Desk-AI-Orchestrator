@@ -89,15 +89,24 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
+/** Return a registered tool's description, or an empty string for an unknown name. */
 export function toolDescription(name: string): string {
   const t = TOOLS.find((x) => x.name === name);
   return t ? t.description : "";
 }
 
+/** Look up a tool by its exact name, returning undefined when none matches. */
 export function findTool(name: string): ToolDef | undefined {
   return TOOLS.find((t) => t.name === name);
 }
 
+/**
+ * Dispatch arguments to a registered tool using the supplied backend context.
+ *
+ * @returns The tool handler's result.
+ * @throws {Error} If the tool is unknown or requires a token that is absent.
+ * Handler errors propagate to the calling transport.
+ */
 export async function callTool(
   name: string,
   args: Record<string, unknown>,
