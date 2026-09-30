@@ -50,8 +50,8 @@ jobs:
 
       # This Neon project defines multiple roles (neondb_owner, authenticator,
       # anonymous, authenticated), which reset-branch-action cannot disambiguate
-      # and fails on. The branch is still valid (created on PR open), so the
-      # migration below runs against it via the created-branch URL fallback.
+      # and fails on. A reused branch whose reset failed may hold stale data, so
+      # the migration step below refuses to run in that case.
       - name: Reset existing Neon Branch on synchronize
         if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
         continue-on-error: true
@@ -62,6 +62,11 @@ jobs:
           branch: ${{ env.NEON_BRANCH_NAME }}
           parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
+      - name: Guard migrations against stale reused branch
+        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true' && steps.reset_neon_branch.outcome == 'failure'
+        run: |
+          echo "Neon branch reset failed on a reused branch; refusing to migrate against possibly stale data."
+          exit 1
 
       # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout

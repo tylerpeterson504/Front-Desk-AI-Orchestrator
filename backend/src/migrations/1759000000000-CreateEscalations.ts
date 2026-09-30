@@ -31,8 +31,18 @@ export class CreateEscalations1759000000000 implements MigrationInterface {
       `SELECT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = 'users'::regclass AND a.attname = 'id' AND format_type(a.atttypid, a.atttypmod) = 'uuid') AS uuid_ids`
     );
     if (uuid_ids) {
-      await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT IF NOT EXISTS fk_escalations_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE`);
-      await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT IF NOT EXISTS fk_escalations_assignee FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL`);
+      const [{ constraint_exists }] = await queryRunner.query(
+        `SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_escalations_creator') AS constraint_exists`
+      );
+      if (!constraint_exists) {
+        await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT fk_escalations_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE`);
+      }
+      const [{ assignee_constraint_exists }] = await queryRunner.query(
+        `SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_escalations_assignee') AS assignee_constraint_exists`
+      );
+      if (!assignee_constraint_exists) {
+        await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT fk_escalations_assignee FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL`);
+      }
     }
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_property_id ON escalations(property_id)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_created_by ON escalations(created_by)`);

@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { getRepository } from '../config/database';
 import { User } from '../entities/User';
+import { Property } from '../entities/Property';
 import { AppError, NotFoundError, ConflictError, AuthenticationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { config } from '../config';
@@ -100,17 +101,34 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.find();
   }
-  // Staff attached to the caller's property: the caller themself plus users
-  // whose property_id matches the property the caller can access.
+  // Staff attached to any property the caller can access: properties they own
+  // (Property.user_id) plus the property they are assigned to (User.property_id).
   async getUsersForProperty(userId: string): Promise<User[]> {
     const caller = await this.findById(userId);
     if (!caller) {
       return [];
     }
-    if (caller.property_id == null) {
+    const propertyRepository = getRepository<Property>(Property);
+    const owned = await propertyRepository.find({ where: { user_id: userId } as never });
+    const authorizedIds = new Set<number>(owned.map((p) => p.id));
+    if (caller.property_id != null) {
+      authorizedIds.add(caller.property_id);
+    }
+    if (authorizedIds.size === 0) {
       return [caller];
     }
-    return this.userRepository.find({ where: { property_id: caller.property_id } });
+    const staff = await this.userRepository.find({
+      where: { property_id: [...authorizedIds] } as never
+    });
+    const seen = new Set<string>([caller.id]);
+    const result = [caller];
+    for (const u of staff) {
+      if (!seen.has(u.id)) {
+        seen.add(u.id);
+        result.push(u);
+      }
+    }
+    return result;
   }
 
   async updateUser(id: string, data: UpdateUserDto): Promise<User> {
