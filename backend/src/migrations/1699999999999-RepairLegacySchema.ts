@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class RepairLegacySchema1700000000001 implements MigrationInterface {
-  name = 'RepairLegacySchema1700000000001';
+export class RepairLegacySchema1699999999999 implements MigrationInterface {
+  name = 'RepairLegacySchema1699999999999';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS property_id INTEGER`);
