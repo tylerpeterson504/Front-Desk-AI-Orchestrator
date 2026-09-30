@@ -1,21 +1,22 @@
 // Database migration runner using TypeORM
 // Replaces the legacy pg-promise based migrate.js
 
-import 'dotenv';
+import dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import path from 'path';
-import { getDatabaseConfig } from '../src/config/index';
-import logger from '../src/config/database';
+import logger from '../src/lib/logger';
 
-const dbConfig = getDatabaseConfig();
+// Migrations need database settings only; CI does not provide application secrets.
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env.local') });
 
-const connectionString = dbConfig.connectionString;
+const connectionString = process.env.DATABASE_URL;
 const manualConfig = connectionString ? {} : {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  username: dbConfig.user,
-  password: dbConfig.password,
-  database: dbConfig.database
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 };
 
 // Create a separate data source just for migrations
@@ -47,14 +48,16 @@ async function runMigrations() {
       logger.info('No new migrations to run');
     }
     
-    await migrationDataSource.destroy();
     logger.info('Migrations completed successfully');
     
     return true;
   } catch (error) {
     logger.error('Migration failed', { error: (error as Error).message });
-    await migrationDataSource.destroy();
     throw error;
+  } finally {
+    if (migrationDataSource.isInitialized) {
+      await migrationDataSource.destroy();
+    }
   }
 }
 
