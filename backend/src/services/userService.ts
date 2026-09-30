@@ -104,12 +104,24 @@ export class UserService {
   }
   // Staff who can be assigned to work on a specific property: the property's
   // owner (Property.user_id) plus users assigned to it (User.property_id).
-  async getUsersForProperty(propertyId: number): Promise<User[]> {
+  // The directory is only visible to admins, the property's owner, or users
+  // assigned to the property.
+  async getUsersForProperty(propertyId: number, callerId: string): Promise<User[]> {
+    const caller = await this.findById(callerId);
+    if (!caller) {
+      return [];
+    }
     const propertyRepository = getRepository<Property>(Property);
     const property = await propertyRepository.findOne({
       where: { id: propertyId } as never
     });
     if (!property) {
+      return [];
+    }
+    const callerAuthorized = caller.role === 'admin'
+      || property.user_id === callerId
+      || caller.property_id === propertyId;
+    if (!callerAuthorized) {
       return [];
     }
     const result: User[] = [];

@@ -180,7 +180,7 @@ router.get('/users', requestId, requireAuth, async (req, res, next) => {
   try {
     const propertyId = parseInt(String(req.query.property_id ?? ''), 10);
     const users = Number.isInteger(propertyId) && propertyId > 0
-      ? await userService.getUsersForProperty(propertyId)
+      ? await userService.getUsersForProperty(propertyId, req.auth!.userId)
       : req.auth!.role === 'admin'
         ? await userService.getAllUsers()
         : [];
