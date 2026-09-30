@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { In } from 'typeorm';
 import { getRepository } from '../config/database';
 import { User } from '../entities/User';
 import { Property } from '../entities/Property';
@@ -118,7 +119,7 @@ export class UserService {
       return [caller];
     }
     const staff = await this.userRepository.find({
-      where: { property_id: [...authorizedIds] } as never
+      where: { property_id: In([...authorizedIds]) }
     });
     const seen = new Set<string>([caller.id]);
     const result = [caller];
