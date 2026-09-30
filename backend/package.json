@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev src/index.ts",
-    "migrate": "node db/migrate.js",
+    "migrate": "ts-node db/migrate.ts",
     "seed": "node db/seed-runner.js",
     "db-setup": "node db/db-setup.js",
     "encrypt-wifi": "node db/encrypt-wifi.js",
