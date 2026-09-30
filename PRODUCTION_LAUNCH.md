@@ -1,7 +1,7 @@
 # 🚀 Front Desk AI Orchestrator - Production Launch Guide
 
 **Version:** 1.0.0  
-**Last Updated:** September 14, 2026  
+**Last Updated:** September 30, 2026  
 **Status:** ✅ Ready for Production  
 **Authorized By:** Tyler Peterson
 
@@ -170,21 +170,15 @@ CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://your_extension_
 # Seeding
 RUN_SEEDS=false
 
-# AI Configuration
+# AI Configuration - Mistral only
 MISTRAL_API_KEY=your_production_mistral_key
-GEMINI_MODEL=gemini-1.5-flash
-PERPLEXITY_API_KEY=your_perplexity_key
-GOOGLE_API_KEY=your_google_key
-HUGGINGFACE_TOKEN=your_hf_token
+MISTRAL_MODEL=mistral-small-latest
 
 # S3 Storage
 AWS_ENDPOINT_URL_S3=your_s3_endpoint
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_REGION=your_region
-
-# AI Gateway
-NEON_AI_GATEWAY_TOKEN=your_neon_ai_token
 
 # Server Configuration
 RATE_LIMIT_WINDOW_MS=900000
@@ -253,6 +247,7 @@ cd backend
 npm install
 npx ts-node db/migrate.ts
 ```
+
 
 ### Seed Database (Optional)
 
@@ -732,7 +727,6 @@ npm run seed
 ### Documentation
 - [Main README](../README.md)
 - [Login Credentials](../LOGIN_CREDENTIALS.md)
-- [Implementation Summary](../IMPLEMENTATION_SUMMARY.md)
 
 ### Contact
 - **Author:** Tyler Peterson
