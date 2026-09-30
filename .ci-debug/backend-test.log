@@ -11,141 +11,134 @@ PASS tests/services.test.ts
 PASS tests/copilotService.test.ts
 PASS tests/errors.test.ts
 PASS tests/responseBuilder.test.ts
-FAIL tests/routes.test.ts
+FAIL tests/migrate.test.ts (7.818 s)
+  ● migration CLI › runs TypeORM migrations with only DATABASE_URL and closes the connection
+
+    ENOENT: no such file or directory, open '/tmp/migration-cli-eq41d5/events.jsonl'
+
+    [0m [90m 61 |[39m       [33m...[39mresult[33m,[39m
+     [90m 62 |[39m       events[33m:[39m readFileSync(eventsFile[33m,[39m [32m'utf8'[39m)[33m.[39mtrim()[33m.[39msplit([32m'\n'[39m)[33m.[39mmap(line [33m=>[39m [33mJSON[39m[33m.[39mparse(line))[33m,[39m
+    [31m[1m>[22m[39m[90m 63 |[39m     }[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 64 |[39m   }
+     [90m 65 |[39m
+     [90m 66 |[39m   it([32m'runs TypeORM migrations with only DATABASE_URL and closes the connection'[39m[33m,[39m () [33m=>[39m {[0m
+
+      at run (tests/migrate.test.ts:63:43)
+      at Object.<anonymous> (tests/migrate.test.ts:67:24)
+
+  ● migration CLI › retains support for individual database settings
+
+    ENOENT: no such file or directory, open '/tmp/migration-cli-f6pwvE/events.jsonl'
+
+    [0m [90m 61 |[39m       [33m...[39mresult[33m,[39m
+     [90m 62 |[39m       events[33m:[39m readFileSync(eventsFile[33m,[39m [32m'utf8'[39m)[33m.[39mtrim()[33m.[39msplit([32m'\n'[39m)[33m.[39mmap(line [33m=>[39m [33mJSON[39m[33m.[39mparse(line))[33m,[39m
+    [31m[1m>[22m[39m[90m 63 |[39m     }[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 64 |[39m   }
+     [90m 65 |[39m
+     [90m 66 |[39m   it([32m'runs TypeORM migrations with only DATABASE_URL and closes the connection'[39m[33m,[39m () [33m=>[39m {[0m
+
+      at run (tests/migrate.test.ts:63:43)
+      at Object.<anonymous> (tests/migrate.test.ts:76:24)
+
+  ● migration CLI › succeeds when no migrations are pending
+
+    ENOENT: no such file or directory, open '/tmp/migration-cli-zo7Gtu/events.jsonl'
+
+    [0m [90m 61 |[39m       [33m...[39mresult[33m,[39m
+     [90m 62 |[39m       events[33m:[39m readFileSync(eventsFile[33m,[39m [32m'utf8'[39m)[33m.[39mtrim()[33m.[39msplit([32m'\n'[39m)[33m.[39mmap(line [33m=>[39m [33mJSON[39m[33m.[39mparse(line))[33m,[39m
+    [31m[1m>[22m[39m[90m 63 |[39m     }[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 64 |[39m   }
+     [90m 65 |[39m
+     [90m 66 |[39m   it([32m'runs TypeORM migrations with only DATABASE_URL and closes the connection'[39m[33m,[39m () [33m=>[39m {[0m
+
+      at run (tests/migrate.test.ts:63:43)
+      at Object.<anonymous> (tests/migrate.test.ts:86:24)
+
+  ● migration CLI › preserves connection failures without trying to destroy an uninitialized connection
+
+    ENOENT: no such file or directory, open '/tmp/migration-cli-YmlssF/events.jsonl'
+
+    [0m [90m 61 |[39m       [33m...[39mresult[33m,[39m
+     [90m 62 |[39m       events[33m:[39m readFileSync(eventsFile[33m,[39m [32m'utf8'[39m)[33m.[39mtrim()[33m.[39msplit([32m'\n'[39m)[33m.[39mmap(line [33m=>[39m [33mJSON[39m[33m.[39mparse(line))[33m,[39m
+    [31m[1m>[22m[39m[90m 63 |[39m     }[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 64 |[39m   }
+     [90m 65 |[39m
+     [90m 66 |[39m   it([32m'runs TypeORM migrations with only DATABASE_URL and closes the connection'[39m[33m,[39m () [33m=>[39m {[0m
+
+      at run (tests/migrate.test.ts:63:43)
+      at Object.<anonymous> (tests/migrate.test.ts:92:24)
+
+  ● migration CLI › fails and closes the connection when a migration fails
+
+    ENOENT: no such file or directory, open '/tmp/migration-cli-01T8dg/events.jsonl'
+
+    [0m [90m 61 |[39m       [33m...[39mresult[33m,[39m
+     [90m 62 |[39m       events[33m:[39m readFileSync(eventsFile[33m,[39m [32m'utf8'[39m)[33m.[39mtrim()[33m.[39msplit([32m'\n'[39m)[33m.[39mmap(line [33m=>[39m [33mJSON[39m[33m.[39mparse(line))[33m,[39m
+    [31m[1m>[22m[39m[90m 63 |[39m     }[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 64 |[39m   }
+     [90m 65 |[39m
+     [90m 66 |[39m   it([32m'runs TypeORM migrations with only DATABASE_URL and closes the connection'[39m[33m,[39m () [33m=>[39m {[0m
+
+      at run (tests/migrate.test.ts:63:43)
+      at Object.<anonymous> (tests/migrate.test.ts:98:24)
+
+PASS tests/routes.test.ts
   ● Console
 
     console.log
-      {"timestamp":"2026-09-24T07:02:03.774Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
+      {"timestamp":"2026-09-30T23:00:21.454Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
 
       at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
     console.log
-      {"timestamp":"2026-09-24T07:02:04.147Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
+      {"timestamp":"2026-09-30T23:00:21.947Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
 
       at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
     console.log
-      {"timestamp":"2026-09-24T07:02:04.191Z","level":"\u001b[31merror\u001b[39m","requestId":"92239839-1d05-4f51-aa33-239c6c16721f","message":"Unhandled error","service":"front-desk-ai-backend","version":"1.0.0","error":"Cannot read properties of undefined (reading 'id')","path":"/api/auth/register","method":"POST"}
+      {"timestamp":"2026-09-30T23:00:22.007Z","level":"\u001b[32minfo\u001b[39m","requestId":"728becbe-1754-4964-93b7-1c176ff9217b","message":"User created","service":"front-desk-ai-backend","version":"1.0.0","user_id":"test-user-id","role":"agent"}
 
       at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
     console.log
-      {"timestamp":"2026-09-24T07:02:04.214Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
+      {"timestamp":"2026-09-30T23:00:22.008Z","level":"\u001b[32minfo\u001b[39m","requestId":"728becbe-1754-4964-93b7-1c176ff9217b","message":"User registered","service":"front-desk-ai-backend","version":"1.0.0","user_id":"test-user-id","role":"agent"}
 
       at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
     console.log
-      {"timestamp":"2026-09-24T07:02:04.260Z","level":"\u001b[31merror\u001b[39m","requestId":"61e482b9-73d5-4b0e-b78e-bf24fb4d7930","message":"Unhandled error","service":"front-desk-ai-backend","version":"1.0.0","error":"Invalid email or password","path":"/api/auth/login","method":"POST"}
+      {"timestamp":"2026-09-30T23:00:22.009Z","level":"\u001b[32minfo\u001b[39m","requestId":"N/A","message":"user registered","service":"front-desk-ai-backend","version":"1.0.0","user_id":"test-user-id","role":"agent","request_id":"728becbe-1754-4964-93b7-1c176ff9217b"}
 
       at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
-  ● Backend Routes - Basic Tests › Auth Routes › should register a user
+    console.log
+      {"timestamp":"2026-09-30T23:00:22.041Z","level":"\u001b[33mwarn\u001b[39m","requestId":"N/A","message":"CORS_ORIGIN is not set; allowing localhost origins for development only","service":"front-desk-ai-backend","version":"1.0.0"}
 
-    expected 201 "Created", got 500 "Internal Server Error"
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
-    [0m[0m
+    console.log
+      {"timestamp":"2026-09-30T23:00:22.103Z","level":"\u001b[32minfo\u001b[39m","requestId":"57e1a27d-a50d-4b03-91a2-8f0a066391a6","message":"User logged in","service":"front-desk-ai-backend","version":"1.0.0","user_id":"test-user-id"}
 
-      at Object.<anonymous> (tests/routes.test.ts:108:18)
-      ----
-      at Test._assertStatus (node_modules/supertest/lib/test.js:376:14)
-      at node_modules/supertest/lib/test.js:432:13
-      at Test._assertFunction (node_modules/supertest/lib/test.js:409:13)
-      at Test.assert (node_modules/supertest/lib/test.js:274:23)
-      at localAssert (node_modules/supertest/lib/test.js:196:38)
-      at Server.<anonymous> (node_modules/supertest/lib/test.js:203:13)
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
-  ● Backend Routes - Basic Tests › Auth Routes › should login a user
+    console.log
+      {"timestamp":"2026-09-30T23:00:22.104Z","level":"\u001b[32minfo\u001b[39m","requestId":"N/A","message":"user logged in","service":"front-desk-ai-backend","version":"1.0.0","user_id":"test-user-id","request_id":"57e1a27d-a50d-4b03-91a2-8f0a066391a6"}
 
-    expected 200 "OK", got 401 "Unauthorized"
-
-    [0m[0m
-
-      at Object.<anonymous> (tests/routes.test.ts:118:18)
-      ----
-      at Test._assertStatus (node_modules/supertest/lib/test.js:376:14)
-      at node_modules/supertest/lib/test.js:432:13
-      at Test._assertFunction (node_modules/supertest/lib/test.js:409:13)
-      at Test.assert (node_modules/supertest/lib/test.js:274:23)
-      at localAssert (node_modules/supertest/lib/test.js:196:38)
-      at Server.<anonymous> (node_modules/supertest/lib/test.js:203:13)
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
 
 PASS tests/requireAuth.test.ts
 PASS tests/cache.test.ts
-FAIL tests/templatePromises.test.ts
-  ● findTemplatePromises (ADR-002 no-promise rule) › rejects future-tense fix promises
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: false
-
-    [0m [90m  9 |[39m
-     [90m 10 |[39m   it([32m'rejects future-tense fix promises'[39m[33m,[39m () [33m=>[39m {
-    [31m[1m>[22m[39m[90m 11 |[39m     expect(findTemplatePromises([32m'We will fix this today.'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m    |[39m                                                                                                    [31m[1m^[22m[39m
-     [90m 12 |[39m     expect(findTemplatePromises([32m"We'll take care of it right away."[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 13 |[39m     expect(findTemplatePromises([32m'Our team is going to resolve this by the end of the day.'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 14 |[39m   })[33m;[39m[0m
-
-      at Object.<anonymous> (tests/templatePromises.test.ts:11:100)
-
-  ● findTemplatePromises (ADR-002 no-promise rule) › rejects guarantee phrasing
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: false
-
-    [0m [90m 14 |[39m   })[33m;[39m
-     [90m 15 |[39m
-    [31m[1m>[22m[39m[90m 16 |[39m   it([32m'rejects guarantee phrasing'[39m[33m,[39m () [33m=>[39m {
-     [90m    |[39m                                                                         [31m[1m^[22m[39m
-     [90m 17 |[39m     expect(findTemplatePromises([32m'Rest assured, your room will be ready by 3:00 pm.'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 18 |[39m     expect(findTemplatePromises([32m'Consider it done!'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 19 |[39m   })[33m;[39m[0m
-
-      at Object.<anonymous> (tests/templatePromises.test.ts:16:126)
-
-  ● findTemplatePromises (ADR-002 no-promise rule) › rejects follow-up promises
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: false
-
-    [0m [90m 18 |[39m     expect(findTemplatePromises([32m'Consider it done!'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 19 |[39m   })[33m;[39m
-    [31m[1m>[22m[39m[90m 20 |[39m
-     [90m    |[39m [31m[1m^[22m[39m
-     [90m 21 |[39m   it([32m'rejects follow-up promises'[39m[33m,[39m () [33m=>[39m {
-     [90m 22 |[39m     expect(findTemplatePromises([32m'We will follow up with you shortly.'[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 23 |[39m     expect(findTemplatePromises([32m"I'll get back to you as soon as I hear from the manager."[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m[0m
-
-      at Object.<anonymous> (tests/templatePromises.test.ts:20:112)
-
-  ● findTemplatePromises (ADR-002 no-promise rule) › is case-insensitive and reports the matched pattern
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: false
-
-    [0m [90m 23 |[39m     expect(findTemplatePromises([32m"I'll get back to you as soon as I hear from the manager."[39m)[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
-     [90m 24 |[39m   })[33m;[39m
-    [31m[1m>[22m[39m[90m 25 |[39m
-     [90m    |[39m [31m[1m^[22m[39m
-     [90m 26 |[39m   it([32m'is case-insensitive and reports the matched pattern'[39m[33m,[39m () [33m=>[39m {
-     [90m 27 |[39m     [36mconst[39m result [33m=[39m findTemplatePromises([32m'WE WILL REPAIR THIS IMMEDIATELY.'[39m)[33m;[39m
-     [90m 28 |[39m     expect(result[33m.[39mhasPromise)[33m.[39mtoBe([36mtrue[39m)[33m;[39m[0m
-
-      at Object.<anonymous> (tests/templatePromises.test.ts:25:35)
-
+PASS tests/templatePromises.test.ts
 PASS tests/validate-email.test.ts
 PASS tests/llm.test.ts
 
-Test Suites: 2 failed, 9 passed, 11 total
-Tests:       6 failed, 160 passed, 166 total
+Test Suites: 1 failed, 11 passed, 12 total
+Tests:       5 failed, 166 passed, 171 total
 Snapshots:   0 total
-Time:        5.62 s
+Time:        14.812 s
 Ran all test suites.
 Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
