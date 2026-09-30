@@ -90,6 +90,9 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS metadata JSONB`);
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45)`);
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent VARCHAR(500)`);
+    await queryRunner.query(`ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS token VARCHAR(255)`);
+    await queryRunner.query(`ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS user_id UUID`);
+    await queryRunner.query(`ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE`);
     await queryRunner.query(`ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS is_revoked BOOLEAN DEFAULT false`);
     // Create indexes
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
