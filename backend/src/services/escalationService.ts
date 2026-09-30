@@ -1,6 +1,7 @@
 import { getRepository } from '../config/database';
 import { Escalation, ESCALATION_PRIORITIES, ESCALATION_STATUSES } from '../entities/Escalation';
 import { Property } from '../entities/Property';
+import { User } from '../entities/User';
 import { AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 
 export interface CreateEscalationDto {
@@ -99,8 +100,24 @@ export class EscalationService {
 
     if (dto.assigned_to !== undefined) {
       patch.assigned_to = dto.assigned_to ? String(dto.assigned_to) : null;
-      if (patch.assigned_to && escalation.status === 'open') patch.status = 'assigned';
-      if (!patch.assigned_to && escalation.status === 'assigned') patch.status = 'open';
+      if (patch.assigned_to) {
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!UUID_RE.test(patch.assigned_to)) {
+          throw new ValidationError('assigned_to must be a valid user id');
+        }
+        const assignee = await getRepository<User>(User).findOne({
+          where: { id: patch.assigned_to } as never
+        });
+        if (!assignee) {
+          throw new ValidationError('assigned_to user does not exist');
+        }
+        const property = await getRepository<Property>(Property).findOne({
+          where: { id: escalation.property_id, user_id: assignee.id } as never
+        });
+        if (!property) {
+          throw new AuthorizationError('Assignee cannot access this escalation\'s property');
+        }
+      }
     }
 
     if (dto.status !== undefined) {
@@ -110,6 +127,11 @@ export class EscalationService {
       patch.status = dto.status;
       patch.resolved_at = dto.status === 'resolved' ? new Date() : null;
     }
+    // Keep status consistent with assignment state after all patch fields are in.
+    const effectiveAssignee = patch.assigned_to !== undefined ? patch.assigned_to : escalation.assigned_to;
+    const effectiveStatus = patch.status !== undefined ? patch.status : escalation.status;
+    if (effectiveAssignee && effectiveStatus === 'open') patch.status = 'assigned';
+    if (!effectiveAssignee && effectiveStatus === 'assigned') patch.status = 'open';
 
     const merged = this.escalationRepository.merge(escalation, patch);
     return this.escalationRepository.save(merged);

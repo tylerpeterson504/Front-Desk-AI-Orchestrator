@@ -40,7 +40,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const [priority, setPriority] = React.useState<(typeof PRIORITIES)[number]>('normal');
   const [guestName, setGuestName] = React.useState('');
   const [roomNumber, setRoomNumber] = React.useState('');
-  const [assignTo, setAssignTo] = React.useState('');
+  const [assignTo, setAssignTo] = React.useState<Record<number, string>>({});
 
   const loadAll = React.useCallback(async () => {
     try {
@@ -108,9 +108,10 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   };
 
   const handleAssign = async (esc: Escalation) => {
-    if (!assignTo) return;
-    await handleUpdate(esc.id, { assigned_to: assignTo } as Partial<Escalation>);
-    setAssignTo('');
+    const selected = assignTo[esc.id];
+    if (!selected) return;
+    await handleUpdate(esc.id, { assigned_to: selected } as Partial<Escalation>);
+    setAssignTo((prev) => ({ ...prev, [esc.id]: '' }));
   };
 
   const handleDelete = async (id: number) => {
@@ -138,7 +139,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
     <div className={embedded ? '' : 'flex h-screen'}>
       <div className={embedded ? '' : 'flex-1 bg-gray-50 overflow-auto'}>
         <div className="p-8">
-          <h1 className="text-3xm font-bold text-gray-800 mb-2">Escalations</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Escalations</h1>
           <p className="text-gray-500 mb-6">
             Flag guest issues that need follow-up, assign them to another agent, and track them to resolution.
           </p>
@@ -269,8 +270,8 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                       <div className="flex gap-1">
                         <select
                            aria-label={'Assign escalation ' + esc.id}
-                          value={assignTo}
-                           onChange={(e) => setAssignTo(e.target.value)}
+                          value={assignTo[esc.id] || ''}
+                           onChange={(e) => setAssignTo((prev) => ({ ...prev, [esc.id]: e.target.value }))}
                            className="w-36 px-2 py-1 border border-gray-300 rounded text-xs bg-white"
                         >
                           <option value="">Assign to…</option>
@@ -280,7 +281,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                         </select>
                         <button
                           onClick={() => handleAssign(esc)}
-                          disabled={!assignTo}
+                          disabled={!assignTo[esc.id]}
                           className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
                         >
                           Assign

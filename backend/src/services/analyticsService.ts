@@ -20,6 +20,7 @@ export interface ResponseTimesSummary {
 }
 
 const MAX_BATCH = 100;
+const FUTURE_SLOP_MS = 5 * 60 * 1000;
 const MAX_WINDOW_DAYS = 90;
 
 function percentile(sorted: number[], p: number): number {
@@ -40,6 +41,9 @@ export class AnalyticsService {
     }
 
     // Every event must reference a property owned by the caller.
+    if (!events.every((e) => Number.isInteger(e.property_id))) {
+      throw new ValidationError('property_id must be an integer');
+    }
     const propertyIds = [...new Set(events.map((e) => e.property_id))];
     const owned = await this.propertyRepository.find({
       where: propertyIds.map((id) => ({ user_id: userId, id })) as never
@@ -55,11 +59,20 @@ export class AnalyticsService {
       if (Number.isNaN(firstSeen.getTime())) {
         throw new ValidationError('first_seen_at must be an ISO date');
       }
+      if (firstSeen.getTime() > Date.now() + FUTURE_SLOP_MS) {
+        throw new ValidationError('first_seen_at cannot be in the future');
+      }
       let replied: Date | null = null;
       if (e.replied_at !== undefined && e.replied_at !== null) {
         replied = new Date(e.replied_at);
         if (Number.isNaN(replied.getTime())) {
           throw new ValidationError('replied_at must be an ISO date');
+        }
+        if (replied.getTime() < firstSeen.getTime()) {
+          throw new ValidationError('replied_at cannot precede first_seen_at');
+        }
+        if (replied.getTime() > Date.now() + FUTURE_SLOP_MS) {
+          throw new ValidationError('replied_at cannot be in the future');
         }
       }
       const hash = String(e.conversation_hash || '').slice(0, 64);

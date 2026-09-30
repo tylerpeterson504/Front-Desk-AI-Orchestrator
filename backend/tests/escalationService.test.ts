@@ -16,10 +16,11 @@ const qb: any = {
   getMany: jest.fn()
 };
 const propRepo: any = { findOne: jest.fn() };
+const userRepo: any = { findOne: jest.fn() };
 
 jest.mock('../src/config/database', () => ({
   getRepository: jest.fn((entity: any) =>
-    entity.name === 'Property' ? propRepo : escRepo
+    entity.name === 'Property' ? propRepo : entity.name === 'User' ? userRepo : escRepo
   )
 }));
 
@@ -87,12 +88,23 @@ describe('EscalationService', () => {
     });
 
     it('marks an open escalation assigned when assigning a user', async () => {
-      qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null });
+      qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null, property_id: 3 });
       escRepo.save.mockImplementation(async (e: any) => e);
+      userRepo.findOne.mockResolvedValue({ id: '11111111-1111-1111-1111-111111111111' });
+      propRepo.findOne.mockResolvedValue({ id: 3 });
 
-      const updated = await escalationService.update(5, { assigned_to: 'u2' }, 'u1');
+      const updated = await escalationService.update(5, { assigned_to: '11111111-1111-1111-1111-111111111111' }, 'u1');
       expect(updated.status).toBe('assigned');
-      expect(updated.assigned_to).toBe('u2');
+      expect(updated.assigned_to).toBe('11111111-1111-1111-1111-111111111111');
+    });
+    it('rejects a non-UUID assignee', async () => {
+      qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null });
+      await expect(escalationService.update(5, { assigned_to: 'u2' }, 'u1')).rejects.toThrow(ValidationError);
+    });
+    it('rejects an assignee that does not exist', async () => {
+      qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null });
+      userRepo.findOne.mockResolvedValue(null);
+      await expect(escalationService.update(5, { assigned_to: '11111111-1111-1111-1111-111111111111' }, 'u1')).rejects.toThrow(ValidationError);
     });
 
     it('rejects an invalid status', async () => {
