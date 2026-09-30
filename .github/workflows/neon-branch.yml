@@ -50,6 +50,7 @@ jobs:
 
       - name: Reset existing Neon Branch on synchronize
         if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
+        continue-on-error: true
         id: reset_neon_branch
         uses: neondatabase/reset-branch-action@v1
         with:
