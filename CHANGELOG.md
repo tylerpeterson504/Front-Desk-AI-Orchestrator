@@ -1,5 +1,19 @@
 # Changelog — Front Desk Orchestrator
 
+## 2026-09-30
+
+### Mistral-only LLM cleanup
+1. **Provider surface reduced to Mistral only**
+   - Removed `GOOGLE_API_KEY`, `GEMINI_MODEL`, `PERPLEXITY_API_KEY`, `PERPLEXITY_MODEL` from the backend config schema (`backend/src/config/index.ts`)
+   - Added `MISTRAL_API_KEY` / `MISTRAL_MODEL` to the schema for parity with the client defaults
+2. **Dead code removed** (never imported; copilot uses `backend/src/services/llm/mistralClient.ts`)
+   - `backend/src/services/llm.js` (Perplexity/Hugging Face/Gemini chain)
+   - `backend/src/services/huggingface.js`
+3. **Docs updated**
+   - README: "AI Copilot" section now documents Mistral only; Perplexity section removed
+   - PRODUCTION_LAUNCH.md: AI configuration block reduced to `MISTRAL_API_KEY` / `MISTRAL_MODEL`
+   - Stale root merge-verification docs deleted (IMPLEMENTATION_SUMMARY.md, FINAL_MERGE_VERIFICATION.md)
+
 ## 2026-08-29
 
 ### Status
@@ -18,9 +32,9 @@
 3. **Databricks integration added**
    - `backend/src/services/databricks.js` — SQL Statement Execution API client
    - `backend/src/routes/databricks.js` — `/api/databricks/status` endpoint
-4. **Perplexity integration added**
+4. **Perplexity integration added** *(superseded 2026-09-30 — copilot is Mistral-only)*
    - `backend/src/services/perplexity.js` — Sonar chat-completions client
-   - Copilot: Perplexity primary, Gemini fallback
+   - Copilot: Perplexity primary, Gemini fallback *(removed)*
 5. **GitHub integration added**
    - `backend/src/services/github.js` — REST API client
    - `backend/src/routes/github.js` — `/api/github/status` endpoint
@@ -46,6 +60,6 @@
 
 ### Pending
 - **Neon connection**: need `NEON_API_KEY` in Keys tab, then run `npx neon@latest init --agent codex` to link project `wispy-butterfly-68794835`
-- **Production keys**: `DATABASE_URL`, `JWT_SECRET`, `PERPLEXITY_API_KEY` (or `GOOGLE_API_KEY`)
+- **Production keys**: `DATABASE_URL`, `JWT_SECRET`, `MISTRAL_API_KEY`
 - **Extension `API_BASE_URL`**: hardcoded to `localhost:3001`, needs production URL after deploy
 - **Dashboard**: needs separate static build pipeline for public exposure

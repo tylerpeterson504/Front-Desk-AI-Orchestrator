@@ -15,34 +15,31 @@ Akia messaging → side panel assembles property + templates + context → backe
 `/api/copilot/draft` enriches with authoritative property/template records and
 calls the LLM → draft rendered in the side panel for review → copy or inject.
 
-## AI Copilot (Gemini)
+## AI Copilot (Mistral)
 
-Draft generation runs **server-side only** via `backend/src/services/copilotService.ts`
-using the configured LLM provider. API keys are never shipped to
-the extension or dashboard. API keys are never shipped to
-the extension or dashboard.
+Draft generation runs **server-side only** via `backend/src/services/copilotService.ts`,
+which calls **Mistral AI** through `backend/src/services/llm/mistralClient.ts`. Mistral is
+the only LLM provider. The API key is never shipped to the extension or dashboard.
 
 ### Configuration
 
 Set the following env vars on the backend (e.g. `backend/.env` or the hosting
 provider's environment settings):
 
-| Variable         | Required | Default            | Description                              |
-|------------------|----------|--------------------|------------------------------------------|
-| `GOOGLE_API_KEY` | yes      | —                  | Google AI Studio API key (Gemini)        |
-| `GEMINI_MODEL`   | no       | `gemini-1.5-flash` | Model override                           |
-| `PERPLEXITY_API_KEY` | no | Perplexity Sonar API key (primary when set) |
-| `PERPLEXITY_MODEL` | no | `sonar` | Perplexity model override |
-| `CORS_ORIGIN` | no | unrestricted | Comma-separated allowed browser origins |
+| Variable         | Required | Default              | Description                              |
+|------------------|----------|----------------------|------------------------------------------|
+| `MISTRAL_API_KEY` | yes     | —                    | Mistral AI API key                      |
+| `MISTRAL_MODEL`   | no      | `mistral-small-latest` | Model override                        |
+| `CORS_ORIGIN`     | no      | unrestricted         | Comma-separated allowed browser origins |
 
-When `GOOGLE_API_KEY` is absent the copilot route returns `503
-LLM_NOT_CONFIGURED` and the extension falls back to local template stitching,
+When `MISTRAL_API_KEY` is absent the copilot route returns `503
+MISTRAL_NOT_CONFIGURED` and the extension falls back to local template stitching,
 so dev/test still work without a key.
 
 ### Getting a key
 
-1. Create an API key at [Google AI Studio](https://aistudio.google.com/apikey).
-2. Add it to the backend environment as `GOOGLE_API_KEY` (never commit it).
+1. Create an API key at [La Plateforme](https://console.mistral.ai/api-keys).
+2. Add it to the backend environment as `MISTRAL_API_KEY` (never commit it).
 
 ### Security properties
 
@@ -81,8 +78,7 @@ CI keep working while a deployed instance is closed by default.
 ## Secrets at rest
 
 `properties.wifi_password` is encrypted with AES-256-GCM before insert
-(`backend/src/lib/
-secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
+(`backend/src/lib/secretBox.js`, stored as `v1:<iv>:<tag>:<ciphertext>`) and
 decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route.
 
 Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production,
@@ -128,8 +124,7 @@ branch directly.
    users already exist. Demo login: `demo@example.com` / `password123`.
 3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
-   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate
-:
+   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate:
    it validates any stored token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
 
@@ -169,8 +164,7 @@ replay, and only a failed refresh returns the user to the login screen. Expired
 rows can be cleared with `cd backend && npm run prune-sessions`.
 
 What this does not do: an access token already issued stays valid until it
-expires, so revocation takes 
-effect within one access-token lifetime (15 minutes
+expires, so revocation takes effect within one access-token lifetime (15 minutes
 by default) rather than instantly. Making it instant means checking a blocklist
 on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
 window if you want it tighter.
@@ -203,25 +197,6 @@ instead of the extension holding blanket access.
 Content-script host matches (MV3 manifest):
 - `https://app.us1.stayntouch.com/*` — Pipeline A (guest info)
 - `https://sys.akia.ai/*` — Pipeline B (chat context + injection)
-
-## Perplexity AI integration
-
-The copilot supports Perplexity's Sonar API for web-grounded responses. It is called only from the backend, so the API key is never exposed to the extension or dashboard. When configured, Perplexity takes priority over Gemini; Gemini remains the fallback when `PERPLEXITY_API_KEY` is absent.
-
-Add this key in
- the project's **Keys** tab:
-
-```text
-PERPLEXITY_API_KEY=your_perplexity_api_key
-```
-
-Optional model override:
-
-```text
-PERPLEXITY_MODEL=sonar
-```
-
-Create the key in the [Perplexity API settings](https://www.perplexity.ai/settings/api), then add it to the Keys tab. Never commit it.
 
 ## Neon database integration
 
@@ -267,8 +242,8 @@ Create a least-privilege token with only the repository permissions your deploym
   `npm install`, start `npm run start` on port 3001). Production requires
   `DATABASE_URL` / DB env vars, `JWT_SECRET`, `CORS_ORIGIN`,
   `WIFI_ENCRYPTION_KEY`, a registration policy
-  (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and at least one AI key:
-  `PERPLEXITY_API_KEY` or `GOOGLE_API_KEY`. The server refuses to boot without
+  (`REGISTRATION_MODE` + `REGISTRATION_INVITE_TOKEN`), and the Mistral API key
+  `MISTRAL_API_KEY`. The server refuses to boot without
   `CORS_ORIGIN` in production rather than reflecting every origin.
 - Dashboard: static React build (CRA `npm run build`).
 - Extension: load unpacked from `extension/` (no build step).
@@ -315,7 +290,7 @@ Root workspace:
 - npm run lint - Run linting for all workspaces
 - npm run lint:check - Check linting without fixing
 - npm run lint:fix - Fix linting issues
-- npm run format - Format all files
+- npm run format - Format all workspaces
 - npm run typecheck - Type check all workspaces
 
 Backend:
@@ -341,20 +316,20 @@ Extension:
    controllers/  # Route controllers
    entities/     # TypeORM entities
    lib/          # Utilities
-   middleware/   # Express middleware
+   middleware/   # Auth middleware
    routes/       # API routes
    services/     # Business logic
- 
+
  dashboard/         # Web dashboard
   src/
    components/   # Reusable UI components
    pages/        # Page components
-   hooks/        # Custom React hooks
+   hooks/        # Custom hooks
    services/     # API services
    stores/       # Zustand state stores
-   types/        # TypeScript types
+   types/        # Types
    utils/        # Utility functions
- 
+
  extension/         # Chrome extension
   src/
    background/   # Background scripts
@@ -362,7 +337,7 @@ Extension:
    popup/        # Popup UI
    sidepanel/    # Side panel UI
    services/     # Shared services
-   types/        # TypeScript types
+   types/        # Types
 
 ### Code Quality
 
@@ -376,7 +351,7 @@ This project enforces code quality through:
 Run quality checks:
 
 npm run lint:check  # Check linting
-npm run format:check  # Check formatting
+npm run format:check # Check formatting
 npm run typecheck  # Check types
 
 ### Contributing
