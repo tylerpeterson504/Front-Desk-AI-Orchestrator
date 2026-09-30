@@ -48,8 +48,13 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
+      # This Neon project defines multiple roles (neondb_owner, authenticator,
+      # anonymous, authenticated), which reset-branch-action cannot disambiguate
+      # and fails on. The branch is still valid (created on PR open), so the
+      # migration below runs against it via the created-branch URL fallback.
       - name: Reset existing Neon Branch on synchronize
         if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
+        continue-on-error: true
         id: reset_neon_branch
         uses: neondatabase/reset-branch-action@v1
         with:
