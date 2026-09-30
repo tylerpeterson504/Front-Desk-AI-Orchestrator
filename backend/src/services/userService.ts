@@ -102,27 +102,26 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.find();
   }
-  // Staff attached to any property the caller can access: properties they own
-  // (Property.user_id) plus the property they are assigned to (User.property_id).
-  async getUsersForProperty(userId: string): Promise<User[]> {
-    const caller = await this.findById(userId);
-    if (!caller) {
+  // Staff who can be assigned to work on a specific property: the property's
+  // owner (Property.user_id) plus users assigned to it (User.property_id).
+  async getUsersForProperty(propertyId: number): Promise<User[]> {
+    const propertyRepository = getRepository<Property>(Property);
+    const property = await propertyRepository.findOne({
+      where: { id: propertyId } as never
+    });
+    if (!property) {
       return [];
     }
-    const propertyRepository = getRepository<Property>(Property);
-    const owned = await propertyRepository.find({ where: { user_id: userId } as never });
-    const authorizedIds = new Set<number>(owned.map((p) => p.id));
-    if (caller.property_id != null) {
-      authorizedIds.add(caller.property_id);
-    }
-    if (authorizedIds.size === 0) {
-      return [caller];
+    const result: User[] = [];
+    const seen = new Set<string>();
+    const owner = await this.findById(property.user_id);
+    if (owner && !seen.has(owner.id)) {
+      seen.add(owner.id);
+      result.push(owner);
     }
     const staff = await this.userRepository.find({
-      where: { property_id: In([...authorizedIds]) }
+      where: { property_id: propertyId }
     });
-    const seen = new Set<string>([caller.id]);
-    const result = [caller];
     for (const u of staff) {
       if (!seen.has(u.id)) {
         seen.add(u.id);

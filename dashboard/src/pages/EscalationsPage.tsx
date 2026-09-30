@@ -28,6 +28,16 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const [escalations, setEscalations] = React.useState<Escalation[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
+  const [assignOptions, setAssignOptions] = React.useState<Record<number, User[]>>({});
+  const ensureAssignOptions = React.useCallback(async (propertyId: number) => {
+    if (assignOptions[propertyId]) return;
+    try {
+      const opts = await userAPI.listForProperty(propertyId);
+      setAssignOptions((prev) => ({ ...prev, [propertyId]: opts }));
+    } catch {
+      setAssignOptions((prev) => ({ ...prev, [propertyId]: [] }));
+    }
+  }, [assignOptions]);
   const [statusFilter, setStatusFilter] = React.useState<(typeof STATUS_FILTERS)[number]>('all');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -271,11 +281,12 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                         <select
                            aria-label={'Assign escalation ' + esc.id}
                           value={assignTo[esc.id] || ''}
+                          onFocus={() => ensureAssignOptions(esc.property_id)}
                            onChange={(e) => setAssignTo((prev) => ({ ...prev, [esc.id]: e.target.value }))}
                            className="w-36 px-2 py-1 border border-gray-300 rounded text-xs bg-white"
                         >
                           <option value="">Assign to…</option>
-                          {users.map((u) => (
+                          {(assignOptions[esc.property_id] || []).map((u) => (
                             <option key={u.id} value={u.id}>{u.name || u.email}</option>
                           ))}
                         </select>

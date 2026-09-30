@@ -91,6 +91,8 @@ export const authAPI = {
 
 export const userAPI = {
   list: (): Promise<User[]> => getData<User[]>('/auth/users'),
+  listForProperty: (propertyId: number): Promise<User[]> =>
+    getData<User[]>(`/auth/users?property_id=${propertyId}`),
 };
 
 export interface ResponseTimesSummary {

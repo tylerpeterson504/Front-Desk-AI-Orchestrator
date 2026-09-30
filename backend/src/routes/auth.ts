@@ -173,13 +173,17 @@ router.get('/registration-mode', requestId, (req, res) => {
 });
 
 // Staff directory for assignment pickers. Minimal fields only —
-// no password hashes, property ids, or timestamps leak. Scoped to staff
-// attached to the caller's own property; admins see the full directory.
+// no password hashes, property ids, or timestamps leak. With ?property_id=,
+// returns the staff who can be assigned to that property (its owner plus
+// assigned staff); admins without a property_id see the full directory.
 router.get('/users', requestId, requireAuth, async (req, res, next) => {
   try {
-    const users = req.auth!.role === 'admin'
-      ? await userService.getAllUsers()
-      : await userService.getUsersForProperty(req.auth!.userId);
+    const propertyId = parseInt(String(req.query.property_id ?? ''), 10);
+    const users = Number.isInteger(propertyId) && propertyId > 0
+      ? await userService.getUsersForProperty(propertyId)
+      : req.auth!.role === 'admin'
+        ? await userService.getAllUsers()
+        : [];
     res.json(
       users.map((u: { id: string; name: string | null; email: string; role: string }) => ({
         id: u.id,
