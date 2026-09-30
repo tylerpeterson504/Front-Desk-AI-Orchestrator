@@ -82,9 +82,13 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
 
     // Ensure columns that may be missing on pre-existing databases
     await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS property_id INTEGER`);
+    await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) DEFAULT ''`);
+    await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'agent'`);
     await queryRunner.query(`ALTER TABLE templates ADD COLUMN IF NOT EXISTS property_id INTEGER`);
     await queryRunner.query(`ALTER TABLE templates ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT false`);
     await queryRunner.query(`ALTER TABLE shift_notes ADD COLUMN IF NOT EXISTS user_id UUID`);
+    await queryRunner.query(`ALTER TABLE shift_notes ADD COLUMN IF NOT EXISTS shift_date DATE DEFAULT CURRENT_DATE`);
+    await queryRunner.query(`ALTER TABLE shift_notes ADD COLUMN IF NOT EXISTS content TEXT`);
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource VARCHAR(100)`);
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource_id VARCHAR(255)`);
     await queryRunner.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS metadata JSONB`);

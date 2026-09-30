@@ -46,7 +46,7 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
         run: |
-          open_prs=" $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number --jq '[.[].number] | join(" ")') "
+          open_prs=" $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number --jq '[.[].number] | join(" ")') "
           npm i -g neonctl@v6 >/dev/null 2>&1
           mapfile -t stale < <(neonctl branches list --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" --output json \
             | jq -r '.[] | select((.name // "") | startswith("preview-pr-")) | .name')
@@ -54,7 +54,10 @@ jobs:
             n="${name#preview-pr-}"
             if [[ "$open_prs" != *" $n "* ]]; then
               echo "Deleting stale branch $name"
-              neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || true
+              if ! neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"; then
+                echo "::error::Failed to delete stale branch $name"
+                exit 1
+              fi
             fi
           done
           if [[ "${{ github.event.action }}" == "synchronize" ]]; then
