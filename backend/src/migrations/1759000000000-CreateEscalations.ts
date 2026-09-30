@@ -19,7 +19,13 @@ export class CreateEscalations1759000000000 implements MigrationInterface {
         assigned_to UUID,
         resolved_at TIMESTAMP WITH TIME ZONE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        CONSTRAINT fk_escalations_property FOREIGN KEY (property_id)
+          REFERENCES properties(id) ON DELETE CASCADE,
+        CONSTRAINT fk_escalations_creator FOREIGN KEY (created_by)
+          REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_escalations_assignee FOREIGN KEY (assigned_to)
+          REFERENCES users(id) ON DELETE SET NULL
       )
     `);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_property_id ON escalations(property_id)`);

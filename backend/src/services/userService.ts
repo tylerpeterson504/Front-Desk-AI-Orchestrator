@@ -100,6 +100,18 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.find();
   }
+  // Staff attached to the caller's property: the caller themself plus users
+  // whose property_id matches the property the caller can access.
+  async getUsersForProperty(userId: string): Promise<User[]> {
+    const caller = await this.findById(userId);
+    if (!caller) {
+      return [];
+    }
+    if (caller.property_id == null) {
+      return [caller];
+    }
+    return this.userRepository.find({ where: { property_id: caller.property_id } });
+  }
 
   async updateUser(id: string, data: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);

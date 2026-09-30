@@ -114,7 +114,8 @@ export class EscalationService {
         const property = await getRepository<Property>(Property).findOne({
           where: { id: escalation.property_id, user_id: assignee.id } as never
         });
-        if (!property) {
+        const assigneeCanAccess = Boolean(property) || assignee.property_id === escalation.property_id;
+        if (!assigneeCanAccess) {
           throw new ValidationError('Assignee cannot access this escalation\'s property');
         }
       }

@@ -133,7 +133,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
     return user?.name || user?.email || id.slice(0, 8);
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading && escalations.length === 0 && properties.length === 0) return <LoadingSpinner />;
 
   return (
     <div className={embedded ? '' : 'flex h-screen'}>
