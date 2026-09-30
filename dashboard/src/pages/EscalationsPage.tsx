@@ -34,6 +34,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
     try {
       const opts = await userAPI.listForProperty(propertyId);
       setAssignOptions((prev) => ({ ...prev, [propertyId]: opts }));
+      setError((current) => (current === 'Failed to load assignment options' ? '' : current));
     } catch {
       setError('Failed to load assignment options');
     }
