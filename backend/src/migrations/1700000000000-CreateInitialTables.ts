@@ -80,6 +80,10 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
       )
     `);
 
+    // Ensure columns that may be missing on pre-existing databases
+    await queryRunner.query(`ALTER TABLE templates ADD COLUMN IF NOT EXISTS property_id INTEGER`);
+    await queryRunner.query(`ALTER TABLE templates ADD COLUMN IF NOT EXISTS is_global BOOLEAN DEFAULT false`);
+    await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS property_id INTEGER`);
     // Create indexes
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_templates_property_id ON templates(property_id)`);
