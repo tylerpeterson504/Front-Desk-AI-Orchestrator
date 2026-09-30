@@ -76,6 +76,7 @@ jobs:
         env:
           # to use unpooled connection (recommended for migrations)
           DATABASE_URL: "${{ steps.reset_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
+          JWT_SECRET: ci-only-secret-not-for-production
 
 
   delete_neon_branch:
