@@ -83,7 +83,7 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
     // Create indexes
     const createIndexIfColumnExists = async (indexName: string, tableName: string, columnName: string) => {
       const [{ exists }] = await queryRunner.query(
-        `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = '${columnName}') AS exists`
+        `SELECT EXISTS (SELECT 1 FROM pg_attribute a JOIN to_regclass('${tableName}') r ON r.oid = a.attrelid WHERE a.attname = '${columnName}' AND NOT a.attisdropped) AS exists`
       );
       if (exists) {
         await queryRunner.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${tableName}(${columnName})`);

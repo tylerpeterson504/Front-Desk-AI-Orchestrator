@@ -115,7 +115,7 @@ export class EscalationService {
           where: { id: escalation.property_id, user_id: assignee.id } as never
         });
         if (!property) {
-          throw new AuthorizationError('Assignee cannot access this escalation\'s property');
+          throw new ValidationError('Assignee cannot access this escalation\'s property');
         }
       }
     }

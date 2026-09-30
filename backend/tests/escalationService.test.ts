@@ -96,6 +96,18 @@ describe('EscalationService', () => {
       const updated = await escalationService.update(5, { assigned_to: '11111111-1111-1111-1111-111111111111' }, 'u1');
       expect(updated.status).toBe('assigned');
       expect(updated.assigned_to).toBe('11111111-1111-1111-1111-111111111111');
+      expect(propRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 3, user_id: '11111111-1111-1111-1111-111111111111' }
+      });
+    });
+    it('rejects an assignee who cannot access the escalation\'s property', async () => {
+      qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null, property_id: 3 });
+      escRepo.save.mockImplementation(async (e: any) => e);
+      userRepo.findOne.mockResolvedValue({ id: '22222222-2222-2222-2222-222222222222' });
+      propRepo.findOne.mockResolvedValue(null);
+      await expect(
+        escalationService.update(5, { assigned_to: '22222222-2222-2222-2222-222222222222' }, 'u1')
+      ).rejects.toThrow(ValidationError);
     });
     it('rejects a non-UUID assignee', async () => {
       qb.getOne.mockResolvedValue({ id: 5, status: 'open', created_by: 'u1', assigned_to: null });

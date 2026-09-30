@@ -55,6 +55,9 @@ export class AnalyticsService {
 
     const rows: ResponseEvent[] = [];
     for (const e of events) {
+      if (typeof e.first_seen_at !== 'string') {
+        throw new ValidationError('first_seen_at must be an ISO date string');
+      }
       const firstSeen = new Date(e.first_seen_at);
       if (Number.isNaN(firstSeen.getTime())) {
         throw new ValidationError('first_seen_at must be an ISO date');
@@ -64,6 +67,9 @@ export class AnalyticsService {
       }
       let replied: Date | null = null;
       if (e.replied_at !== undefined && e.replied_at !== null) {
+        if (typeof e.replied_at !== 'string') {
+          throw new ValidationError('replied_at must be an ISO date string');
+        }
         replied = new Date(e.replied_at);
         if (Number.isNaN(replied.getTime())) {
           throw new ValidationError('replied_at must be an ISO date');
