@@ -15,6 +15,7 @@ concurrency:
 # not the GitHub token, so read access to the checkout is all any job needs.
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   NEON_BRANCH_NAME: preview-pr-${{ github.event.number }}
@@ -39,6 +40,23 @@ jobs:
           echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
           echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
 
+      - name: Prune preview branches for closed PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: |
+          open_prs=" $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number --jq '[.[].number] | join(" ")') "
+          npm i -g neonctl@v6 >/dev/null 2>&1
+          mapfile -t stale < <(neonctl branches list --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" --output json \
+            | jq -r '.[] | select((.name // "") | startswith("preview-pr-")) | .name')
+          for name in "${stale[@]}"; do
+            n="${name#preview-pr-}"
+            if [[ "$open_prs" != *" $n "* ]]; then
+              echo "Deleting stale branch $name"
+              neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || true
+            fi
+          done
       - name: Create or reuse Neon Branch
         id: create_neon_branch
         uses: neondatabase/create-branch-action@v6
