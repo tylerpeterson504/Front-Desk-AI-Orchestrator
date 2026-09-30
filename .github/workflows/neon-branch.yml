@@ -57,6 +57,10 @@ jobs:
               neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || true
             fi
           done
+          if [[ "${{ github.event.action }}" == "synchronize" ]]; then
+            echo "Deleting current branch ${{ env.NEON_BRANCH_NAME }} so it is recreated fresh"
+            neonctl branches delete "${{ env.NEON_BRANCH_NAME }}" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || true
+          fi
       - name: Create or reuse Neon Branch
         id: create_neon_branch
         uses: neondatabase/create-branch-action@v6
@@ -66,15 +70,6 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
-      - name: Reset existing Neon Branch on synchronize
-        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
-        id: reset_neon_branch
-        uses: neondatabase/reset-branch-action@v1
-        with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: ${{ env.NEON_BRANCH_NAME }}
-          parent: true
-          api_key: ${{ secrets.NEON_API_KEY }}
 
       # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
@@ -92,7 +87,7 @@ jobs:
         run: npm ci && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
-          DATABASE_URL: "${{ steps.reset_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
+          DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
 
 
   delete_neon_branch:
