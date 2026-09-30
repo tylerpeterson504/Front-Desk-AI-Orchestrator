@@ -21,13 +21,19 @@ export class CreateEscalations1759000000000 implements MigrationInterface {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         CONSTRAINT fk_escalations_property FOREIGN KEY (property_id)
-          REFERENCES properties(id) ON DELETE CASCADE,
-        CONSTRAINT fk_escalations_creator FOREIGN KEY (created_by)
-          REFERENCES users(id) ON DELETE CASCADE,
-        CONSTRAINT fk_escalations_assignee FOREIGN KEY (assigned_to)
-          REFERENCES users(id) ON DELETE SET NULL
+          REFERENCES properties(id) ON DELETE CASCADE
       )
     `);
+    // The users FKs are added separately: legacy databases migrated with the
+    // old SQL scripts have users.id as INTEGER, which cannot reference UUID
+    // columns. Add them only when the id types actually match.
+    const [{ uuid_ids }] = await queryRunner.query(
+      `SELECT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = 'users'::regclass AND a.attname = 'id' AND format_type(a.atttypid, a.atttypmod) = 'uuid') AS uuid_ids`
+    );
+    if (uuid_ids) {
+      await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT IF NOT EXISTS fk_escalations_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE`);
+      await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT IF NOT EXISTS fk_escalations_assignee FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL`);
+    }
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_property_id ON escalations(property_id)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_created_by ON escalations(created_by)`);
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_assigned_to ON escalations(assigned_to)`);
