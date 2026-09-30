@@ -88,6 +88,8 @@ jobs:
         env:
           # to use unpooled connection (recommended for migrations)
           DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url }}"
+          # config validation requires JWT_SECRET even for migrations
+          JWT_SECRET: "ci-migrations-placeholder-secret-32chars!!"
 
 
   delete_neon_branch:
