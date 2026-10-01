@@ -69,7 +69,8 @@ router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
 
     await shiftNoteService.delete(id, userId);
 
-    logger.info('Shift note deleted', { shift_note_id: id, user_id: userId, request_id: req.requestId });
+    logger
+.info('Shift note deleted', { shift_note_id: id, user_id: userId, request_id: req.requestId });
     res.status(204).send();
   } catch (err) {
     next(err);

@@ -6,9 +6,10 @@ import type {
   ShiftNote,
   AuditLog,
   AuthResponse,
+  Escalation,
 } from '../types';
 
-export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse };
+export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
@@ -88,6 +89,29 @@ export const authAPI = {
   logout: (): Promise<void> => postData<void>('/auth/logout'),
 };
 
+export const userAPI = {
+  list: (): Promise<User[]> => getData<User[]>('/auth/users'),
+  listForProperty: (propertyId: number): Promise<User[]> =>
+    getData<User[]>(`/auth/users?property_id=${propertyId}`),
+};
+
+export interface ResponseTimesSummary {
+  property_id: number;
+  days: number;
+  count: number;
+  median_seconds: number | null;
+  avg_seconds: number | null;
+  p95_seconds: number | null;
+}
+
+export const analyticsAPI = {
+  responseTimes: (params?: {
+    property_id?: number;
+    days?: number;
+  }): Promise<ResponseTimesSummary> =>
+    getData<ResponseTimesSummary>('/analytics/response-times', { params }),
+};
+
 export const propertyAPI = {
   getAll: (propertyId?: number): Promise<Property[]> =>
     getData<Property[]>(propertyId ? '/properties?property_id=' + propertyId : '/properties'),
@@ -131,6 +155,16 @@ export const shiftNoteAPI = {
     putData<ShiftNote>('/shift-notes/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
   remove: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
+};
+
+export const escalationAPI = {
+  getAll: (status?: string): Promise<Escalation[]> =>
+    getData<Escalation[]>(status ? '/escalations?status=' + status : '/escalations'),
+  create: (data: Partial<Escalation>): Promise<Escalation> =>
+    postData<Escalation>('/escalations', data),
+  update: (id: number, data: Partial<Escalation>): Promise<Escalation> =>
+    putData<Escalation>('/escalations/' + id, data),
+  delete: (id: number): Promise<void> => deleteData<void>('/escalations/' + id),
 };
 
 export const auditAPI = {
