@@ -196,7 +196,16 @@ router.get('/registration-mode', requestId, (req, res) => {
   res.json({ mode: getMode() });
 });
 
-// Set user role (admin only)
+/**
+ * Set the user identified by `req.params.id` to the body's `admin` or `agent` role,
+ * requiring an admin role in the bearer token. Respond with the updated user's
+ * id, email, name, and role as JSON.
+ *
+ * Respond with 401 for a missing Bearer authorization header, 403 for a non-admin
+ * token, or 400 for an invalid role. Forward token verification failures
+ * (AuthenticationError), a missing user (NotFoundError), and other errors,
+ * including database failures, to Express error handling via `next`.
+ */
 router.patch('/users/:id/role', requestId, async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
