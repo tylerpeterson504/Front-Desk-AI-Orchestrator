@@ -58,6 +58,9 @@ describe('migration CLI', () => {
       env: {
         PATH: process.env.PATH,
         NODE_ENV: 'test',
+        // Config validation still requires JWT_SECRET even for migrations;
+        // supply a dummy so the CLI env stays minimal but valid.
+        JWT_SECRET: 'migration-cli-test-secret-0123456789abcdef',
         DOTENV_CONFIG_QUIET: 'true',
         MIGRATION_EVENTS: eventsFile,
         MIGRATION_SCENARIO: scenario,
