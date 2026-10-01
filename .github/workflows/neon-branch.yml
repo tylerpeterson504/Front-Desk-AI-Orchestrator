@@ -41,22 +41,34 @@ jobs:
 
       - name: Create or reuse Neon Branch
         id: create_neon_branch
-        uses: neondatabase/create-branch-action@v6
+        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           branch_name: ${{ env.NEON_BRANCH_NAME }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
-      - name: Reset existing Neon Branch on synchronize
+      # This Neon project defines multiple roles (neondb_owner, authenticator,
+      # anonymous, authenticated), which reset-branch-action cannot disambiguate
+      # and fails on. To guarantee fresh parent data on synchronize, delete the
+      # stale branch and recreate it from the parent instead of resetting it.
+      - name: Delete stale branch on synchronize
         if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
-        id: reset_neon_branch
-        uses: neondatabase/reset-branch-action@v1
+        id: delete_neon_branch
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           branch: ${{ env.NEON_BRANCH_NAME }}
-          parent: true
           api_key: ${{ secrets.NEON_API_KEY }}
+      - name: Recreate branch from parent on synchronize
+        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
+        id: recreate_neon_branch
+        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: ${{ env.NEON_BRANCH_NAME }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          expires_at: ${{ env.EXPIRES_AT }}
 
       # Run schema migrations against the fresh PR branch (unpooled connection).
       - name: Checkout
@@ -74,7 +86,8 @@ jobs:
         run: npm ci && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
-          DATABASE_URL: "${{ steps.reset_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
+          DATABASE_URL: "${{ steps.recreate_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
+          JWT_SECRET: ci-only-secret-not-for-production
 
 
   delete_neon_branch:
@@ -83,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete Neon Branch
-        uses: neondatabase/delete-branch-action@v3
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
           branch: ${{ env.NEON_BRANCH_NAME }}
