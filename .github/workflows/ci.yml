@@ -20,6 +20,9 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # TEMPORARY (remove after debugging): allow pushing CI debug logs.
+    permissions:
+      contents: write
     timeout-minutes: 30
     services:
       postgres:
@@ -36,9 +39,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: npm
@@ -85,6 +88,18 @@ jobs:
           NODE_ENV: test
           CI: "true"
 
+      - name: Attach debug logs on failure
+        if: failure()
+        run: |
+          git config user.name "ci-debug"
+          git config user.email "ci-debug@users.noreply.github.com"
+          mkdir -p .ci-debug
+          cp /tmp/typecheck.log .ci-debug/typecheck.log 2>/dev/null || true
+          cp /tmp/backend-test.log .ci-debug/backend-test.log 2>/dev/null || true
+          git add -f .ci-debug
+          git commit -m "ci: attach debug logs [skip ci]"
+          git push origin HEAD:refs/heads/ci-debug-log-${{ github.run_id }} --force || echo "failed to push debug logs"
+
       - name: Test dashboard
         run: npm run test:dashboard
 
@@ -96,9 +111,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: npm
