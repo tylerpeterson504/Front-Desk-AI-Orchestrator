@@ -20,6 +20,9 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # TEMPORARY (remove after debugging): allow pushing CI debug logs.
+    permissions:
+      contents: write
     timeout-minutes: 30
     services:
       postgres:
@@ -84,6 +87,18 @@ jobs:
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           NODE_ENV: test
           CI: "true"
+
+      - name: Attach debug logs on failure
+        if: failure()
+        run: |
+          git config user.name "ci-debug"
+          git config user.email "ci-debug@users.noreply.github.com"
+          mkdir -p .ci-debug
+          cp /tmp/typecheck.log .ci-debug/typecheck.log 2>/dev/null || true
+          cp /tmp/backend-test.log .ci-debug/backend-test.log 2>/dev/null || true
+          git add -f .ci-debug
+          git commit -m "ci: attach debug logs [skip ci]"
+          git push origin HEAD:refs/heads/ci-debug-log-${{ github.run_id }} --force || echo "failed to push debug logs"
 
       - name: Test dashboard
         run: npm run test:dashboard
