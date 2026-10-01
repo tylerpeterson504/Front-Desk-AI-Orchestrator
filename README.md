@@ -10,7 +10,7 @@ A hotel front desk assistant: a Chrome extension that captures guest context fro
 | Dashboard | React, Vite, Tailwind | `dashboard/` |
 | Extension | Chrome MV3 (side panel, content scripts) | `extension/` |
 
-Request flow: content scripts scrape guest/chat context from Stayntouch PMS and Akia messaging â the side panel assembles property + templates + context â the backend `/api/copilot/draft` enriches the request with authoritative property/template records and calls the LLM â the draft renders in the side panel for review â copy or inject.
+Request flow: content scripts scrape guest/chat context from Stayntouch PMS and Akia messaging → the side panel assembles property + templates + context → the backend `/api/copilot/draft` enriches the request with authoritative property/template records and calls the LLM → the draft renders in the side panel for review → copy or inject.
 
 ## Quick start
 
@@ -25,7 +25,7 @@ npm run dev                             # backend :3001 + dashboard :3000
 
 Demo login: `demo@example.com` / `password123`.
 
-Load the extension from `chrome://extensions/` â Developer mode â Load unpacked â `extension/`. Point it at the backend via the popup's **Backend URL** field â no repackaging needed. Details: [extension/README.md](extension/README.md).
+Load the extension from `chrome://extensions/` → Developer mode → Load unpacked → `extension/`. Point it at the backend via the popup's **Backend URL** field — no repackaging needed. Details: [extension/README.md](extension/README.md).
 
 ## AI copilot (Mistral)
 
@@ -50,15 +50,15 @@ When the key is missing after boot the copilot route reports `MISTRAL_NOT_CONFIG
 
 Short-lived access tokens (JWT, 15 minutes by default) plus single-use, revocable refresh tokens (opaque, SHA-256 hashed at rest, 30 days). Refreshing returns a successor token; presenting a superseded one revokes the whole family. Both clients refresh silently on 401 and replay once.
 
-- `POST /api/auth/login|register` â `{ token, expires_in, refresh_token, user }`
-- `POST /api/auth/refresh` â new `token` **and** `refresh_token`
-- `POST /api/auth/logout` / `logout-all` â revoke session(s)
+- `POST /api/auth/login|register` → `{ token, expires_in, refresh_token, user }`
+- `POST /api/auth/refresh` → new `token` **and** `refresh_token`
+- `POST /api/auth/logout` / `logout-all` → revoke session(s)
 
 Every new account is created as `agent`. Role is never accepted from registration; promotion happens via `PATCH /api/auth/users/:id/role` (admin only) or the server-side `npm run set-role` bootstrap. Registration is gated by `REGISTRATION_MODE` (`invite` / `open` / `closed`), defaulting to `invite` in production. Sessions are revoked when an admin changes a user's role.
 
 ## Secrets at rest
 
-`properties.wifi_password` is encrypted with AES-256-GCM before insert (`backend/src/lib/secretBox`) and decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route. Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) â required in production. Backfill legacy rows with `cd backend && npm run encrypt-wifi`; reads pass plaintext through, so the backfill is optional and idempotent.
+`properties.wifi_password` is encrypted with AES-256-GCM before insert (`backend/src/lib/secretBox`) and decrypted only inside the audit-logged `GET /api/properties/:id/wifi` route. Set `WIFI_ENCRYPTION_KEY` (32 bytes, base64 or hex) — required in production. Backfill legacy rows with `cd backend && npm run encrypt-wifi`; reads pass plaintext through, so the backfill is optional and idempotent.
 
 ## API surface
 
@@ -102,6 +102,6 @@ Tokens never reach the browser and are never logged.
 
 npm workspaces: `npm run install:all`, `npm run build:all`, `npm run test`, `npm run lint:check`, `npm run typecheck`. Schema changes go through TypeORM migrations (`synchronize` is off).
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) â setup, conventions, PR checklist
-- [CHANGELOG.md](CHANGELOG.md) â notable changes
-- [docs/](docs/) â environment setup, test plan, ADRs, Neon branch workflow
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, conventions, PR checklist
+- [CHANGELOG.md](CHANGELOG.md) — notable changes
+- [docs/](docs/) — environment setup, test plan, ADRs, Neon branch workflow
