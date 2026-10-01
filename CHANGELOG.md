@@ -1,8 +1,8 @@
 # Changelog
 
-Front Desk AI Orchestrator â notable changes by date, newest first.
+Front Desk AI Orchestrator — notable changes by date, newest first.
 
-## 2026-09-30 â Mistral-only LLM cleanup
+## 2026-09-30 — Mistral-only LLM cleanup
 
 - **Provider surface reduced to Mistral only**: removed `GOOGLE_API_KEY`, `GEMINI_MODEL`, `PERPLEXITY_API_KEY`, `PERPLEXITY_MODEL` from the backend config schema; added `MISTRAL_API_KEY` / `MISTRAL_MODEL` (PR #343).
 - **Dead code removed** (never imported; copilot uses `backend/src/services/llm/mistralClient.ts`): `backend/src/services/llm.js`, `backend/src/services/huggingface.js`.
@@ -16,13 +16,13 @@ Front Desk AI Orchestrator â notable changes by date, newest first.
 - **Docs**: README, CONTRIBUTING, and extension README rewritten to match the Mistral-only copilot and current structure; obsolete launch guides and one-shot summaries removed (#docs-refactor).
 - **Corruption guard**: CI now fails on raw control bytes and warns on mid-token line splits (#324).
 
-## 2026-09-02 â TypeScript migration
+## 2026-09-02 — TypeScript migration
 
 - Backend routes/services migrated to TypeScript with a service layer.
 - Dashboard and extension fully converted to TypeScript.
 - Dockerfile.backend / Dockerfile.dashboard, docker-compose, CodeQL workflow added.
 
-## 2026-08-29 â Integrations and hardening
+## 2026-08-29 — Integrations and hardening
 
 - Databricks and GitHub server-side clients added (`/api/databricks/status`, `/api/github/status`).
 - Neon `DATABASE_URL` takes precedence over `DB_*` variables.
