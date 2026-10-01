@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
 
@@ -15,6 +15,16 @@ describe('migration CLI', () => {
       const { DataSource } = require(${JSON.stringify(require.resolve('typeorm'))});
       const { appendFileSync } = require('fs');
       const record = (event) => appendFileSync(process.env.MIGRATION_EVENTS, JSON.stringify(event) + '\\n');
+      // Capture crashes before the logger's exception handlers can swallow
+      // them into a file and exit silently.
+      const crash = (kind) => (err) => {
+        try {
+          record({ event: kind, message: String((err && err.stack) || err) });
+        } catch {}
+        process.exit(1);
+      };
+      process.on('uncaughtException', crash('uncaughtException'));
+      process.on('unhandledRejection', crash('unhandledRejection'));
       DataSource.prototype.initialize = async function () {
         record({ event: 'initialize', options: this.options });
         if (process.env.MIGRATION_SCENARIO === 'connect-error') throw new Error('test connection failure');
@@ -30,8 +40,8 @@ describe('migration CLI', () => {
       DataSource.prototype.destroy = async function () {
         record({ event: 'destroy' });
         this.isInitialized = false;
-      };
-    `);
+    };
+      `);
   });
 
   afterEach(() => rmSync(fixtureDir, { recursive: true, force: true }));
@@ -64,15 +74,23 @@ describe('migration CLI', () => {
     try {
       eventsRaw = readFileSync(eventsFile, 'utf8');
     } catch {
+      const detail = [`migrate CLI exited with status ${result.status} without recording events`,
+        `stdout:\n${result.stdout}`, `stderr:\n${result.stderr}`];
+      const exLog = path.join(backendDir, 'logs', 'exceptions.log');
+      if (existsSync(exLog)) {
+        detail.push(`exceptions.log:\n${readFileSync(exLog, 'utf8')}`);
+      }
+      throw new Error(detail.join('\n'));
+    }
+    const events = eventsRaw.trim().split('\n').map(line => JSON.parse(line));
+    const crash = events.find(event => /uncaught|unhandled/.test(event.event));
+    if (crash) {
       throw new Error(
-        `migrate CLI exited with status ${result.status} without recording events\n` +
+        `migrate CLI crashed before initializing (${crash.event}):\n${crash.message}\n` +
         `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`
       );
     }
-    return {
-      ...result,
-      events: eventsRaw.trim().split('\n').map(line => JSON.parse(line)),
-    };
+    return { ...result, events };
   }
 
   it('runs TypeORM migrations with only DATABASE_URL and closes the connection', () => {
