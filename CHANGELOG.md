@@ -25,8 +25,7 @@ Front Desk AI Orchestrator — notable changes by date, newest first.
 ## 2026-08-29 — Integrations and hardening
 
 - Databricks and GitHub server-side clients added (`/api/databricks/status`, `/api/github/status`).
-- Neon `
-DATABASE_URL` takes precedence over `DB_*` variables.
+- Neon `DATABASE_URL` takes precedence over `DB_*` variables.
 - Extension: fixed MutationObserver teardown, empty-draft fallback, added template validation and `property_id` in copilot requests, runtime backend-URL override.
 - Dashboard: Properties and Shift Notes pages, state-based sidebar navigation.
 - Backend hardening: no dev JWT secret fallback in production, `x-powered-by` disabled, JSON body limit, configurable CORS.
