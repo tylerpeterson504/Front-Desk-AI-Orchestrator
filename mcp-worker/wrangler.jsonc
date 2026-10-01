@@ -1,0 +1,13 @@
+{
+  // Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fdao-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    // Where the orchestrator Express backend is reachable. Override per environment:
+    // local dev uses the Express default port 3001.
+    "BACKEND_URL": "http://localhost:3001"
+  }
+}
