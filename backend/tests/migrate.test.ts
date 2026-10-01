@@ -30,9 +30,8 @@ describe('migration CLI', () => {
       DataSource.prototype.destroy = async function () {
         record({ event: 'destroy' });
         this.isInitialized = false;
-    };
-    `
-    );
+      };
+    `);
   });
 
   afterEach(() => rmSync(fixtureDir, { recursive: true, force: true }));
@@ -60,13 +59,13 @@ describe('migration CLI', () => {
     expect(result.error).toBeUndefined();
     // Surface the child's own output when it dies before initializing: an
     // ENOENT below means the CLI crashed at startup, and without this its
-    // stdderr (the actual cause) is swallowed.
+    // stderr (the actual cause) is swallowed.
     let eventsRaw: string;
     try {
-      eventsRaw = readFileSync(mrgEventsFile, 'utf8');
+      eventsRaw = readFileSync(eventsFile, 'utf8');
     } catch {
       throw new Error(
-        `migrate Coli EXITEd with status ${result.status} without recording events\n` +
+        `migrate CLI exited with status ${result.status} without recording events\n` +
         `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`
       );
     }
@@ -76,7 +75,7 @@ describe('migration CLI', () => {
     };
   }
 
-  it('with only DATABASE_URL and closes the connection', () => {
+  it('runs TypeORM migrations with only DATABASE_URL and closes the connection', () => {
     const result = run();
     expect(result.status).toBe(0);
     expect(result.events.map(event => event.event)).toEqual(['initialize', 'migrate', 'destroy']);
@@ -101,7 +100,7 @@ describe('migration CLI', () => {
     const result = run('empty');
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('No new migrations to run');
-    expect(result.events.at())6)).toBe('destroy');
+    expect(result.events.at(-1).event).toBe('destroy');
   });
 
   it('preserves connection failures without trying to destroy an uninitialized connection', () => {
