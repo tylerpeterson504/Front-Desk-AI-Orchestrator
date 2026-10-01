@@ -4,6 +4,7 @@ import { authService, AuthResponse } from '../services/authService';
 import { requestId } from '../middleware/errorHandler';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth';
 import { config } from '../config';
+import { getCookieTrustedOrigins } from '../config';
 import { getMode, assertRegistrationAllowed } from '../config/registration';
 import { isValidEmail } from '../lib/validateEmail';
 import logger from '../lib/logger';
@@ -18,13 +19,25 @@ function usesCookie(req: Request): boolean {
   return req.get('X-Refresh-Token-Transport') === 'cookie';
 }
 
+// Cookie-based credential flows expand session authority to any origin the
+// browser will attach the cookie to (SameSite=None). CORS preflight is a
+// browser-side control only, so the server independently verifies that the
+// request's Origin header matches an explicitly configured exact origin
+// before reading or rotating the cookie. Regex/wildcard CORS entries are not
+// trusted here, and a missing Origin header is rejected rather than assumed.
+function cookieOriginAllowed(req: Request): boolean {
+  const origin = req.get('Origin');
+  if (!origin) return false;
+  return getCookieTrustedOrigins().includes(origin);
+}
+
 function refreshCookie(req: Request): string | undefined {
   return req.headers.cookie?.split(';').map((part) => part.trim())
     .find((part) => part.startsWith(`${REFRESH_COOKIE}=`))?.slice(REFRESH_COOKIE.length + 1);
 }
 
 function sendAuthResponse(req: Request, res: Response, response: AuthResponse, status = 200): void {
-  if (usesCookie(req)) {
+  if (usesCookie(req) && cookieOriginAllowed(req)) {
     res.cookie(REFRESH_COOKIE, response.refresh_token, {
       ...cookieOptions,
       expires: response.refresh_expires_at
@@ -122,6 +135,13 @@ router.post('/login', requestId, async (req, res, next) => {
 // Refresh token
 router.post('/refresh', requestId, async (req, res, next) => {
   try {
+    if (usesCookie(req) && !cookieOriginAllowed(req)) {
+      return res.status(403).json({
+        error: 'Cookie refresh requires a trusted origin',
+        code: 'ORIGIN_NOT_ALLOWED',
+        requestId: req.requestId
+      });
+    }
     const refresh_token = usesCookie(req) ? refreshCookie(req) : req.body?.refresh_token;
 
     if (!refresh_token) {
@@ -156,6 +176,13 @@ router.post('/refresh', requestId, async (req, res, next) => {
 // Logout
 router.post('/logout', requestId, async (req, res, next) => {
   try {
+    if (usesCookie(req) && !cookieOriginAllowed(req)) {
+      return res.status(403).json({
+        error: 'Cookie logout requires a trusted origin',
+        code: 'ORIGIN_NOT_ALLOWED',
+        requestId: req.requestId
+      });
+    }
     const refresh_token = usesCookie(req) ? refreshCookie(req) : req.body?.refresh_token;
 
     if (refresh_token) {

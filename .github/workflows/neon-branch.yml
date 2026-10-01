@@ -48,15 +48,18 @@ jobs:
         run: |
           open_prs=" $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number --jq '[.[].number] | join(" ")') "
           npm i -g neonctl@v6 >/dev/null 2>&1
+          # Skip branches younger than 30 minutes: a PR may have just closed
+          # and reopened (or another workflow may be mid-provision), making the
+          # open-PR snapshot stale. Young branches are left for a later run to
+          # reconsider, so a concurrent reopen never loses a live preview.
           mapfile -t stale < <(neonctl branches list --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" --output json \
-            | jq -r '.[] | select((.name // "") | startswith("preview-pr-")) | .name')
+            | jq -r '.[] | select((.name // "") | startswith("preview-pr-")) | select((.created_at // 0) | fromdateiso8601 < (now - 1800)) | .name')
           for name in "${stale[@]}"; do
             n="${name#preview-pr-}"
             if [[ "$open_prs" != *" $n "* ]]; then
               echo "Deleting stale branch $name"
               if ! neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"; then
-                echo "::error::Failed to delete stale branch $name"
-                exit 1
+                echo "::warning::Failed to delete stale branch $name; a later run will retry"
               fi
             fi
           done

@@ -54,7 +54,8 @@ async function createTestApp(userRepoMock?: any, propertyRepoMock?: any, authSer
       JWT_SECRET: 'test-secret-key-at-least-32-characters-long',
       JWT_TTL: '15m',
       BCRYPT_ROUNDS: '10'
-    }
+    },
+    getCookieTrustedOrigins: () => ['http://localhost:3000', 'http://localhost:5173']
   }));
   
   // Mock bcrypt
@@ -154,7 +155,7 @@ describe('Backend Routes - Basic Tests', () => {
       });
       const logout = jest.fn().mockResolvedValue(undefined);
       const { app } = await createTestApp(undefined, undefined, { refresh, logout });
-      const header = { 'X-Refresh-Token-Transport': 'cookie' };
+      const header = { 'X-Refresh-Token-Transport': 'cookie', Origin: 'http://localhost:3000' };
 
       await request(app).post('/api/auth/refresh').set(header).send({ refresh_token: 'body-secret' }).expect(400);
       expect(refresh).not.toHaveBeenCalled();
@@ -169,6 +170,21 @@ describe('Backend Routes - Basic Tests', () => {
         .set('Cookie', 'refresh_token=new-refresh').send({}).expect(200);
       expect(logout).toHaveBeenCalledWith('new-refresh', expect.any(String));
       expect(loggedOut.headers['set-cookie'][0]).toMatch(/^refresh_token=;.*HttpOnly; Secure;.*SameSite=None/);
+    });
+    it('rejects cookie refresh and logout from untrusted origins', async () => {
+      const refresh = jest.fn();
+      const logout = jest.fn();
+      const { app } = await createTestApp(undefined, undefined, { refresh, logout });
+      const evil = { 'X-Refresh-Token-Transport': 'cookie', Origin: 'https://evil.example.com' };
+      await request(app).post('/api/auth/refresh').set(evil)
+        .set('Cookie', 'refresh_token=old-refresh').send({}).expect(403);
+      await request(app).post('/api/auth/logout').set(evil)
+        .set('Cookie', 'refresh_token=old-refresh').send({}).expect(403);
+      const noOrigin = { 'X-Refresh-Token-Transport': 'cookie' };
+      await request(app).post('/api/auth/refresh').set(noOrigin)
+        .set('Cookie', 'refresh_token=old-refresh').send({}).expect(403);
+      expect(refresh).not.toHaveBeenCalled();
+      expect(logout).not.toHaveBeenCalled();
     });
 
     it('keeps body-based refresh available for extension clients', async () => {

@@ -76,3 +76,13 @@ export const getCorsOrigins = () => {
     .map((o: string) => o.trim())
     .filter(Boolean);
 };
+
+// Exact origins trusted for cookie-based credential flows (refresh/logout).
+// Regex and wildcard CORS entries are deliberately excluded: cookies with
+// SameSite=None are sent from any origin the browser allows, so the server
+// must independently verify the request origin before honoring them.
+export const getCookieTrustedOrigins = (): string[] => {
+  return getCorsOrigins().filter(
+    (origin): origin is string => typeof origin === 'string' && !origin.includes('*')
+  );
+};

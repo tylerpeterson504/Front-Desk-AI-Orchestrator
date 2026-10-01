@@ -77,6 +77,13 @@ describe('config.js shared module', () => {
     }
     expect(config.normalizeApiBaseUrl('https://api.example.com//')).toBe('https://api.example.com');
   });
+  it('rejects cleartext http for non-local origins but keeps localhost http for dev', async () => {
+    const config = await loadConfig('app.us1.stayntouch.com');
+    expect(config.normalizeApiBaseUrl('http://api.example.com')).toBeNull();
+    expect(config.normalizeApiBaseUrl('http://192.168.1.5:3001')).toBeNull();
+    expect(config.normalizeApiBaseUrl('http://localhost:3001')).toBe('http://localhost:3001');
+    expect(config.normalizeApiBaseUrl('http://127.0.0.1:3001/')).toBe('http://127.0.0.1:3001');
+  });
 
   it('a storage change updates the cached override without a reload', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
