@@ -5,11 +5,10 @@ import { User } from '../types';
 interface AuthState {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  setCredentials: (user: User, token: string, refreshToken: string) => void;
+  setCredentials: (user: User, token: string) => void;
   clearCredentials: () => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
@@ -20,15 +19,13 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      setCredentials: (user, token, refreshToken) => set({
+      setCredentials: (user, token) => set({
         user,
         token,
-        refreshToken,
         isAuthenticated: true,
         error: null
       }),
@@ -36,7 +33,6 @@ export const useAuthStore = create<AuthState>()(
       clearCredentials: () => set({
         user: null,
         token: null,
-        refreshToken: null,
         isAuthenticated: false
       }),
 
@@ -45,10 +41,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState as AuthState;
+        return { user: state.user, token: state.token, isAuthenticated: state.isAuthenticated };
+      },
       partialize: (state) => ({
         user: state.user,
         token: state.token,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated
       })
     }
@@ -58,10 +58,9 @@ export const useAuthStore = create<AuthState>()(
 // Token storage for backward compatibility with existing code
 export const tokenStore = {
   get: () => useAuthStore.getState().token,
-  set: (token: string) => useAuthStore.getState().setCredentials(
-    useAuthStore.getState().user!,
-    token,
-    useAuthStore.getState().refreshToken || ''
-  ),
+  set: (token: string) => {
+    const user = useAuthStore.getState().user;
+    if (user) useAuthStore.getState().setCredentials(user, token);
+  },
   clear: () => useAuthStore.getState().clearCredentials()
 };
