@@ -1,51 +1,26 @@
-# Changelog — Front Desk Orchestrator
+# Changelog
 
-## 2026-08-29
+Front Desk AI Orchestrator — notable changes by date, newest first.
 
-### Status
-- Backend tests: 46/46 pass
-- Extension tests: 38/38 pass
-- Preview: running, `/health` → `{"status":"ok"}`
-- Deploy check: deployable, no issues
+## 2026-09 (in progress)
 
-### Recent changes
-1. **Neon agent-skills installed**
-   - `.agents/skills/neon/SKILL.md` — Neon CLI + MCP guide
-   - `.agents/skills/neon-postgres/SKILL.md` — Postgres operations guide
-2. **Neon CLI auth attempted**
-   - `npx neon@latest init --agent codex` — plugin installed but OAuth timed out (no browser in sandbox)
-   - `NEON_API_KEY` env var not reachable in CLI context
-3. **Databricks integration added**
-   - `backend/src/services/databricks.js` — SQL Statement Execution API client
-   - `backend/src/routes/databricks.js` — `/api/databricks/status` endpoint
-4. **Perplexity integration added**
-   - `backend/src/services/perplexity.js` — Sonar chat-completions client
-   - Copilot: Perplexity primary, Gemini fallback
-5. **GitHub integration added**
-   - `backend/src/services/github.js` — REST API client
-   - `backend/src/routes/github.js` — `/api/github/status` endpoint
-6. **Neon `DATABASE_URL` support**
-   - `backend/src/config/database.js` — takes precedence over individual `DB_*` vars
-7. **Extension fixes**
-   - Fixed `MutationObserver` teardown errors in content scripts
-   - Fixed empty-draft fallback in sidepanel
-   - Fixed stale generate tests in sidepanel.test.js
-   - Added template POST/PUT validation + tests
-   - Extension sends `property_id` to `/copilot/draft`
-   - Production API base URL override via `chrome.storage`
-8. **Dashboard**
-   - Added Properties page (`dashboard/src/pages/PropertiesPage.jsx`)
-   - Added Shift Notes page (`dashboard/src/pages/ShiftNotesPage.jsx`)
-   - Fixed sidebar active-state bug (state-based navigation)
-9. **Backend hardening**
-   - Production no longer silently falls back to dev JWT secret
-   - Invalid/malformed authorization headers rejected cleanly
-   - Disabled `x-powered-by`, added JSON request-size limit, configurable CORS via `CORS_ORIGIN`
-   - Removed dead `stripWifi` code
-   - Added template validation + tests
+- **Auth refactor**: all routes use the shared `requireAuth` middleware; `req.auth` carries userId/email/role; admin role changes revoke sessions (PR #304).
+- **Template no-promise rule**: the backend enforces at save time that templates never promise follow-up unless explicitly allowed (PR #307); promise-detection regexes repaired and covered by tests.
+- **CI repair**: nested lockfiles tracked, `npm ci` everywhere, per-package build matrix, test-job hang fixed with `--forceExit`, Postgres service container, extension typecheck gate (PRs #314, #317); obsolete lockfile-generation workflow removed (#320); workflow audit fixes in flight (#322).
+- **Escalations API**: guest-request escalation and assignment endpoints with ownership scoping and tests (#326).
+- **Docs**: README, CONTRIBUTING, and extension README rewritten to match the Mistral-only copilot and current structure; obsolete launch guides and one-shot summaries removed (#docs-refactor).
+- **Corruption guard**: CI now fails on raw control bytes and warns on mid-token line splits (#324).
 
-### Pending
-- **Neon connection**: need `NEON_API_KEY` in Keys tab, then run `npx neon@latest init --agent codex` to link project `wispy-butterfly-68794835`
-- **Production keys**: `DATABASE_URL`, `JWT_SECRET`, `PERPLEXITY_API_KEY` (or `GOOGLE_API_KEY`)
-- **Extension `API_BASE_URL`**: hardcoded to `localhost:3001`, needs production URL after deploy
-- **Dashboard**: needs separate static build pipeline for public exposure
+## 2026-09-02 — TypeScript migration
+
+- Backend routes/services migrated to TypeScript with a service layer.
+- Dashboard and extension fully converted to TypeScript.
+- Dockerfile.backend / Dockerfile.dashboard, docker-compose, CodeQL workflow added.
+
+## 2026-08-29 — Integrations and hardening
+
+- Databricks and GitHub server-side clients added (`/api/databricks/status`, `/api/github/status`).
+- Neon `DATABASE_URL` takes precedence over `DB_*` variables.
+- Extension: fixed MutationObserver teardown, empty-draft fallback, added template validation and `property_id` in copilot requests, runtime backend-URL override.
+- Dashboard: Properties and Shift Notes pages, state-based sidebar navigation.
+- Backend hardening: no dev JWT secret fallback in production, `x-powered-by` disabled, JSON body limit, configurable CORS.
