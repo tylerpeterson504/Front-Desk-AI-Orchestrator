@@ -1,22 +1,21 @@
 // Database migration runner using TypeORM
 // Replaces the legacy pg-promise based migrate.js
 
-import dotenv from 'dotenv';
+import 'dotenv';
 import { DataSource } from 'typeorm';
 import path from 'path';
+import { getDatabaseConfig } from '../src/config/index';
 import logger from '../src/lib/logger';
 
-// Migrations need database settings only; CI does not provide application secrets.
-dotenv.config({ path: path.join(__dirname, '../.env') });
-dotenv.config({ path: path.join(__dirname, '../../.env.local') });
+const dbConfig = getDatabaseConfig();
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = dbConfig.connectionString;
 const manualConfig = connectionString ? {} : {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  host: dbConfig.host,
+  port: dbConfig.port,
+  username: dbConfig.user,
+  password: dbConfig.password,
+  database: dbConfig.database
 };
 
 // Create a separate data source just for migrations
