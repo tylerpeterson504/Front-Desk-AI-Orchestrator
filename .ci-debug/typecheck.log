@@ -2,3 +2,10 @@
 > front-desk-ai-orchestrator@1.0.0 typecheck
 > cd backend && npx tsc --noEmit && cd ../dashboard && npx tsc --noEmit
 
+tests/migrate.test.ts(104,31): error TS1005: ';' expected.
+tests/migrate.test.ts(104,32): error TS1005: ';' expected.
+tests/migrate.test.ts(104,33): error TS1005: ';' expected.
+tests/migrate.test.ts(105,3): error TS1128: Declaration or statement expected.
+tests/migrate.test.ts(105,4): error TS1128: Declaration or statement expected.
+tests/migrate.test.ts(120,1): error TS1128: Declaration or statement expected.
+tests/migrate.test.ts(120,2): error TS1128: Declaration or statement expected.
