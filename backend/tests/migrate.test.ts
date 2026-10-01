@@ -110,7 +110,7 @@ describe('migration CLI', () => {
       'CreateInitialTables1700000000000',
       'CreateEscalations1759000000000',
       'CreateResponseEvents1760000000000',
-      'RepairLegacySchema1699999999999',
+      'RepairLegacySchema1790000000000',
     ]));
     expect(result.stdout).toContain('Successfully ran 4 migration(s)');
   });

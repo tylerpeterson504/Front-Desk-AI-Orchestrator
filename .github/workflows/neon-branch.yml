@@ -62,7 +62,9 @@ jobs:
           done
           if [[ "${{ github.event.action }}" == "synchronize" ]]; then
             echo "Deleting current branch ${{ env.NEON_BRANCH_NAME }} so it is recreated fresh"
-            neonctl branches delete "${{ env.NEON_BRANCH_NAME }}" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" || true
+            if ! neonctl branches delete "${{ env.NEON_BRANCH_NAME }}" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"; then
+              echo "::warning::Failed to delete current branch ${{ env.NEON_BRANCH_NAME }}; create-branch step will attempt to reuse or recreate it"
+            fi
           fi
       - name: Create or reuse Neon Branch
         id: create_neon_branch
