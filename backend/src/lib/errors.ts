@@ -559,7 +559,7 @@ export function wrapError(
   if (error instanceof AppError) {
     // Preserve existing error but add context
     const mergedContext = { ...error.context, ...context };
-    return new (error.constructor as any)(
+    return new (error.constructor as new (message: string, options: any) => AppError)(
       error.message,
       {
         severity: error.severity,
@@ -616,7 +616,7 @@ export function detectError(
 
   // Error object
   if (source instanceof Error) {
-    return wrapError(source, context || createErrorContext({} as any));
+    return wrapError(source, context || createErrorContext({} as unknown as Parameters<typeof createErrorContext>[0]));
   }
 
   // String error message (non-empty)
@@ -630,13 +630,13 @@ export function detectError(
     
     if (obj.message && typeof obj.message === 'string') {
       const error = new Error(obj.message as string);
-      return wrapError(error, context || createErrorContext({} as any));
+      return wrapError(error, context || createErrorContext({} as unknown as Parameters<typeof createErrorContext>[0]));
     }
  
    
     if (obj.error && typeof obj.error === 'string') {
       const error = new Error(obj.error as string);
-      return wrapError(error, context || createErrorContext({} as any));
+      return wrapError(error, context || createErrorContext({} as unknown as Parameters<typeof createErrorContext>[0]));
     }
   }
 
@@ -777,5 +777,14 @@ export default {
   detectError,
   recoverFromError,
   retryWithBackoff,
-  DEFAULT_RECOVERY_OPTIONS
+  DEFAULT_RECOVERY_OPTIONS,
+  MistralError
 };
+
+// Custom error class for Mistral API errors
+class MistralError extends Error {
+  constructor(message: string, public code: string, public status?: number) {
+    super(message);
+    this.name = 'MistralError';
+  }
+}

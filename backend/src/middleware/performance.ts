@@ -5,6 +5,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../lib/logger';
+import '../types/express';
 
 /**
  * Threshold in milliseconds for logging slow requests
@@ -30,8 +31,8 @@ export function performanceMonitor() {
     const startDate = new Date();
     
     // Store start time on request for use in later middleware
-    (req as any)._startTime = start;
-    (req as any)._startDate = startDate;
+    req._startTime = start;
+    req._startDate = startDate;
     
     // Override res.end to capture response time
     const originalEnd = res.end;
@@ -51,7 +52,7 @@ export function performanceMonitor() {
           method: req.method,
           path: req.originalUrl,
           durationMs: responseTime.toFixed(2),
-          userId: (req as any).user?.userId,
+          userId: req.user?.userId,
           requestId: req.requestId
         });
       } else if (responseTime >= SLOW_REQUEST_THRESHOLD) {
@@ -60,7 +61,7 @@ export function performanceMonitor() {
           path: req.originalUrl,
           durationMs: responseTime.toFixed(
 2),
-          userId: (req as any).user?.userId,
+          userId: req.user?.userId,
           requestId: req.requestId
         });
       }
@@ -71,7 +72,7 @@ export function performanceMonitor() {
         path: req.originalUrl,
         statusCode: res.statusCode,
         durationMs: responseTime.toFixed(2),
-        userId: (req as any).user?.userId,
+        userId: req.user?.userId,
         requestId: req.requestId
       });
       

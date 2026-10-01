@@ -1,6 +1,8 @@
 // Mistral AI chat completions client.
 // Uses the OpenAI-compatible endpoint at api.mistral.ai - no SDK dependency needed.
 
+import { MistralError } from '../../lib/errors';
+
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MODEL_NAME = process.env.MISTRAL_MODEL || 'mistral-medium';
 const BASE_URL = process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai';
@@ -23,14 +25,10 @@ export function isConfigured(): boolean {
 
 export async function complete(messages: Array<{ role: string; content: string }>, options: LLMOptions = {}): Promise<LLMResult> {
   if (!isConfigured()) {
-    const error = new Error('Mistral is not configured');
-    (error as any).code = 'MISTRAL_NOT_CONFIGURED';
-    throw error;
+    throw new MistralError('Mistral is not configured', 'MISTRAL_NOT_CONFIGURED');
   }
   if (!Array.isArray(messages) || messages.length === 0) {
-    const error = new Error('Messages are required');
-    (error as any).code = 'INVALID_MESSAGES';
-    throw error;
+    throw new MistralError('Messages are required', 'INVALID_MESSAGES');
   }
 
   const controller = new AbortController();
@@ -51,10 +49,11 @@ export async function complete(messages: Array<{ role: string; content: string }
       signal: controller.signal
     });
     if (!response.ok) {
-      const error = new Error(`Mistral request failed with status ${response.status}`);
-      (error as any).code = 'MISTRAL_REQUEST_FAILED';
-      (error as any).status = response.status;
-      throw error;
+      throw new MistralError(
+        `Mistral request failed with status ${response.status}`,
+        'MISTRAL_REQUEST_FAILED',
+        response.status
+      );
     }
     const payload = (await response.json()) as {
       model?: string;

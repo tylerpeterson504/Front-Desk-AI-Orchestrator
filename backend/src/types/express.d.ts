@@ -9,6 +9,8 @@ declare global {
         role: string;
         propertyId?: string;
       };
+      _startTime?: bigint;
+      _startDate?: Date;
     }
 
     interface User {

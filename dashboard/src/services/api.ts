@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import type {
   User,
   Property,
@@ -9,9 +9,14 @@ import type {
   Escalation,
 } from '../types';
 
+interface RetryableConfig extends AxiosRequestConfig {
+  _retried?: boolean;
+}
+
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+// Vite injects import.meta.env at runtime
+const baseURL = (import.meta.env as { VITE_API_URL?: string }).VITE_API_URL || 'http://localhost:3001';
 
 let onUnauthorized: (() => void) | null = null;
 
@@ -35,8 +40,8 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const original = error.config as any;
+  async (error: AxiosError<RetryableConfig>) => {
+    const original = error.config as RetryableConfig;
     if (error.response?.status === 401 && original && !original._retried) {
       original._retried = true;
       const refreshToken = localStorage.getItem('refresh_token');
