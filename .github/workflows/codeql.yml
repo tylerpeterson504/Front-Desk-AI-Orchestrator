@@ -67,11 +67,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-<<<<<<< HEAD
       uses: github/codeql-action/init@7999b86c43a865dc79d8923397f35af22de63401
-=======
-      uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2
->>>>>>> origin/vibe/azure-llm-config-a04d08
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
@@ -100,10 +96,6 @@ jobs:
         exit 1
 
     - name: Perform CodeQL Analysis
-<<<<<<< HEAD
       uses: github/codeql-action/analyze@7999b86c43a865dc79d8923397f35af22de63401
-=======
-      uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2
->>>>>>> origin/vibe/azure-llm-config-a04d08
       with:
         category: "/language:${{matrix.language}}"
