@@ -107,7 +107,7 @@ export function monitoringMiddleware(req: Request, res: Response, next: NextFunc
       path: req.path,
       status: statusCode,
       duration_ms: duration,
-      user_id: req.auth?.userId,
+      user_id: (req as Request & { auth?: { userId?: string } }).auth?.userId,
       client_ip: (req as Request & { clientIp?: string }).clientIp
     };
 
@@ -245,22 +245,39 @@ export function tracingMiddleware(req: Request, res: Response, next: NextFunctio
  * Ensures all logs have consistent structure
  */
 export function structuredLoggingMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // Add structured logging context
-  const originalLog = logger.info;
+  // Store original logger methods
+  const originalInfo = logger.info;
+  const originalError = logger.error;
+  const originalWarn = logger.warn;
+  const originalDebug = logger.debug;
   
-  // Override logger methods temporarily
+  // Context to add to all logs
+  const context = {
+    request_id: req.requestId,
+    correlation_id: (req as Request & { correlationId?: string }).correlationId,
+    session_id: req.headers['x-session-id']
+  };
+  
+  // Override logger methods temporarily to include context
   logger.info = function (message: string, meta: Record<string, unknown> = {}) {
-    originalLog.call(this, message, {
-      ...meta,
-      request_id: req.requestId,
-      correlation_id: (req as Request & { correlationId?: string }).correlationId,
-      session_id: req.headers['x-session-id']
-    });
+    originalInfo.call(this, message, { ...context, ...meta });
+  };
+  logger.error = function (message: string, meta: Record<string, unknown> = {}) {
+    originalError.call(this, message, { ...context, ...meta });
+  };
+  logger.warn = function (message: string, meta: Record<string, unknown> = {}) {
+    originalWarn.call(this, message, { ...context, ...meta });
+  };
+  logger.debug = function (message: string, meta: Record<string, unknown> = {}) {
+    originalDebug.call(this, message, { ...context, ...meta });
   };
 
   // Restore on response finish
   res.on('finish', () => {
-    logger.info = originalLog;
+    logger.info = originalInfo;
+    logger.error = originalError;
+    logger.warn = originalWarn;
+    logger.debug = originalDebug;
   });
 
   next();

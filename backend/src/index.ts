@@ -16,7 +16,7 @@ import { additionalSecurityHeaders, sanitizeInput, createCopilotRateLimiter } fr
 import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
-import { monitoringMiddleware, tracingMiddleware, prometheusMetricsHandler } from './middleware/monitoring';
+import { monitoringMiddleware, tracingMiddleware, structuredLoggingMiddleware, prometheusMetricsHandler } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
 
 // Load environment variables
@@ -47,6 +47,7 @@ app.use(cookieParser());
 app.use(compressionMiddleware);
 app.use(requestIpLogger);
 app.use(tracingMiddleware);
+app.use(structuredLoggingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
 app.use(requestId);

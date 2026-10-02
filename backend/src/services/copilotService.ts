@@ -4,7 +4,7 @@ import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
 import { AppError, ValidationError, AuthorizationError } from '../lib/errors';
 import logger from '../lib/logger';
-import { llmProviderFactory, LLMMessage, LLMClient, LLMResult } from './llm/providerFactory';
+import { llmProviderFactory, LLMMessage, LLMResult } from './llm/providerFactory';
 import { conversationService } from './conversationService';
 import { Conversation, ConversationMessage } from './conversationService';
 
@@ -208,8 +208,21 @@ export class CopilotService {
     const prompt = this.buildPrompt({ property, guestInfo, chatContext, templates, tone: toneSafe });
 
     // Add user message to conversation and to LLM prompt
-    const userMessage: LLMMessage = { role: 'user', content: prompt };
+    const userMessageContent = prompt;
+    const userMessage: LLMMessage = { role: 'user', content: userMessageContent };
     messages.push(userMessage);
+
+    // Add user message to conversation
+    if (conversation) {
+      await conversationService.addMessage(conversation.id, {
+        role: 'user',
+        content: userMessageContent,
+        metadata: {
+          template_ids: ids, // Track which templates are being used
+          template_count: templates.length
+        }
+      });
+    }
 
     // Get LLM client with fallback support
     if (!llmProviderFactory.hasAnyConfigured()) {

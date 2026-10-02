@@ -3,6 +3,7 @@
  * Provides API documentation and interactive exploration
  */
 
+import path from 'path';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { config } from './index';
 

@@ -199,13 +199,14 @@ export class AnalyticsService {
     const userIds = [...new Set(events.map(e => e.user_id))];
     
     // Get template usage from the response events
-    // Note: This assumes we track template usage in metadata - we need to enhance this
+    // Note: This assumes we track template usage in metadata - only works for new events
     const templateUsage: Map<number, number> = new Map();
     for (const event of events) {
-      if (event.metadata?.template_ids) {
-        const templateIds = Array.isArray(event.metadata.template_ids) ? event.metadata.template_ids : [];
-        for (const templateId of templateIds) {
-          templateUsage.set(templateId, (templateUsage.get(templateId) || 0) + 1);
+      if (event.metadata && Array.isArray(event.metadata.template_ids)) {
+        for (const templateId of event.metadata.template_ids) {
+          if (typeof templateId === 'number') {
+            templateUsage.set(templateId, (templateUsage.get(templateId) || 0) + 1);
+          }
         }
       }
     }
@@ -253,15 +254,18 @@ export class AnalyticsService {
     }
 
     // Get response events that used this template
+    // For PostgreSQL, we use jsonb_array_elements_text to check if template_id is in the array
     const events = await this.eventRepository
       .createQueryBuilder('e')
       .where('e.property_id = :property_id', { property_id })
-      .andWhere('e.metadata->>\'template_ids\' LIKE :template_id', { template_id: `%${template_id}%` })
+      .andWhere('e.metadata IS NOT NULL')
+      .andWhere('exists(select 1 from jsonb_array_elements_text(e.metadata->\'template_ids\') as t where t = :template_id::text)')
+      .setParameter('template_id', template_id.toString())
       .getMany();
 
     // Calculate average response length
     const responseLengths = events
-      .map(e => e.response_text?.length || 0)
+      .map(e => (e.response_text && typeof e.response_text === 'string') ? e.response_text.length : 0)
       .filter(len => len > 0);
 
     const avgLength = responseLengths.length > 0
