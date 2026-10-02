@@ -52,7 +52,10 @@ Short-lived access tokens (JWT, 15 minutes by default) plus single-use, revocabl
 
 - `POST /api/auth/login|register` → `{ token, expires_in, refresh_token, user }`
 - `POST /api/auth/refresh` → new `token` **and** `refresh_token`
-- `POST /api/auth/logout` / `logout-all` → revoke session(s)
+- `POST /api/auth/logout` → 200, revokes the session
+- `POST /api/auth/logout-all` → revokes every session for the caller
+
+The dashboard opts into refresh-token cookies with `X-Refresh-Token-Transport: cookie` on login, refresh, and logout. Login and refresh responses omit `refresh_token` and instead set/rotate an HttpOnly, Secure, SameSite=None cookie scoped to `/api/auth`. Logout clears the cookie. Dashboard requests send credentials, and the backend must allow its exact origin through `CORS_ORIGIN`. Run the dashboard/API over HTTPS outside localhost. Extension clients without the header continue to use the JSON refresh-token contract.
 
 Every new account is created as `agent`. Role is never accepted from registration; promotion happens via `PATCH /api/auth/users/:id/role` (admin only) or the server-side `npm run set-role` bootstrap. Registration is gated by `REGISTRATION_MODE` (`invite` / `open` / `closed`), defaulting to `invite` in production. Sessions are revoked when an admin changes a user's role.
 
