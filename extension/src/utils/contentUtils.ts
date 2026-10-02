@@ -1,7 +1,8 @@
 // Shared utilities for all content scripts
 // This module provides common functionality for content scripts
 
-import { getApiBaseUrl, getPropertyConfig, PropertyConfig } from './config';
+import { getApiBaseUrl, getPropertyConfig } from '../config';
+import type { PropertyConfig } from '../config';
 
 export interface MessageType {
   type: 'GUEST_INFO_UPDATED' | 'CHAT_CONTEXT_UPDATED' | 'GET_GUEST_INFO' | 'GET_CHAT_CONTEXT' | 'INJECT_MESSAGE';
@@ -132,7 +133,7 @@ export async function retryWithBackoff<T>(
   maxRetries: number = 3,
   baseDelay: number = 1000
 ): Promise<T> {
-  let lastError: Error;
+  let lastError: Error = new Error('retry failed');
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -160,8 +161,8 @@ export function isVisible(element: Element | null): boolean {
     style.display !== 'none' &&
     style.visibility !== 'hidden' &&
     style.opacity !== '0' &&
-    element.offsetWidth > 0 &&
-    element.offsetHeight > 0
+    (element as HTMLElement).offsetWidth > 0 &&
+    (element as HTMLElement).offsetHeight > 0
   );
 }
 
@@ -384,7 +385,7 @@ export function injectTextToSelector(selector: string, text: string): boolean {
     }
 
     // For contenteditable elements
-    if (element.isContentEditable) {
+    if ((element as HTMLElement).isContentEditable) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);

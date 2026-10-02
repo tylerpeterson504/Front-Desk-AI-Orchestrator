@@ -23,10 +23,8 @@ const envSchema = z.object({
   WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
-  GOOGLE_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
-  PERPLEXITY_API_KEY: z.string().optional(),
-  PERPLEXITY_MODEL: z.string().default('sonar'),
+  MISTRAL_API_KEY: z.string().optional(),
+  MISTRAL_MODEL: z.string().optional(),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug', 'silly']).default('info'),
   NEON_PROJECT_ID: z.string().optional(),
   DATABRICKS_HOST: z.string().optional(),
@@ -69,7 +67,7 @@ export const getCorsOrigins = () => {
     }
     return [
       /^http:\/\/localhost(:\d+)?$/,
-      /^http:\/\/127.0.0.1(:\d+)?$/,
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/,
       /^chrome-extension:\/\//,
     ];
   }

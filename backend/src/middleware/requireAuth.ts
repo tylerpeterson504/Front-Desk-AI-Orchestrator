@@ -21,6 +21,9 @@ function unauthorized(res: Response, requestId: unknown): Response {
   });
 }
 
+// Shared Bearer-token authentication. Verifies the access token and attaches
+// the acting user to req.auth so route handlers stop hand-parsing the
+// Authorization header.
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -39,10 +42,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     req.auth = { userId, email, role };
     next();
   } catch (err) {
+    // Invalid/expired tokens flow through the shared error handler so the
+    // response shape stays identical to every other auth failure.
     next(err);
   }
 }
 
+// Admin-only guard. Mount after requireAuth so the role is always present;
+// it still defends in depth if a route is ever mounted without it.
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!req.auth || req.auth.role !== 'admin') {
     res.status(403).json({
