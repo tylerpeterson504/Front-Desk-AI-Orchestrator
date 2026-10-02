@@ -60,6 +60,22 @@ export interface AuditLog {
   created_at: string;
 }
 
+// Escalation types
+export interface Escalation {
+  id: number;
+  property_id: number;
+  created_by: string;
+  guest_name: string | null;
+  room_number: string | null;
+  reason: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: 'open' | 'assigned' | 'resolved';
+  assigned_to: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Auth types
 export interface AuthResponse {
   user: User;
@@ -137,7 +153,7 @@ export interface TemplateFormData {
 }
 
 // UI types
-export type PageType = 'templates' | 'audit' | 'properties' | 'shift-notes';
+export type PageType = 'templates' | 'audit' | 'properties' | 'shift-notes' | 'escalations';
 
 export interface SidebarProps {
   currentPage: PageType;

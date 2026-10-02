@@ -1,6 +1,6 @@
 import express from 'express';
 import { propertyService } from '../services/propertyService';
-import { authenticateToken } from '../config/auth';
+import { requireAuth } from '../middleware/requireAuth';
 import { requestId } from '../middleware/errorHandler';
 import logger from '../lib/logger';
 
@@ -87,7 +87,7 @@ router.delete('/:id', requestId, async (req, res, next) => {
 });
 
 // Get Wi-Fi password (audit-logged, requires authentication)
-router.get('/:id/wifi', requestId, authenticateToken, async (req, res, next) => {
+router.get('/:id/wifi', requestId, requireAuth, async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -99,7 +99,7 @@ router.get('/:id/wifi', requestId, authenticateToken, async (req, res, next) => 
     }
 
     const wifi = await propertyService.getWifiPassword(id, req.requestId);
-    logger.info('WiFi password retrieved', { property_id: id, user_id: (req as any).user?.id, request_id: req.requestId });
+    logger.info('WiFi password retrieved', { property_id: id, user_id: req.auth!.userId, request_id: req.requestId });
     res.json(wifi);
   } catch (err) {
     next(err);

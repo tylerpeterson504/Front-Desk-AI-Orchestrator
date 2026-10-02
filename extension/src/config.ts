@@ -107,6 +107,10 @@ function getAllProperties(): PropertyConfig[] {
   return Object.values(PROPERTIES);
 }
 
+export type {
+  PropertyConfig,
+};
+
 export {
   PROPERTIES,
   getPropertyConfig,

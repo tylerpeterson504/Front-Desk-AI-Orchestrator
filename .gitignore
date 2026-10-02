@@ -1,13 +1,16 @@
 # Dependencies
 node_modules/
-# Lockfiles are not committed; CI uses `npm install` (not `npm ci`),
-# which regenerates them at install time.
-package-lock.json
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+.env.production
+.env.*.production
+
+# Local credentials notes must never be committed; use the deployment
+# platform's secret store instead.
+LOGIN_CREDENTIALS.md
 
 # Build outputs
 dist/
