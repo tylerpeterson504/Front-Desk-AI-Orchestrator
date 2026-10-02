@@ -105,13 +105,14 @@ describe('migration CLI', () => {
     // The migration set is owned by main and grows over time (CreateEscalations,
     // CreateResponseEvents arrived via the #337/#343 merges); assert the full
     // known set without depending on TypeORM's glob load order.
-    expect(result.events[1].names).toHaveLength(3);
+    expect(result.events[1].names).toHaveLength(4);
     expect(result.events[1].names).toEqual(expect.arrayContaining([
       'CreateInitialTables1700000000000',
       'CreateEscalations1759000000000',
       'CreateResponseEvents1760000000000',
+      'RepairLegacySchema1790000000000',
     ]));
-    expect(result.stdout).toContain('Successfully ran 3 migration(s)');
+    expect(result.stdout).toContain('Successfully ran 4 migration(s)');
   });
 
   it('retains support for individual database settings', () => {

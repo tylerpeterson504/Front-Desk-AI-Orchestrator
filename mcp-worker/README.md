@@ -33,7 +33,9 @@ resolution order:
 
 1. Authorization: Bearer header
 2. ?token= query parameter (for WS clients that cannot set headers)
-3. BACKEND_TOKEN worker secret (service-token fallback)
+3. BACKEND_TOKEN worker secret (service-token fallback) — only used when
+   ALLOW_FALLBACK_TOKEN="true" is explicitly set; by default, requests without
+   a caller token are rejected with 401
 
 Access tokens expire roughly every 15 minutes; the known silent-refresh bug is tracked in PR
 #309. Until that lands, expect to re-enter the token after expiry.
@@ -64,6 +66,8 @@ then send an initialize frame, followed by tools/list and tools/call.
     # point BACKEND_URL at the deployed backend (edit wrangler.jsonc vars,
     # or set it in the Workers dashboard)
     npx wrangler secret put BACKEND_TOKEN   # optional service JWT
+    # opt-in for unauthenticated service-token fallback (off by default):
+    npx wrangler secret put ALLOW_FALLBACK_TOKEN   # "true" to enable
     npx wrangler deploy
 
 The worker deploys to https://fdao-mcp.<your-subdomain>.workers.dev

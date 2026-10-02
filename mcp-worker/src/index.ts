@@ -13,10 +13,14 @@ import type { BackendCtx } from "./backend";
 export interface Env {
   BACKEND_URL: string;
   BACKEND_TOKEN?: string;
+  ALLOW_FALLBACK_TOKEN?: string;
 }
 
 /**
- * Resolve a token from the Bearer header, then the token query parameter, then BACKEND_TOKEN.
+ * Resolve a token from the Bearer header, then the token query parameter.
+ * The shared BACKEND_TOKEN is only used when ALLOW_FALLBACK_TOKEN="true" is
+ * explicitly configured, so an unauthenticated caller cannot act as the
+ * service account by default.
  * Return null when none is present; a Bearer header with an empty value returns an empty string.
  */
 function resolveToken(request: Request, env: Env): string | null {
@@ -24,7 +28,8 @@ function resolveToken(request: Request, env: Env): string | null {
   if (header && header.toLowerCase().startsWith("bearer ")) return header.slice(7).trim();
   const q = new URL(request.url).searchParams.get("token");
   if (q) return q;
-  return env.BACKEND_TOKEN || null;
+  if (env.BACKEND_TOKEN && env.ALLOW_FALLBACK_TOKEN === "true") return env.BACKEND_TOKEN;
+  return null;
 }
 
 /** Wrap text in the content array expected by an MCP tool result. */
@@ -125,12 +130,19 @@ export default {
     }
 
     if (url.pathname === "/ws" || url.pathname === "/ws/") {
-      return handleWsUpgrade(request, { baseUrl: env.BACKEND_URL, token: resolveToken(request, env) });
+      const wsToken = resolveToken(request, env);
+      if (!wsToken) {
+        return withCors(jsonResponse({ error: "unauthorized: a caller token is required" }, 401));
+      }
+      return handleWsUpgrade(request, { baseUrl: env.BACKEND_URL, token: wsToken });
     }
 
     if (url.pathname === "/mcp" || url.pathname === "/mcp/") {
       if (request.method === "OPTIONS") return withCors(new Response(null, { status: 204 }));
       const bctx: BackendCtx = { baseUrl: env.BACKEND_URL, token: resolveToken(request, env) };
+      if (!bctx.token) {
+        return withCors(jsonResponse({ error: "unauthorized: a caller token is required" }, 401));
+      }
       // Build the handler per request so the factory can close over the live
       // Authorization header without module-level mutable state (no cross-request bleed).
       const handler = createMcpHandler((factoryCtx: any) => {
