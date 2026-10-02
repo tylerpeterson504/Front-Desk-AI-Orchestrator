@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
+import { In } from 'typeorm';
 import { getRepository } from '../config/database';
 import { User } from '../entities/User';
+import { Property } from '../entities/Property';
 import { AppError, NotFoundError, ConflictError, AuthenticationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { config } from '../config';
@@ -100,6 +102,45 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.find();
   }
+  // Staff who can be assigned to work on a specific property: the property's
+  // owner (Property.user_id) plus users assigned to it (User.property_id).
+  // The directory is only visible to admins, the property's owner, or users
+  // assigned to the property.
+  async getUsersForProperty(propertyId: number, callerId: string): Promise<User[]> {
+    const caller = await this.findById(callerId);
+    if (!caller) {
+      return [];
+    }
+    const propertyRepository = getRepository<Property>(Property);
+    const property = await propertyRepository.findOne({
+      where: { id: propertyId } as never,
+    });
+    if (!property) {
+      return [];
+    }
+    const callerAuthorized =
+      caller.role === 'admin' || property.user_id === callerId || caller.property_id === propertyId;
+    if (!callerAuthorized) {
+      return [];
+    }
+    const result: User[] = [];
+    const seen = new Set<string>();
+    const owner = await this.findById(property.user_id);
+    if (owner && !seen.has(owner.id)) {
+      seen.add(owner.id);
+      result.push(owner);
+    }
+    const staff = await this.userRepository.find({
+      where: { property_id: propertyId },
+    });
+    for (const u of staff) {
+      if (!seen.has(u.id)) {
+        seen.add(u.id);
+        result.push(u);
+      }
+    }
+    return result;
+  }
 
   async updateUser(id: string, data: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
@@ -146,7 +187,6 @@ export class UserService {
     if (!user) {
       throw new NotFoundError('User', id);
     }
-
 
     user.role = role;
     await this.userRepository.save(user);

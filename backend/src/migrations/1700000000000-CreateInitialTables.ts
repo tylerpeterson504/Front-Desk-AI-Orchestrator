@@ -81,16 +81,30 @@ export class CreateInitialTables1700000000000 implements MigrationInterface {
     `);
 
     // Create indexes
+    const createIndexIfColumnExists = async (
+      indexName: string,
+      tableName: string,
+      columnName: string
+    ) => {
+      const [{ exists }] = await queryRunner.query(
+        `SELECT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('${tableName}') AND a.attname = '${columnName}' AND NOT a.attisdropped) AS exists`
+      );
+      if (exists) {
+        await queryRunner.query(
+          `CREATE INDEX IF NOT EXISTS ${indexName} ON ${tableName}(${columnName})`
+        );
+      }
+    };
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_templates_property_id ON templates(property_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_shift_notes_property_id ON shift_notes(property_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_shift_notes_user_id ON shift_notes(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`);
+    await createIndexIfColumnExists('idx_templates_property_id', 'templates', 'property_id');
+    await createIndexIfColumnExists('idx_shift_notes_property_id', 'shift_notes', 'property_id');
+    await createIndexIfColumnExists('idx_shift_notes_user_id', 'shift_notes', 'user_id');
+    await createIndexIfColumnExists('idx_audit_logs_user_id', 'audit_logs', 'user_id');
+    await createIndexIfColumnExists('idx_audit_logs_action', 'audit_logs', 'action');
+    await createIndexIfColumnExists('idx_audit_logs_resource', 'audit_logs', 'resource');
+    await createIndexIfColumnExists('idx_audit_logs_created_at', 'audit_logs', 'created_at');
+    await createIndexIfColumnExists('idx_refresh_tokens_user_id', 'refresh_tokens', 'user_id');
+    await createIndexIfColumnExists('idx_refresh_tokens_token', 'refresh_tokens', 'token');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

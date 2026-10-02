@@ -58,6 +58,7 @@ export interface EscalationResolutionSummary {
 }
 
 const MAX_BATCH = 100;
+const FUTURE_SLOP_MS = 5 * 60 * 1000;
 const MAX_WINDOW_DAYS = 90;
 
 function percentile(sorted: number[], p: number): number {
@@ -81,9 +82,12 @@ export class AnalyticsService {
     }
 
     // Every event must reference a property owned by the caller.
+    if (!events.every((e) => Number.isInteger(e.property_id))) {
+      throw new ValidationError('property_id must be an integer');
+    }
     const propertyIds = [...new Set(events.map((e) => e.property_id))];
     const owned = await this.propertyRepository.find({
-      where: propertyIds.map((id) => ({ user_id: userId, id })) as never
+      where: propertyIds.map((id) => ({ user_id: userId, id })) as never,
     });
     const ownedIds = new Set(owned.map((p) => p.id));
     if (!propertyIds.every((id) => ownedIds.has(id))) {
@@ -92,15 +96,30 @@ export class AnalyticsService {
 
     const rows: ResponseEvent[] = [];
     for (const e of events) {
+      if (typeof e.first_seen_at !== 'string') {
+        throw new ValidationError('first_seen_at must be an ISO date string');
+      }
       const firstSeen = new Date(e.first_seen_at);
       if (Number.isNaN(firstSeen.getTime())) {
         throw new ValidationError('first_seen_at must be an ISO date');
       }
+      if (firstSeen.getTime() > Date.now() + FUTURE_SLOP_MS) {
+        throw new ValidationError('first_seen_at cannot be in the future');
+      }
       let replied: Date | null = null;
       if (e.replied_at !== undefined && e.replied_at !== null) {
+        if (typeof e.replied_at !== 'string') {
+          throw new ValidationError('replied_at must be an ISO date string');
+        }
         replied = new Date(e.replied_at);
         if (Number.isNaN(replied.getTime())) {
           throw new ValidationError('replied_at must be an ISO date');
+        }
+        if (replied.getTime() < firstSeen.getTime()) {
+          throw new ValidationError('replied_at cannot precede first_seen_at');
+        }
+        if (replied.getTime() > Date.now() + FUTURE_SLOP_MS) {
+          throw new ValidationError('replied_at cannot be in the future');
         }
       }
       const hash = String(e.conversation_hash || '').slice(0, 64);
@@ -113,7 +132,7 @@ export class AnalyticsService {
           user_id: userId,
           conversation_hash: hash,
           first_seen_at: firstSeen,
-          replied_at: replied
+          replied_at: replied,
         })
       );
     }
@@ -122,7 +141,11 @@ export class AnalyticsService {
     return rows.length;
   }
 
-  async responseTimes(property_id: number, userId: string, days = 30): Promise<ResponseTimesSummary> {
+  async responseTimes(
+    property_id: number,
+    userId: string,
+    days = 30
+  ): Promise<ResponseTimesSummary> {
     if (!Number.isInteger(property_id)) {
       throw new ValidationError('property_id is required');
     }
@@ -131,7 +154,7 @@ export class AnalyticsService {
     }
 
     const property = await this.propertyRepository.findOne({
-      where: { id: property_id, user_id: userId }
+      where: { id: property_id, user_id: userId },
     });
     if (!property) {
       throw new AuthorizationError('Property not found or access denied');
@@ -151,7 +174,14 @@ export class AnalyticsService {
       .sort((a, b) => a - b);
 
     if (!seconds.length) {
-      return { property_id, days, count: 0, median_seconds: null, avg_seconds: null, p95_seconds: null };
+      return {
+        property_id,
+        days,
+        count: 0,
+        median_seconds: null,
+        avg_seconds: null,
+        p95_seconds: null,
+      };
     }
 
     const mid = Math.floor(seconds.length / 2);
@@ -164,7 +194,7 @@ export class AnalyticsService {
       count: seconds.length,
       median_seconds: Math.round(median),
       avg_seconds: Math.round(avg),
-      p95_seconds: Math.round(percentile(seconds, 95))
+      p95_seconds: Math.round(percentile(seconds, 95)),
     };
   }
 
@@ -181,14 +211,14 @@ export class AnalyticsService {
 
     // Verify property ownership
     const property = await this.propertyRepository.findOne({
-      where: { id: property_id, user_id: userId }
+      where: { id: property_id, user_id: userId },
     });
     if (!property) {
       throw new AuthorizationError('Property not found or access denied');
     }
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    
+
     // Get response events for this property in the time period
     const events = await this.eventRepository
       .createQueryBuilder('e')
@@ -197,8 +227,8 @@ export class AnalyticsService {
       .getMany();
 
     // Count unique users
-    const userIds = [...new Set(events.map(e => e.user_id))];
-    
+    const userIds = [...new Set(events.map((e) => e.user_id))];
+
     // Get template usage from the response events
     // Note: This assumes we track template usage in metadata - only works for new events
     const templateUsage: Map<number, number> = new Map();
@@ -224,14 +254,18 @@ export class AnalyticsService {
       total_requests: events.length,
       unique_users: userIds.length,
       templates_used: templateUsage.size,
-      most_used_templates: mostUsedTemplates
+      most_used_templates: mostUsedTemplates,
     };
   }
 
   /**
    * Get template effectiveness metrics
    */
-  async templateEffectiveness(property_id: number, userId: string, template_id: number): Promise<TemplateEffectivenessSummary> {
+  async templateEffectiveness(
+    property_id: number,
+    userId: string,
+    template_id: number
+  ): Promise<TemplateEffectivenessSummary> {
     if (!Number.isInteger(property_id)) {
       throw new ValidationError('property_id is required');
     }
@@ -241,14 +275,14 @@ export class AnalyticsService {
 
     // Verify property and template ownership
     const property = await this.propertyRepository.findOne({
-      where: { id: property_id, user_id: userId }
+      where: { id: property_id, user_id: userId },
     });
     if (!property) {
       throw new AuthorizationError('Property not found or access denied');
     }
 
     const template = await this.templateRepository.findOne({
-      where: { id: template_id, user_id: userId }
+      where: { id: template_id, user_id: userId },
     });
     if (!template) {
       throw new AuthorizationError('Template not found or access denied');
@@ -260,31 +294,40 @@ export class AnalyticsService {
       .createQueryBuilder('e')
       .where('e.property_id = :property_id', { property_id })
       .andWhere('e.metadata IS NOT NULL')
-      .andWhere('exists(select 1 from jsonb_array_elements_text(e.metadata->\'template_ids\') as t where t = :template_id::text)')
+      .andWhere(
+        "exists(select 1 from jsonb_array_elements_text(e.metadata->'template_ids') as t where t = :template_id::text)"
+      )
       .setParameter('template_id', template_id.toString())
       .getMany();
 
     // Calculate average response length
     const responseLengths = events
-      .map(e => (e.response_text && typeof e.response_text === 'string') ? e.response_text.length : 0)
-      .filter(len => len > 0);
+      .map((e) =>
+        e.response_text && typeof e.response_text === 'string' ? e.response_text.length : 0
+      )
+      .filter((len) => len > 0);
 
-    const avgLength = responseLengths.length > 0
-      ? responseLengths.reduce((a, b) => a + b, 0) / responseLengths.length
-      : 0;
+    const avgLength =
+      responseLengths.length > 0
+        ? responseLengths.reduce((a, b) => a + b, 0) / responseLengths.length
+        : 0;
 
     return {
       template_id,
       usage_count: events.length,
       avg_response_length: Math.round(avgLength),
-      property_id
+      property_id,
     };
   }
 
   /**
    * Get shift note completion rates
    */
-  async shiftNoteCompletion(property_id: number, userId: string, days = 30): Promise<ShiftNoteCompletionSummary> {
+  async shiftNoteCompletion(
+    property_id: number,
+    userId: string,
+    days = 30
+  ): Promise<ShiftNoteCompletionSummary> {
     if (!Number.isInteger(property_id)) {
       throw new ValidationError('property_id is required');
     }
@@ -294,14 +337,14 @@ export class AnalyticsService {
 
     // Verify property ownership
     const property = await this.propertyRepository.findOne({
-      where: { id: property_id, user_id: userId }
+      where: { id: property_id, user_id: userId },
     });
     if (!property) {
       throw new AuthorizationError('Property not found or access denied');
     }
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    
+
     // Get all shift notes for this property
     const notes = await this.shiftNoteRepository
       .createQueryBuilder('note')
@@ -311,7 +354,9 @@ export class AnalyticsService {
 
     // For now, assume all shift notes are "completed" if they have content
     // In a more sophisticated system, we might have a status field
-    const completed_notes = notes.filter(note => note.content && note.content.trim().length > 0).length;
+    const completed_notes = notes.filter(
+      (note) => note.content && note.content.trim().length > 0
+    ).length;
 
     const completion_rate = notes.length > 0 ? (completed_notes / notes.length) * 100 : 0;
 
@@ -320,14 +365,18 @@ export class AnalyticsService {
       days,
       total_notes: notes.length,
       completed_notes,
-      completion_rate: Math.round(completion_rate * 100) / 100 // Round to 2 decimal places
+      completion_rate: Math.round(completion_rate * 100) / 100, // Round to 2 decimal places
     };
   }
 
   /**
    * Get escalation resolution time tracking
    */
-  async escalationResolutionTimes(property_id: number, userId: string, days = 30): Promise<EscalationResolutionSummary> {
+  async escalationResolutionTimes(
+    property_id: number,
+    userId: string,
+    days = 30
+  ): Promise<EscalationResolutionSummary> {
     if (!Number.isInteger(property_id)) {
       throw new ValidationError('property_id is required');
     }
@@ -337,14 +386,14 @@ export class AnalyticsService {
 
     // Verify property ownership
     const property = await this.propertyRepository.findOne({
-      where: { id: property_id, user_id: userId }
+      where: { id: property_id, user_id: userId },
     });
     if (!property) {
       throw new AuthorizationError('Property not found or access denied');
     }
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    
+
     // Get all escalations for this property
     const escalations = await this.escalationRepository
       .createQueryBuilder('e')
@@ -352,18 +401,18 @@ export class AnalyticsService {
       .andWhere('e.created_at >= :since', { since })
       .getMany();
 
-    const resolved_escalations = escalations.filter(e => e.resolved_at !== null);
+    const resolved_escalations = escalations.filter((e) => e.resolved_at !== null);
     const resolution_times = resolved_escalations
-      .map(e => (e.resolved_at!.getTime() - e.created_at.getTime()) / 1000)
-      .filter(t => t >= 0);
+      .map((e) => (e.resolved_at!.getTime() - e.created_at.getTime()) / 1000)
+      .filter((t) => t >= 0);
 
-    const avg_resolution_time = resolution_times.length > 0
-      ? resolution_times.reduce((a, b) => a + b, 0) / resolution_times.length
-      : null;
+    const avg_resolution_time =
+      resolution_times.length > 0
+        ? resolution_times.reduce((a, b) => a + b, 0) / resolution_times.length
+        : null;
 
-    const resolution_rate = escalations.length > 0 
-      ? (resolved_escalations.length / escalations.length) * 100 
-      : 0;
+    const resolution_rate =
+      escalations.length > 0 ? (resolved_escalations.length / escalations.length) * 100 : 0;
 
     return {
       property_id,
@@ -371,7 +420,7 @@ export class AnalyticsService {
       total_escalations: escalations.length,
       resolved_escalations: resolved_escalations.length,
       avg_resolution_time_seconds: avg_resolution_time ? Math.round(avg_resolution_time) : null,
-      resolution_rate: Math.round(resolution_rate * 100) / 100 // Round to 2 decimal places
+      resolution_rate: Math.round(resolution_rate * 100) / 100, // Round to 2 decimal places
     };
   }
 }

@@ -12,11 +12,20 @@ import { initializeDatabase } from './config/database';
 import { config } from './config';
 import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
-import { additionalSecurityHeaders, sanitizeInput, createCopilotRateLimiter } from './middleware/security';
+import {
+  additionalSecurityHeaders,
+  sanitizeInput,
+  createCopilotRateLimiter,
+} from './middleware/security';
 import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
-import { monitoringMiddleware, tracingMiddleware, structuredLoggingMiddleware, prometheusMetricsHandler } from './middleware/monitoring';
+import {
+  monitoringMiddleware,
+  tracingMiddleware,
+  structuredLoggingMiddleware,
+  prometheusMetricsHandler,
+} from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
 
 // Load environment variables
@@ -24,13 +33,9 @@ dotenv.config();
 dotenv.config({ path: path.join(__dirname, '../../.env.local') });
 
 // Validate required environment variables
-const requiredEnvVars = [
-  'MISTRAL_API_KEY',
-  'JWT_SECRET',
-  'DATABASE_URL'
-];
+const requiredEnvVars = ['MISTRAL_API_KEY', 'JWT_SECRET', 'DATABASE_URL'];
 
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 if (missingEnvVars.length > 0) {
   logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
   process.exit(1);
@@ -57,7 +62,9 @@ app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
-  ? config.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  ? config.CORS_ORIGIN.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
   : [];
 
 if (!corsOrigins.length) {
@@ -67,17 +74,25 @@ if (!corsOrigins.length) {
   logger.warn('CORS_ORIGIN is not set; allowing localhost origins for development only');
 }
 
-app.use(cors({
-  origin: corsOrigins.length
-    ? corsOrigins
-    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
-  credentials: true,
-  maxAge: 86400, // 24 hours preflight cache
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+app.use(
+  cors({
+    credentials: true,
+    origin: corsOrigins.length
+      ? corsOrigins
+      : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Request-ID',
+      'X-CSRF-Token',
+      'x-refresh-token-transport',
+    ],
+    maxAge: 86400, // 24 hours preflight cache
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
 
@@ -90,7 +105,7 @@ const apiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Rate limit credential-guessing endpoints to mitigate brute-force attacks.
@@ -104,7 +119,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout'
+  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -114,7 +129,7 @@ const refreshLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Copilot-specific rate limiter to prevent LLM cost exhaustion
@@ -129,7 +144,7 @@ const appShellLimiter = rateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Database is initialized only when the server starts (see isMainModule below),
@@ -146,6 +161,8 @@ import healthRouter from './routes/health';
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
 import githubRouter from './routes/github';
+import analyticsRouter from './routes/analytics';
+import escalationsRouter from './routes/escalations';
 
 app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
@@ -155,6 +172,8 @@ app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
 app.use('/api/copilot', copilotLimiter, apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
+app.use('/api/analytics', apiLimiter, analyticsRouter);
+app.use('/api/escalations', apiLimiter, escalationsRouter);
 
 // Health check routes
 app.use('/health', healthRouter);
@@ -195,7 +214,7 @@ if (isMainModule) {
         logger.info('backend started', {
           port: PORT,
           env: config.NODE_ENV || 'development',
-          registration_mode: getMode()
+          registration_mode: getMode(),
         });
       });
     })

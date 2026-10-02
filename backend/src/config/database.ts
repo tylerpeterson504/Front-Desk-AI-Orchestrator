@@ -1,28 +1,51 @@
 import { DataSource, ObjectLiteral, EntityTarget } from 'typeorm';
 import { config, isProduction, getDatabaseConfig } from './index';
 import logger from '../lib/logger';
-import { User, Property, Template, ShiftNote, AuditLog, RefreshToken } from '../entities';
+import {
+  User,
+  Property,
+  Template,
+  ShiftNote,
+  AuditLog,
+  RefreshToken,
+  Escalation,
+  ResponseEvent,
+} from '../entities';
 
 const dbConfig = getDatabaseConfig();
 
 const connectionString = dbConfig.connectionString;
-const manualConfig = connectionString ? {} : {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  username: dbConfig.user,
-  password: dbConfig.password,
-  database: dbConfig.database
-};
+const manualConfig = connectionString
+  ? {}
+  : {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      username: dbConfig.user,
+      password: dbConfig.password,
+      database: dbConfig.database,
+    };
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
   ...(connectionString ? { url: connectionString } : manualConfig),
-  ssl: connectionString?.includes('neon.tech') || isProduction() ? { rejectUnauthorized: false } : false,
-  entities: [User, Property, Template, ShiftNote, AuditLog, RefreshToken],
+  ssl:
+    connectionString?.includes('neon.tech') || isProduction()
+      ? { rejectUnauthorized: false }
+      : false,
+  entities: [
+    User,
+    Property,
+    Template,
+    ShiftNote,
+    AuditLog,
+    RefreshToken,
+    Escalation,
+    ResponseEvent,
+  ],
   migrations: [__dirname + '/../migrations/**/*.ts'],
   synchronize: false,
   logging: config.LOG_LEVEL === 'debug',
-  migrationsRun: true
+  migrationsRun: true,
 });
 
 export const initializeDatabase = async () => {

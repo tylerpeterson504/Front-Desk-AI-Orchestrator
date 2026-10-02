@@ -59,9 +59,8 @@ function requestOrigin(origin: string): Promise<boolean> {
 
 if (saveButton && urlInput) {
   saveButton.addEventListener('click', async () => {
-    const normalized = typeof normalizeApiBaseUrl === 'function'
-      ? normalizeApiBaseUrl(urlInput.value)
-      : null;
+    const normalized =
+      typeof normalizeApiBaseUrl === 'function' ? normalizeApiBaseUrl(urlInput.value) : null;
 
     if (!urlInput.value.trim()) {
       await chrome.storage.local.remove('apiBaseUrl');
@@ -70,7 +69,10 @@ if (saveButton && urlInput) {
     }
 
     if (!normalized) {
-      setStatus('Enter a full http(s) URL, e.g. https://api.example.com', 'error');
+      setStatus(
+        'Enter a full https:// URL (http is only allowed for localhost), e.g. https://api.example.com',
+        'error'
+      );
       return;
     }
 

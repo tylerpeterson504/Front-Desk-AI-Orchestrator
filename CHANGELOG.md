@@ -233,6 +233,11 @@ DEFAULT_LANGUAGE=en
 - **Language Support**: 12+ languages with RTL support
 - **Integration Coverage**: Email, Slack, Webhooks, Reporting fully implemented
 
+## 2026-09-30 — Mistral-only LLM cleanup
+
+- **Provider surface reduced to Mistral only**: removed `GOOGLE_API_KEY`, `GEMINI_MODEL`, `PERPLEXITY_API_KEY`, `PERPLEXITY_MODEL` from the backend config schema; added `MISTRAL_API_KEY` / `MISTRAL_MODEL` (PR #343).
+- **Dead code removed** (never imported; copilot uses `backend/src/services/llm/mistralClient.ts`): `backend/src/services/llm.js`, `backend/src/services/huggingface.js`.
+
 ## 2026-09 (in progress)
 
 - **Auth refactor**: all routes use the shared `requireAuth` middleware; `req.auth` carries userId/email/role; admin role changes revoke sessions (PR #304).

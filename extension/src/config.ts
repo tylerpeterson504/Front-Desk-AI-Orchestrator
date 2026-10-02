@@ -17,12 +17,18 @@ let apiBaseUrlOverride: string | null = null;
 
 // Reject anything that is not an http(s) origin so a bad storage value cannot
 // redirect API calls somewhere unexpected, and drop trailing slashes so callers
-// can always append '/api'.
+// can always append '/api'. Non-local origins must use HTTPS: refresh tokens
+// travel on these requests, and cleartext transport exposes them to network
+// observers. Plain http://localhost / 127.0.0.1 stays allowed for development.
+function isLocalHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
 function normalizeApiBaseUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
     const url = new URL(value.trim());
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.protocol === 'http:' && !isLocalHost(url.hostname)) return null;
     return (url.origin + url.pathname).replace(/\/+$/, '');
   } catch {
     return null;
@@ -77,7 +83,7 @@ const PROPERTIES: Record<string, PropertyConfig> = {
     urlPattern: 'app.us1.stayntouch.com',
     toneGuidelines: 'Professional, formal, courteous',
     checkoutTime: '11:00 AM',
-    wifiSSID: 'StPierre-Guest'
+    wifiSSID: 'StPierre-Guest',
   },
   'sys.akia.ai': {
     id: 2,
@@ -85,8 +91,8 @@ const PROPERTIES: Record<string, PropertyConfig> = {
     urlPattern: 'sys.akia.ai',
     toneGuidelines: 'Friendly, welcoming, professional',
     checkoutTime: '11:00 AM',
-    wifiSSID: 'AndrewJackson-Guest'
-  }
+    wifiSSID: 'AndrewJackson-Guest',
+  },
 };
 
 // Get property config from current URL
@@ -107,9 +113,7 @@ function getAllProperties(): PropertyConfig[] {
   return Object.values(PROPERTIES);
 }
 
-export type {
-  PropertyConfig,
-};
+export type { PropertyConfig };
 
 export {
   PROPERTIES,
@@ -120,7 +124,7 @@ export {
   loadApiBaseUrl,
   normalizeApiBaseUrl,
   DEFAULT_API_BASE_URL,
-  apiBaseUrlOverride
+  apiBaseUrlOverride,
 };
 
 export {};

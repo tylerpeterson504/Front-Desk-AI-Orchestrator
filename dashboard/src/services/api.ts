@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   User,
   Property,
@@ -8,16 +8,17 @@ import type {
   AuthResponse,
   Escalation,
 } from '../types';
-
-interface RetryableConfig extends AxiosRequestConfig {
-  _retried?: boolean;
-}
+import { tokenStore } from '../stores/authStore';
 
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
-// Vite injects import.meta.env at runtime
-const baseURL =
-  (import.meta.env as { VITE_API_URL?: string }).VITE_API_URL || 'http://localhost:3001';
+const baseURL = (import.meta as any).env?.VITE_API_URL || '/api';
+const cookieTransport = {
+  headers: { 'X-Refresh-Token-Transport': 'cookie' },
+  withCredentials: true,
+};
+
+localStorage.removeItem('refresh_token');
 
 let onUnauthorized: (() => void) | null = null;
 
@@ -32,7 +33,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = tokenStore.get();
   if (token) {
     config.headers.Authorization = 'Bearer ' + token;
   }
@@ -41,27 +42,28 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<RetryableConfig>) => {
-    const original = error.config as RetryableConfig;
-    if (error.response?.status === 401 && original && !original._retried) {
+  async (error: AxiosError) => {
+    const original = error.config as any;
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retried &&
+      original.url !== '/auth/login'
+    ) {
       original._retried = true;
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        try {
-          const res = await axios.post(baseURL + '/auth/refresh', {
-            refreshToken,
-          });
-          const data = res.data as { token: string; refreshToken: string };
-          localStorage.setItem('access_token', data.token);
-          localStorage.setItem('refresh_token', data.refreshToken);
-          original.headers = { ...original.headers, Authorization: 'Bearer ' + data.token };
-          return api(original);
-        } catch {
-          // fall through to logout
-        }
+      try {
+        const res = await axios.post<{ token: string }>(
+          baseURL + '/auth/refresh',
+          {},
+          cookieTransport
+        );
+        tokenStore.set(res.data.token);
+        original.headers.Authorization = 'Bearer ' + res.data.token;
+        return api(original);
+      } catch {
+        // fall through to logout
       }
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      tokenStore.clear();
       if (onUnauthorized) onUnauthorized();
     }
     return Promise.reject(error);
@@ -90,13 +92,18 @@ async function deleteData<T>(url: string): Promise<T> {
 
 export const authAPI = {
   login: (email: string, password: string): Promise<AuthResponse> =>
-    postData<AuthResponse>('/auth/login', { email, password }),
+    api
+      .post<AuthResponse>('/auth/login', { email, password }, cookieTransport)
+      .then((res) => res.data),
   me: (): Promise<User> => getData<User>('/auth/me'),
-  logout: (): Promise<void> => postData<void>('/auth/logout'),
+  logout: (): Promise<void> =>
+    api.post<void>('/auth/logout', {}, cookieTransport).then((res) => res.data),
 };
 
 export const userAPI = {
   list: (): Promise<User[]> => getData<User[]>('/auth/users'),
+  listForProperty: (propertyId: number): Promise<User[]> =>
+    getData<User[]>(`/auth/users?property_id=${propertyId}`),
 };
 
 export interface ResponseTimesSummary {
@@ -114,16 +121,6 @@ export const analyticsAPI = {
     days?: number;
   }): Promise<ResponseTimesSummary> =>
     getData<ResponseTimesSummary>('/analytics/response-times', { params }),
-};
-
-export const escalationAPI = {
-  getAll: (status?: string): Promise<Escalation[]> =>
-    getData<Escalation[]>('/escalations', { params: status ? { status } : undefined }),
-  create: (data: Partial<Escalation>): Promise<Escalation> =>
-    postData<Escalation>('/escalations', data),
-  update: (id: number, data: Partial<Escalation>): Promise<Escalation> =>
-    putData<Escalation>('/escalations/' + id, data),
-  delete: (id: number): Promise<void> => deleteData<void>('/escalations/' + id),
 };
 
 export const propertyAPI = {
@@ -167,6 +164,16 @@ export const shiftNoteAPI = {
     putData<ShiftNote>('/shift-notes/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
   remove: (id: number): Promise<void> => deleteData<void>('/shift-notes/' + id),
+};
+
+export const escalationAPI = {
+  getAll: (status?: string): Promise<Escalation[]> =>
+    getData<Escalation[]>(status ? '/escalations?status=' + status : '/escalations'),
+  create: (data: Partial<Escalation>): Promise<Escalation> =>
+    postData<Escalation>('/escalations', data),
+  update: (id: number, data: Partial<Escalation>): Promise<Escalation> =>
+    putData<Escalation>('/escalations/' + id, data),
+  delete: (id: number): Promise<void> => deleteData<void>('/escalations/' + id),
 };
 
 export const auditAPI = {

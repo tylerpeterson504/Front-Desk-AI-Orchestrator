@@ -1,9 +1,10 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { userService } from '../services/userService';
-import { authService } from '../services/authService';
+import { authService, AuthResponse } from '../services/authService';
 import { requestId } from '../middleware/errorHandler';
 import { requireAuth, requireAdmin } from '../middleware/requireAuth';
 import { config } from '../config';
+import { getCookieTrustedOrigins } from '../config';
 import { getMode, assertRegistrationAllowed } from '../config/registration';
 import { isValidEmail } from '../lib/validateEmail';
 import logger from '../lib/logger';
@@ -11,6 +12,54 @@ import logger from '../lib/logger';
 const router = express.Router();
 
 const MIN_PASSWORD_LENGTH = 12;
+const REFRESH_COOKIE = 'refresh_token';
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none' as const,
+  path: '/api/auth',
+};
+
+function usesCookie(req: Request): boolean {
+  return req.get('X-Refresh-Token-Transport') === 'cookie';
+}
+
+// Cookie-based credential flows expand session authority to any origin the
+// browser will attach the cookie to (SameSite=None). CORS preflight is a
+// browser-side control only, so the server independently verifies that the
+// request's Origin header matches an explicitly configured exact origin
+// before reading or rotating the cookie. Regex/wildcard CORS entries are not
+// trusted here, and a missing Origin header is rejected rather than assumed.
+function cookieOriginAllowed(req: Request): boolean {
+  const origin = req.get('Origin');
+  if (!origin) return false;
+  return getCookieTrustedOrigins().includes(origin);
+}
+
+function refreshCookie(req: Request): string | undefined {
+  return req.headers.cookie
+    ?.split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${REFRESH_COOKIE}=`))
+    ?.slice(REFRESH_COOKIE.length + 1);
+}
+
+function sendAuthResponse(req: Request, res: Response, response: AuthResponse, status = 200): void {
+  if (usesCookie(req) && cookieOriginAllowed(req)) {
+    res.cookie(REFRESH_COOKIE, response.refresh_token, {
+      ...cookieOptions,
+      expires: response.refresh_expires_at,
+    });
+    res.status(status).json({
+      token: response.token,
+      expires_in: response.expires_in,
+      refresh_expires_at: response.refresh_expires_at,
+      user: response.user,
+    });
+  } else {
+    res.status(status).json(response);
+  }
+}
 
 // Every endpoint that hands out credentials returns the same shape, so clients
 // have one code path for login, register and refresh.
@@ -24,7 +73,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Email, password, and name are required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -32,7 +81,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'A valid email address is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -40,7 +89,7 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -48,18 +97,19 @@ router.post('/register', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'A name is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
-    const response = await authService.register(
-      { email, password, name },
-      req.requestId
-    );
+    const response = await authService.register({ email, password, name }, req.requestId);
 
-    logger.info('user registered', { user_id: response.user.id, role: response.user.role, request_id: req.requestId });
+    logger.info('user registered', {
+      user_id: response.user.id,
+      role: response.user.role,
+      request_id: req.requestId,
+    });
 
-    res.status(201).json(response);
+    sendAuthResponse(req, res, response, 201);
   } catch (err) {
     next(err);
   }
@@ -74,18 +124,15 @@ router.post('/login', requestId, async (req, res, next) => {
       return res.status(400).json({
         error: 'Email and password are required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
-    const response = await authService.login(
-      { email, password },
-      req.requestId
-    );
+    const response = await authService.login({ email, password }, req.requestId);
 
     logger.info('user logged in', { user_id: response.user.id, request_id: req.requestId });
 
-    res.json(response);
+    sendAuthResponse(req, res, response);
   } catch (err) {
     next(err);
   }
@@ -94,24 +141,43 @@ router.post('/login', requestId, async (req, res, next) => {
 // Refresh token
 router.post('/refresh', requestId, async (req, res, next) => {
   try {
-    const { refresh_token } = req.body || {};
+    if (usesCookie(req) && !cookieOriginAllowed(req)) {
+      return res.status(403).json({
+        error: 'Cookie refresh requires a trusted origin',
+        code: 'ORIGIN_NOT_ALLOWED',
+        requestId: req.requestId,
+      });
+    }
+    const refresh_token = usesCookie(req) ? refreshCookie(req) : req.body?.refresh_token;
 
     if (!refresh_token) {
       return res.status(400).json({
         error: 'Refresh token is required',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
     const tokens = await authService.refresh(refresh_token, req.requestId);
 
-    res.json({
-      token: tokens.token,
-      expires_in: tokens.expiresIn,
-      refresh_token: tokens.refreshToken,
-      refresh_expires_at: tokens.refreshExpiresAt
-    });
+    if (usesCookie(req)) {
+      res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
+        ...cookieOptions,
+        expires: tokens.refreshExpiresAt,
+      });
+      res.json({
+        token: tokens.token,
+        expires_in: tokens.expiresIn,
+        refresh_expires_at: tokens.refreshExpiresAt,
+      });
+    } else {
+      res.json({
+        token: tokens.token,
+        expires_in: tokens.expiresIn,
+        refresh_token: tokens.refreshToken,
+        refresh_expires_at: tokens.refreshExpiresAt,
+      });
+    }
   } catch (err) {
     next(err);
   }
@@ -120,11 +186,20 @@ router.post('/refresh', requestId, async (req, res, next) => {
 // Logout
 router.post('/logout', requestId, async (req, res, next) => {
   try {
-    const { refresh_token } = req.body || {};
+    if (usesCookie(req) && !cookieOriginAllowed(req)) {
+      return res.status(403).json({
+        error: 'Cookie logout requires a trusted origin',
+        code: 'ORIGIN_NOT_ALLOWED',
+        requestId: req.requestId,
+      });
+    }
+    const refresh_token = usesCookie(req) ? refreshCookie(req) : req.body?.refresh_token;
 
     if (refresh_token) {
       await authService.logout(refresh_token, req.requestId);
     }
+
+    if (usesCookie(req)) res.clearCookie(REFRESH_COOKIE, cookieOptions);
 
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
@@ -151,7 +226,7 @@ router.get('/me', requestId, requireAuth, async (req, res, next) => {
       return res.status(404).json({
         error: 'User not found',
         code: 'NOT_FOUND',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -160,7 +235,7 @@ router.get('/me', requestId, requireAuth, async (req, res, next) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      property_id: user.property_id
+      property_id: user.property_id,
     });
   } catch (err) {
     next(err);
@@ -173,16 +248,24 @@ router.get('/registration-mode', requestId, (req, res) => {
 });
 
 // Staff directory for assignment pickers. Minimal fields only —
-// no password hashes, property ids, or timestamps leak.
+// no password hashes, property ids, or timestamps leak. With ?property_id=,
+// returns the staff who can be assigned to that property (its owner plus
+// assigned staff); admins without a property_id see the full directory.
 router.get('/users', requestId, requireAuth, async (req, res, next) => {
   try {
-    const users = await userService.getAllUsers();
+    const propertyId = parseInt(String(req.query.property_id ?? ''), 10);
+    const users =
+      Number.isInteger(propertyId) && propertyId > 0
+        ? await userService.getUsersForProperty(propertyId, req.auth!.userId)
+        : req.auth!.role === 'admin'
+          ? await userService.getAllUsers()
+          : [];
     res.json(
       users.map((u: { id: string; name: string | null; email: string; role: string }) => ({
         id: u.id,
         name: u.name,
         email: u.email,
-        role: u.role
+        role: u.role,
       }))
     );
   } catch (err) {
@@ -200,7 +283,7 @@ router.patch('/users/:id/role', requestId, requireAuth, requireAdmin, async (req
       return res.status(400).json({
         error: 'Invalid role',
         code: 'VALIDATION_ERROR',
-        requestId: req.requestId
+        requestId: req.requestId,
       });
     }
 
@@ -210,14 +293,14 @@ router.patch('/users/:id/role', requestId, requireAuth, requireAdmin, async (req
       user_id: user.id,
       new_role: user.role,
       updated_by: req.auth!.userId,
-      request_id: req.requestId
+      request_id: req.requestId,
     });
 
     res.json({
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
     });
   } catch (err) {
     next(err);

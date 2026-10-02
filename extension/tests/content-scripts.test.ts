@@ -19,7 +19,7 @@ describe('config.js shared module', () => {
     if (hostname !== undefined) {
       Object.defineProperty(window, 'location', {
         value: { hostname },
-        writable: true
+        writable: true,
       });
     }
     const mod = await import(CONFIG_PATH);
@@ -77,6 +77,13 @@ describe('config.js shared module', () => {
     }
     expect(config.normalizeApiBaseUrl('https://api.example.com//')).toBe('https://api.example.com');
   });
+  it('rejects cleartext http for non-local origins but keeps localhost http for dev', async () => {
+    const config = await loadConfig('app.us1.stayntouch.com');
+    expect(config.normalizeApiBaseUrl('http://api.example.com')).toBeNull();
+    expect(config.normalizeApiBaseUrl('http://192.168.1.5:3001')).toBeNull();
+    expect(config.normalizeApiBaseUrl('http://localhost:3001')).toBe('http://localhost:3001');
+    expect(config.normalizeApiBaseUrl('http://127.0.0.1:3001/')).toBe('http://127.0.0.1:3001');
+  });
 
   it('a storage change updates the cached override without a reload', async () => {
     const config = await loadConfig('app.us1.stayntouch.com');
@@ -100,8 +107,7 @@ describe('content-stayntouch.js extraction', () => {
   });
 
   async function loadScript() {
-    await import(
-SCRIPT_PATH);
+    await import(SCRIPT_PATH);
   }
 
   it('broadcasts GUEST_INFO_UPDATED with extracted fields', async () => {
@@ -124,7 +130,7 @@ SCRIPT_PATH);
       checkIn: '2026-08-28',
       checkOut: '2026-08-30',
       reservationStatus: 'Checked-in',
-      confirmationNumber: 'CN-9911'
+      confirmationNumber: 'CN-9911',
     });
   });
 
@@ -158,8 +164,7 @@ SCRIPT_PATH);
 describe('content-akia.js extraction and injection', () => {
   const SCRIPT_PATH = '../src/content-akia.ts';
 
-  beforeEach
-(() => {
+  beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
   });
@@ -195,7 +200,7 @@ describe('content-akia.js extraction and injection', () => {
     expect(sent[0].data.conversationId).toBe('conv-42');
     expect(sent[0].data.messages).toEqual([
       { sender: 'Jane', text: 'When is checkout?', time: '10:02' },
-      { sender: 'Desk', text: '11 AM.', time: null }
+      { sender: 'Desk', text: '11 AM.', time: null },
     ]);
   });
 
@@ -214,8 +219,7 @@ describe('content-akia.js extraction and injection', () => {
     const respond = vi.fn();
     listener()({ type: 'GET_CHAT_CONTEXT' }, {}, respond);
     expect(respond).toHaveBeenCalled();
-    expect(respond.mock.calls[0][0].data
-.messages[0].text).toBe('hello');
+    expect(respond.mock.calls[0][0].data.messages[0].text).toBe('hello');
   });
 
   it('injectMessage sets the textarea via the native setter + input event', async () => {
@@ -285,8 +289,16 @@ describe('background.js relay', () => {
 
 describe('exception-safe broadcast path (safeSend)', () => {
   const CASES = [
-    { path: '../src/content-stayntouch.ts', fixture: '<div class="guest-name">Jane</div>', type: 'GUEST_INFO_UPDATED' },
-    { path: '../src/content-akia.ts', fixture: '<div class="message-item"><span class="message-text">hi</span></div>', type: 'CHAT_CONTEXT_UPDATED' }
+    {
+      path: '../src/content-stayntouch.ts',
+      fixture: '<div class="guest-name">Jane</div>',
+      type: 'GUEST_INFO_UPDATED',
+    },
+    {
+      path: '../src/content-akia.ts',
+      fixture: '<div class="message-item"><span class="message-text">hi</span></div>',
+      type: 'CHAT_CONTEXT_UPDATED',
+    },
   ];
 
   for (const { path: scriptPath, fixture, type } of CASES) {
@@ -325,7 +337,9 @@ describe('exception-safe broadcast path (safeSend)', () => {
         const rejections: any[] = [];
         const handler = (err: any) => rejections.push(err);
         process.on('unhandledRejection', handler);
-        chrome.runtime.sendMessage.mockImplementation(() => Promise.reject(new Error('no receiver')));
+        chrome.runtime.sendMessage.mockImplementation(() =>
+          Promise.reject(new Error('no receiver'))
+        );
 
         try {
           await loadScript();

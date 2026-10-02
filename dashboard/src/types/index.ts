@@ -80,7 +80,6 @@ export interface Escalation {
 export interface AuthResponse {
   user: User;
   token: string;
-  refreshToken: string;
 }
 
 export interface LoginCredentials {

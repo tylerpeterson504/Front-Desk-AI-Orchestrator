@@ -42,6 +42,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^10.0.13",
+    "pg": "^8.23.0",
     "pg-promise": "^11.9.1",
     "reflect-metadata": "^0.2.2",
     "swagger-jsdoc": "^6.3.0",

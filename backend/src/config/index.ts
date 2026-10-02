@@ -20,13 +20,14 @@ const envSchema = z.object({
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
-  WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
+  WIFI_ENCRYPTION_KEY: z
+    .string()
+    .min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters')
+    .optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
-  GOOGLE_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
-  PERPLEXITY_API_KEY: z.string().optional(),
-  PERPLEXITY_MODEL: z.string().default('sonar'),
+  MISTRAL_API_KEY: z.string().optional(),
+  MISTRAL_MODEL: z.string().optional(),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug', 'silly']).default('info'),
   NEON_PROJECT_ID: z.string().optional(),
   DATABRICKS_HOST: z.string().optional(),
@@ -68,7 +69,7 @@ const envSchema = z.object({
   COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000).optional(),
   // Database caching settings
   CACHE_TTL_SECONDS: z.coerce.number().default(60).optional(),
-  CACHE_MAX_SIZE: z.coerce.number().default(1000).optional()
+  CACHE_MAX_SIZE: z.coerce.number().default(1000).optional(),
 });
 
 // Parse and validate
@@ -102,7 +103,7 @@ export const getCorsOrigins = () => {
     }
     return [
       /^http:\/\/localhost(:\d+)?$/,
-      /^http:\/\/127.0.0.1(:\d+)?$/,
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/,
       /^chrome-extension:\/\//,
     ];
   }
@@ -110,4 +111,14 @@ export const getCorsOrigins = () => {
   return config.CORS_ORIGIN.split(',')
     .map((o: string) => o.trim())
     .filter(Boolean);
+};
+
+// Exact origins trusted for cookie-based credential flows (refresh/logout).
+// Regex and wildcard CORS entries are deliberately excluded: cookies with
+// SameSite=None are sent from any origin the browser allows, so the server
+// must independently verify the request origin before honoring them.
+export const getCookieTrustedOrigins = (): string[] => {
+  return getCorsOrigins().filter(
+    (origin): origin is string => typeof origin === 'string' && !origin.includes('*')
+  );
 };

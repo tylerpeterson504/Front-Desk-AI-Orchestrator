@@ -5,3 +5,4 @@ export * from './ShiftNote';
 export * from './AuditLog';
 export * from './RefreshToken';
 export * from './ResponseEvent';
+export * from './Escalation';

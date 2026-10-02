@@ -19,6 +19,7 @@ permissions:
 jobs:
   test:
     name: Test
+    # Service containers (postgres) require GitHub-hosted Linux runners
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -36,9 +37,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: npm
@@ -50,7 +51,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          HUSKY: "0"
+          HUSKY: '0'
         run: |
           npm ci --no-audit --no-fund --ignore-scripts
           cd backend && npm ci --no-audit --no-fund --ignore-scripts
@@ -83,7 +84,7 @@ jobs:
           MISTRAL_API_KEY: ci-dummy-key-not-used-by-tests
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           NODE_ENV: test
-          CI: "true"
+          CI: 'true'
 
       - name: Test dashboard
         run: npm run test:dashboard
@@ -93,12 +94,12 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: npm
@@ -109,7 +110,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          HUSKY: "0"
+          HUSKY: '0'
         run: |
           npm ci --no-audit --no-fund --ignore-scripts
           cd backend && npm ci --no-audit --no-fund --ignore-scripts

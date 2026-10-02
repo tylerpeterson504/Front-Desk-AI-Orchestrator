@@ -13,25 +13,25 @@ vi.mock('../src/services/api', () => ({
     getOne: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   templateAPI: {
     getAll: vi.fn(),
     getOne: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   shiftNoteAPI: {
     getAll: vi.fn(),
     getOne: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   auditAPI: {
-    getAll: vi.fn()
-  }
+    getAll: vi.fn(),
+  },
 }));
 
 describe('Zustand Stores', () => {
@@ -52,9 +52,9 @@ describe('Zustand Stores', () => {
     it('should fetch properties', async () => {
       const mockProperties = [
         { id: 1, name: 'Property 1' },
-        { id: 2, name: 'Property 2' }
+        { id: 2, name: 'Property 2' },
       ];
-      
+
       propertyAPI.getAll.mockResolvedValue(mockProperties);
 
       const { result } = renderHook(() => usePropertiesStore());
@@ -129,11 +129,10 @@ describe('Zustand Stores', () => {
 
     it('should fetch templates with property filter', async () => {
       const mockTemplates = [
- 
-       { id: 1, name: 'Template 1', property_id: 1 },
-        { id: 2, name: 'Template 2', property_id: 1 }
+        { id: 1, name: 'Template 1', property_id: 1 },
+        { id: 2, name: 'Template 2', property_id: 1 },
       ];
-      
+
       templateAPI.getAll.mockResolvedValue(mockTemplates);
 
       const { result } = renderHook(() => useTemplatesStore());
@@ -170,9 +169,9 @@ describe('Zustand Stores', () => {
     it('should fetch shift notes', async () => {
       const mockShiftNotes = [
         { id: 1, property_id: 1, content: 'Note 1' },
-        { id: 2, property_id: 1, content: 'Note 2' }
+        { id: 2, property_id: 1, content: 'Note 2' },
       ];
-      
+
       shiftNoteAPI.getAll.mockResolvedValue(mockShiftNotes);
 
       const { result } = renderHook(() => useShiftNotesStore());
@@ -192,17 +191,16 @@ describe('Zustand Stores', () => {
       expect(result.current.auditLogs).toEqual([]);
       expect(result.current.currentAuditLog).toBeNull();
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).
-toBeNull();
+      expect(result.current.error).toBeNull();
       expect(result.current.pagination).toEqual({ page: 1, limit: 20, total: 0, totalPages: 0 });
     });
 
     it('should fetch audit logs with pagination', async () => {
       const mockAuditLogs = [
         { id: 1, action: 'CREATE', resource: 'User' },
-        { id: 2, action: 'UPDATE', resource: 'Property' }
+        { id: 2, action: 'UPDATE', resource: 'Property' },
       ];
-      
+
       auditAPI.getAll.mockResolvedValue(mockAuditLogs);
 
       const { result } = renderHook(() => useAuditLogsStore());
@@ -222,7 +220,6 @@ toBeNull();
 
       expect(result.current.user).toBeNull();
       expect(result.current.token).toBeNull();
-      expect(result.current.refreshToken).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
     });
 
@@ -232,15 +229,21 @@ toBeNull();
       act(() => {
         result.current.setCredentials(
           { id: '1', email: 'test@example.com', name: 'Test', role: 'agent' },
-          'token',
-          'refresh_token'
+          'token'
         );
       });
 
-      expect(result.current.user).toEqual({ id: '1', email: 'test@example.com', name: 'Test', role: 'agent' });
+      expect(result.current.user).toEqual({
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test',
+        role: 'agent',
+      });
       expect(result.current.token).toBe('token');
-      expect(result.current.refreshToken).toBe('refresh_token');
       expect(result.current.isAuthenticated).toBe(true);
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty(
+        'refreshToken'
+      );
     });
 
     it('should clear credentials', async () => {
@@ -249,8 +252,7 @@ toBeNull();
       act(() => {
         result.current.setCredentials(
           { id: '1', email: 'test@example.com', name: 'Test', role: 'agent' },
-          'token',
-          'refresh_token'
+          'token'
         );
       });
 
@@ -260,8 +262,31 @@ toBeNull();
 
       expect(result.current.user).toBeNull();
       expect(result.current.token).toBeNull();
-      expect(result.current.refreshToken).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('removes legacy refresh tokens from persisted state', async () => {
+      localStorage.setItem(
+        'auth-storage',
+        JSON.stringify({
+          state: {
+            user: null,
+            token: 'old-token',
+            refreshToken: 'old-refresh',
+            isAuthenticated: true,
+          },
+          version: 0,
+        })
+      );
+
+      await act(async () => {
+        await useAuthStore.persist.rehydrate();
+      });
+
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty(
+        'refreshToken'
+      );
+      act(() => useAuthStore.getState().clearCredentials());
     });
   });
 });

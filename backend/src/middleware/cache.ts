@@ -4,6 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { createHash } from 'crypto';
 import logger from '../lib/logger';
 
 /**
@@ -40,19 +41,23 @@ const DEFAULT_MAX_SIZE = 1000; // Maximum number of cache entries
 function generateCacheKey(req: Request, prefix: string = ''): string {
   // Use method, path, and query parameters for cache key
   // Don't include headers or body as they may contain sensitive data
-  const keyParts = [
-    req.method,
-    req.path,
-    req.query ? JSON.stringify(req.query) : ''
-  ];
-  
+  const keyParts = [req.method, req.path, req.query ? JSON.stringify(req.query) : ''];
+
+  // This middleware runs before route-level requireAuth, so req.auth is not
+  // populated yet. Scope the key by the presented credential to prevent one
+  // user's response being served from cache to another.
+  const authorization = req.headers.authorization;
+  if (authorization) {
+    keyParts.push(createHash('sha256').update(authorization).digest('hex'));
+  }
+
   // Add authentication context if available. requireAuth attaches req.auth
   // (the old req.user field no longer exists); without the user in the key,
   // one user's cached GET response could be served to another.
   if (req.auth?.userId) {
     keyParts.push(req.auth.userId);
   }
-  
+
   return `${prefix}:${keyParts.join(':')}`;
 }
 
@@ -68,17 +73,17 @@ function isExpired(entry: CacheEntry): boolean {
  */
 function cleanupExpired() {
   const keysToDelete: string[] = [];
-  
+
   for (const [key, entry] of cache.entries()) {
     if (isExpired(entry)) {
       keysToDelete.push(key);
     }
   }
-  
+
   for (const key of keysToDelete) {
     cache.delete(key);
   }
-  
+
   // Log cleanup
   if (keysToDelete.length > 0) {
     logger.debug('Cache cleanup', { removed: keysToDelete.length, remaining: cache.size });
@@ -100,36 +105,39 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
   const prefix = options.prefix || 'cache';
   const onlySuccess = options.onlySuccess !== false;
   const maxSize = options.maxSize || DEFAULT_MAX_SIZE;
-  
+
   return (req: Request, res: Response, next: NextFunction) => {
     // Only cache GET requests
     if (req.method !== 'GET') {
       return next();
     }
-    
+
     // Don't cache if explicitly disabled
-    if (req.headers['x-no-cache'] === 'true' || req.headers['cache-control']?.includes('no-cache')) {
+    if (
+      req.headers['x-no-cache'] === 'true' ||
+      req.headers['cache-control']?.includes('no-cache')
+    ) {
       return next();
     }
-    
+
     // Don't cache auth, health, or internal endpoints
     const path = req.path;
     if (path.includes('/api/auth') || path.includes('/health') || path.includes('/internal')) {
       return next();
     }
-    
+
     const cacheKey = generateCacheKey(req, prefix);
-    
+
     // Check if we have a cached response
     const cached = cache.get(cacheKey);
     if (cached && !isExpired(cached)) {
       logger.debug('Cache hit', { key: cacheKey });
-      
+
       // Return cached response
       res.set('X-Cache', 'HIT');
       return res.status(200).json(cached.data);
     }
-    
+
     // Enforce max cache size
     if (cache.size >= maxSize) {
       // Delete oldest entry
@@ -139,26 +147,25 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
         logger.debug('Cache eviction', { evicted: oldestKey });
       }
     }
-    
+
     // Override res.json to cache the response
     const originalJson = res.json;
-    res.json = (function (data: unknown) {
+    res.json = function (data: unknown) {
       // Only cache successful responses if configured
       if (!onlySuccess || (res.statusCode >= 200 && res.statusCode < 300)) {
         cache.set(cacheKey, {
           data,
-          expiresAt: Date.now() + effectiveTtl * 1000
+          expiresAt: Date.now() + effectiveTtl * 1000,
         });
-        logger.debug('Cache set', { key: cacheKey, ttl
-: effectiveTtl });
+        logger.debug('Cache set', { key: cacheKey, ttl: effectiveTtl });
         res.set('X-Cache', 'MISS');
       } else {
         res.set('X-Cache', 'BYPASS');
       }
-      
+
       originalJson.call(res, data);
-    }) as typeof res.json;
-    
+    } as typeof res.json;
+
     next();
   };
 }
@@ -176,18 +183,18 @@ export function clearCacheKey(key: string): boolean {
 export function clearCachePattern(pattern: RegExp): number {
   let count = 0;
   const keysToDelete: string[] = [];
-  
+
   for (const key of cache.keys()) {
     if (pattern.test(key)) {
       keysToDelete.push(key);
     }
   }
-  
+
   for (const key of keysToDelete) {
     cache.delete(key);
     count++;
   }
-  
+
   return count;
 }
 
@@ -205,17 +212,17 @@ export function clearAllCache(): number {
  */
 export function getCacheStats() {
   let expiredCount = 0;
-  
+
   for (const entry of cache.values()) {
     if (isExpired(entry)) {
       expiredCount++;
     }
   }
-  
+
   return {
     size: cache.size,
     expiredCount,
-    activeCount: cache.size - expiredCount
+    activeCount: cache.size - expiredCount,
   };
 }
 
@@ -231,10 +238,10 @@ export function userResponseCache(ttl: number = DEFAULT_TTL) {
  * Cache middleware for public data (not user-specific)
  */
 export function publicResponseCache(ttl: number = DEFAULT_TTL * 5) {
-  return responseCache(ttl, { 
+  return responseCache(ttl, {
     prefix: 'public-cache',
     onlySuccess: true,
-    maxSize: DEFAULT_MAX_SIZE * 2
+    maxSize: DEFAULT_MAX_SIZE * 2,
   });
 }
 
@@ -247,34 +254,34 @@ export function etagCache() {
     if (req.method !== 'GET') {
       return next();
     }
-    
+
     // Skip if no ETag header
     const etag = req.headers['if-none-match'];
     if (!etag) {
       return next();
     }
-    
+
     // Generate ETag based on request
     const cacheKey = generateCacheKey(req, 'etag');
     const cached = cache.get(cacheKey);
-    
+
     if (cached && !isExpired(cached) && cached.data === etag) {
       res.set('ETag', etag);
       return res.status(304).end();
     }
-    
+
     // Store ETag for future requests
     const originalJson = res.json;
-    res.json = (function (data: unknown) {
+    res.json = function (data: unknown) {
       const responseEtag = generateETag(data);
       cache.set(cacheKey, {
         data: responseEtag,
-        expiresAt: Date.now() + DEFAULT_TTL * 1000
+        expiresAt: Date.now() + DEFAULT_TTL * 1000,
       });
       res.set('ETag', responseEtag);
       originalJson.call(res, data);
-    }) as typeof res.json;
-    
+    } as typeof res.json;
+
     next();
   };
 }
@@ -289,7 +296,7 @@ function generateETag(data: unknown): string {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return `"${Math.abs(hash).toString(16)}"`;

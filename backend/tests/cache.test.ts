@@ -38,6 +38,16 @@ describe('Response Cache Middleware', () => {
     expect(res2.body.count).toBe(1); // Same count - served from cache
   });
 
+  it('scopes cache entries by presented credential', async () => {
+    const res1 = await request(app).get('/api/data').set('Authorization', 'Bearer token-a');
+    expect(res1.headers['x-cache']).toBe('MISS');
+    const res2 = await request(app).get('/api/data').set('Authorization', 'Bearer token-a');
+    expect(res2.headers['x-cache']).toBe('HIT');
+    expect(res2.body.count).toBe(res1.body.count);
+    const res3 = await request(app).get('/api/data').set('Authorization', 'Bearer token-b');
+    expect(res3.headers['x-cache']).toBe('MISS');
+    expect(res3.body.count).toBe(res1.body.count + 1);
+  });
   it('does not cache auth endpoints', async () => {
     const res1 = await request(app).get('/api/auth/login');
     expect(res1.headers['x-cache']).toBeUndefined();
@@ -52,7 +62,7 @@ describe('Response Cache Middleware', () => {
     await request(app).get('/api/data');
 
     // Wait for TTL to expire (1s + buffer)
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     const res2 = await request(app).get('/api/data');
     expect(res2.headers['x-cache']).toBe('MISS');
