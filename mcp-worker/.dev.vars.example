@@ -1,0 +1,5 @@
+# Copy to .dev.vars (git-ignored) and fill in per-session values.
+# Base URL of the orchestrator backend. Overrides the wrangler.jsonc var.
+BACKEND_URL=http://localhost:3001
+# Optional service JWT used when a client connects without a Bearer token.
+BACKEND_TOKEN=

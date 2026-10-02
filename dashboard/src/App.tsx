@@ -3,6 +3,7 @@ import { TemplatesPage } from './pages/TemplatesPage';
 import { AuditPage } from './pages/AuditPage';
 import { PropertiesPage } from './pages/PropertiesPage';
 import { ShiftNotesPage } from './pages/ShiftNotesPage';
+import { EscalationsPage } from './pages/EscalationsPage';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -65,10 +66,12 @@ function App() {
     <div className="flex h-screen">
       <Sidebar page={page} onNavigate={setPage} user={user} onLogout={handleLogout} />
       <div className="flex-1 overflow-auto">
-        {page === 'templates' && <TemplatesPage embedded />}
+     
+   {page === 'templates' && <TemplatesPage embedded />}
         {page === 'audit' && <AuditPage embedded />}
         {page === 'properties' && <PropertiesPage embedded />}
         {page === 'shift-notes' && <ShiftNotesPage embedded />}
+        {page === 'escalations' && <EscalationsPage embedded />}
       </div>
     </div>
   );

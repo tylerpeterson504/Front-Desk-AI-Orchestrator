@@ -5,7 +5,7 @@ import 'dotenv';
 import { DataSource } from 'typeorm';
 import path from 'path';
 import { getDatabaseConfig } from '../src/config/index';
-import logger from '../src/config/database';
+import logger from '../src/lib/logger';
 
 const dbConfig = getDatabaseConfig();
 
@@ -47,14 +47,16 @@ async function runMigrations() {
       logger.info('No new migrations to run');
     }
     
-    await migrationDataSource.destroy();
     logger.info('Migrations completed successfully');
     
     return true;
   } catch (error) {
     logger.error('Migration failed', { error: (error as Error).message });
-    await migrationDataSource.destroy();
     throw error;
+  } finally {
+    if (migrationDataSource.isInitialized) {
+      await migrationDataSource.destroy();
+    }
   }
 }
 

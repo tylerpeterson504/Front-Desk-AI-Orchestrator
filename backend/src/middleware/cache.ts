@@ -4,6 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { createHash } from 'crypto';
 import logger from '../lib/logger';
 
 /**
@@ -45,10 +46,20 @@ function generateCacheKey(req: Request, prefix: string = ''): string {
     req.path,
     req.query ? JSON.stringify(req.query) : ''
   ];
+
+  // This middleware runs before route-level requireAuth, so req.auth is not
+  // populated yet. Scope the key by the presented credential to prevent one
+  // user's response being served from cache to another.
+  const authorization = req.headers.authorization;
+  if (authorization) {
+    keyParts.push(createHash('sha256').update(authorization).digest('hex'));
+  }
   
-  // Add authentication context if available
-  if ((req as any).user?.userId) {
-    keyParts.push((req as any).user.userId);
+  // Add authentication context if available. requireAuth attaches req.auth
+  // (the old req.user field no longer exists); without the user in the key,
+  // one user's cached GET response could be served to another.
+  if (req.auth?.userId) {
+    keyParts.push(req.auth.userId);
   }
   
   return `${prefix}:${keyParts.join(':')}`;
@@ -85,7 +96,7 @@ function cleanupExpired() {
 
 // Run cleanup every 5 minutes
 
-setInterval(cleanupExpired, 5 * 60 * 1000);
+setInterval(cleanupExpired, 5 * 60 * 1000).unref();
 
 // Run cleanup on startup
 cleanupExpired();
@@ -147,7 +158,8 @@ export function responseCache(ttl: number = DEFAULT_TTL, options: CacheOptions =
           data,
           expiresAt: Date.now() + effectiveTtl * 1000
         });
-        logger.debug('Cache set', { key: cacheKey, ttl: effectiveTtl });
+        logger.debug('Cache set', { key: cacheKey, ttl
+: effectiveTtl });
         res.set('X-Cache', 'MISS');
       } else {
         res.set('X-Cache', 'BYPASS');
