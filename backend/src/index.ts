@@ -122,6 +122,8 @@ import auditLogsRouter from './routes/auditLogs';
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
 import githubRouter from './routes/github';
+import analyticsRouter from './routes/analytics';
+import escalationsRouter from './routes/escalations';
 
 app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
@@ -131,6 +133,8 @@ app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
 app.use('/api/copilot', apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
+app.use('/api/analytics', apiLimiter, analyticsRouter);
+app.use('/api/escalations', apiLimiter, escalationsRouter);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

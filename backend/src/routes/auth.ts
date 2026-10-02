@@ -2,6 +2,7 @@ import express from 'express';
 import { userService } from '../services/userService';
 import { authService } from '../services/authService';
 import { requestId } from '../middleware/errorHandler';
+import { requireAuth, requireAdmin } from '../middleware/requireAuth';
 import { config } from '../config';
 import { getMode, assertRegistrationAllowed } from '../config/registration';
 import { isValidEmail } from '../lib/validateEmail';
@@ -60,8 +61,7 @@ router.post('/register', requestId, async (req, res, next) => {
 
     res.status(201).json(response);
   } catch (err) {
-    
-next(err);
+    next(err);
   }
 });
 
@@ -133,21 +133,9 @@ router.post('/logout', requestId, async (req, res, next) => {
 });
 
 // Logout everywhere
-router.post('/logout-all', requestId, async (req, res, next) => {
+router.post('/logout-all', requestId, requireAuth, async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const { userId } = authService.getCurrentUser(token);
-
-    await authService.logoutEverywhere(userId, req.requestId);
+    await authService.logoutEverywhere(req.auth!.userId, req.requestId);
 
     res.json({ message: 'Logged out everywhere successfully' });
   } catch (err) {
@@ -156,21 +144,9 @@ router.post('/logout-all', requestId, async (req, res, next) => {
 });
 
 // Get current user
-router.get('/me', requestId, async (req, res, next) => {
+router.get('/me', requestId, requireAuth, async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const { userId } = authService.getCurrentUser(token);
-
-    const user = await userService.findById(userId);
+    const user = await userService.findById(req.auth!.userId);
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
@@ -196,6 +172,31 @@ router.get('/registration-mode', requestId, (req, res) => {
   res.json({ mode: getMode() });
 });
 
+// Staff directory for assignment pickers. Minimal fields only —
+// no password hashes, property ids, or timestamps leak. With ?property_id=,
+// returns the staff who can be assigned to that property (its owner plus
+// assigned staff); admins without a property_id see the full directory.
+router.get('/users', requestId, requireAuth, async (req, res, next) => {
+  try {
+    const propertyId = parseInt(String(req.query.property_id ?? ''), 10);
+    const users = Number.isInteger(propertyId) && propertyId > 0
+      ? await userService.getUsersForProperty(propertyId, req.auth!.userId)
+      : req.auth!.role === 'admin'
+        ? await userService.getAllUsers()
+        : [];
+    res.json(
+      users.map((u: { id: string; name: string | null; email: string; role: string }) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role
+      }))
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
 /**
  * Set the user identified by `req.params.id` to the body's `admin` or `agent` role,
  * requiring an admin role in the bearer token. Respond with the updated user's
@@ -206,35 +207,14 @@ router.get('/registration-mode', requestId, (req, res) => {
  * (AuthenticationError), a missing user (NotFoundError), and other errors,
  * including database failures, to Express error handling via `next`.
  */
-router.patch('/users/:id/role', requestId, async (req, res, next) => {
+router.patch('/users/:id/role', requestId, requireAuth, requireAdmin, async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'AUTHENTICATION_ERROR',
-        requestId: req.requestId
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const { userId, role: currentRole } = authService.getCurrentUser(token);
-
-    if (currentRole !== 'admin') {
-      return res.status(403).json({
-        error: 'Admin access required',
-        code: 'AUTHORIZATION_ERROR',
-        requestId: req.requestId
-      });
-    }
-
     const { id } = req.params;
     const { role } = req.body;
 
     if (!role || !['admin', 'agent'].includes(role)) {
       return res.status(400).json({
-       
- error: 'Invalid role',
+        error: 'Invalid role',
         code: 'VALIDATION_ERROR',
         requestId: req.requestId
       });
@@ -242,8 +222,12 @@ router.patch('/users/:id/role', requestId, async (req, res, next) => {
 
     const user = await userService.setUserRole(id, role as 'admin' | 'agent');
 
-    logger.info('user role updated', { user_id: user.id, new_role: user.role, updated_by: userId,
-      request_id: req.requestId });
+    logger.info('user role updated', {
+      user_id: user.id,
+      new_role: user.role,
+      updated_by: req.auth!.userId,
+      request_id: req.requestId
+    });
 
     res.json({
       id: user.id,

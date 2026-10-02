@@ -268,8 +268,7 @@ describe('background.js relay', () => {
 
   it('forwards context updates to the runtime', async () => {
     await loadScript();
-    // Background script registers its listener 
-on chrome.runtime.onMessage
+    // Background script registers its listener on chrome.runtime.onMessage
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
     listener({ type: 'GUEST_INFO_UPDATED', data: {} }, {}, vi.fn());
     listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, {}, vi.fn());

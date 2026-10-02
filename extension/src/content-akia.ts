@@ -16,7 +16,7 @@
 //         div.message      "Send a message to our hotel staff."
 //         time.timestamp   "a few seconds ago"
 
-import { logger, initDebugMode } from './utils/logger';
+import { initDebugMode } from './utils/logger';
 
 interface ChatMessage {
   sender: string | null;
@@ -31,8 +31,9 @@ interface ChatContext {
 }
 
 interface MessageSelectorResult {
-  type: string;
+  type?: string;
   success?: boolean;
+  data?: unknown;
 }
 
 (function () {
@@ -46,16 +47,6 @@ interface MessageSelectorResult {
   // Initialize logger with debug mode from storage
   const log = createLogger('FDAO/akia');
   initDebugMode(log);
-
-  function sanitizeText(text: string | null | undefined): string | null | undefined {
-    if (!text || typeof text !== 'string') return text;
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
 
   function safeSend(payload: { type: string; data?: unknown }): void {
     try {
@@ -77,12 +68,16 @@ sendMessage(payload);
     ) || document.body;
   }
 
+  /**
+   * Return the trimmed text of the first element under root that matches any
+   * of the given selectors, or null if none match.
+   */
   function firstText(root: Element, selectors: string[]): string | null {
     for (let i = 0; i < selectors.length; i++) {
       let el: Element | null = null;
-      try { el = root.querySelector(selectors[i]); } catch (_) {}
+      try { el = root.querySelector(selectors[i] as string); } catch (_) {}
       if (el) {
-        const t = (el.innerText || el.textContent || '').trim();
+        const t = ((el as HTMLElement).innerText || el.textContent || '').trim();
         if (t) return t;
       }
     }
@@ -121,6 +116,10 @@ sendMessage(payload);
     '[contenteditable="true"]'
   ];
 
+  /**
+   * Scan the DOM for chat messages and derive the current chat context
+   * (messages, active guest, and conversation id).
+   */
   function extractChatContext(): ChatContext {
     const root = getRoot();
     const collected: Element[] = [];
@@ -145,7 +144,7 @@ sendMessage(payload);
         const siblingRows = nodes.filter(function (n) { return n.parentElement === el.parentElement; });
         if (siblingRows.length <= 1) sender = firstText(el.parentElement, SENDER_SELECTORS);
       }
-      const text = firstText(el, TEXT_SELECTORS) || (el.innerText || el.textContent || '').trim();
+      const text = firstText(el, TEXT_SELECTORS) || ((el as HTMLElement).innerText || el.textContent || '').trim();
       const time = firstText(el, TIME_SELECTORS);
       return { sender: sender, text: text, time: time };
     }).filter(function (m) { return !!m.text; });
@@ -182,6 +181,10 @@ sendMessage(payload);
     catch (e: unknown) { log.warn('sendChatContext failed:', (e as Error)?.message); }
   }
 
+  /**
+   * Log counts of candidate selectors for messages, senders, and composers to
+   * help find new selectors when the site markup changes.
+   */
   function logDiscovery(root: Element): void {
     const probes: Record<string, string[]> = {
       'message-containers': ['.message-item', '.chat-message', '[data-test="message"]', '[data-testid*="message" i]', '[class*="bubble" i]', '[class*="msg" i]'],
@@ -190,7 +193,8 @@ sendMessage(payload);
     };
     Object.keys(probes).forEach(function (label) {
       let total = 0; const samples: string[] = [];
-      (probes as Record<string, string[]>)[label].forEach(function (sel) {
+      const sels = (probes as Record<string, string[]>)[label] || [];
+      sels.forEach(function (sel) {
         let n = 0; try { n = root.querySelectorAll(sel).length; } catch (_) {}
         if (n) { total += n; if (samples.length < 5) samples.push(sel + '(' + n + ')'); }
       });
@@ -198,14 +202,21 @@ sendMessage(payload);
     });
   }
 
+  /**
+   * Find the message composer element using the first matching selector.
+   */
   function findComposer(): Element | null {
     for (let i = 0; i < COMPOSER_SELECTORS.length; i++) {
-      let el: Element | null = null; try { el = document.querySelector(COMPOSER_SELECTORS[i]); } catch (_) {}
+      let el: Element | null = null; try { el = document.querySelector(COMPOSER_SELECTORS[i] as string); } catch (_) {}
       if (el) return el;
     }
     return null;
   }
 
+  /**
+   * Inject drafted text into the chat composer, handling both contenteditable
+   * elements and standard input/textarea fields.
+   */
   function injectMessage(text: string): boolean {
     if (!text || typeof text !== 'string') { log.warn('inject: invalid text input, must be a non-empty string'); return false; }
     if (text.length > 10000) { log.warn('inject: text too long, truncating to 10000 characters'); text = text.substring(0, 10000); }
@@ -217,7 +228,7 @@ sendMessage(payload);
         const before = el.textContent;
         let ok = false;
         try {
-          const s = document.execCommand('selectAll', false, null);
+          const s = document.execCommand('selectAll');
           const i = document.execCommand('insertText', false, text);
           ok = !!(s && i);
         }
@@ -294,15 +305,19 @@ sendMessage(payload);
     }
     if (message.type === 'INJECT_MESSAGE') {
       sendResponse({ success: injectMessage(message.text || '') });
-      return false;
     }
+    return false;
   });
 
   init();
 
   // Import createLogger dynamically to avoid circular dependency
+  /**
+   * Create a lightweight logger scoped to prefix, with debug logging gated by
+   * setDebug.
+   */
   function createLogger(prefix: string): {
-    log: (message: string, data?: unknown) => void;
+    log: (...parts: unknown[]) => void;
     warn: (message: string, data?: unknown) => void;
     error: (message: string, data?: unknown) => void;
     setDebug: (enabled: boolean) => void;
@@ -313,12 +328,12 @@ sendMessage(payload);
       debug = enabled;
     }
 
-    function log(message: string, data?: unknown): void {
+    /**
+     * Log to the console when debug mode is enabled.
+     */
+    function log(...parts: unknown[]): void {
       if (!debug) return;
-      const formatted = data !== undefined 
-        ? `[${new Date().toISOString()}] [${prefix}] ${message} ${JSON.stringify(data)}`
-        : `[${new Date().toISOString()}] [${prefix}] ${message}`;
-      console.log(formatted);
+      console.log(`[${new Date().toISOString()}] [${prefix}]`, ...parts);
     }
 
     function warn(message: string, data?: unknown): void {
