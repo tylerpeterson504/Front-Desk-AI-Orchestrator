@@ -7,11 +7,9 @@ export interface AuthUser {
   role: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: AuthUser;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    auth?: AuthUser;
   }
 }
 
