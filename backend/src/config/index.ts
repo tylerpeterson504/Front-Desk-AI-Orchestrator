@@ -36,6 +36,28 @@ const envSchema = z.object({
   GITHUB_REPOSITORY: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
   BCRYPT_ROUNDS: z.string().optional(),
+  // Email settings
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587).optional(),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false').optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM_EMAIL: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().optional(),
+  REPLY_TO_EMAIL: z.string().optional(),
+  // Slack settings
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_DEFAULT_CHANNEL: z.string().optional(),
+  SLACK_ESCALATION_CHANNEL: z.string().optional(),
+  SLACK_ERROR_CHANNEL: z.string().optional(),
+  SLACK_SHIFT_CHANNEL: z.string().optional(),
+  SLACK_SIGNING_SECRET: z.string().optional(),
+  // Webhook settings
+  WEBHOOK_URLS: z.string().optional(),
+  // i18n settings
+  SUPPORTED_LANGUAGES: z.string().optional(),
+  DEFAULT_LANGUAGE: z.string().default('en').optional(),
   // Security settings
   CSRF_ENABLED: z.enum(['true', 'false']).default('true').optional(),
   CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
