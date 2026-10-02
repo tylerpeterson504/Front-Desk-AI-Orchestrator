@@ -70,7 +70,7 @@ if (saveButton && urlInput) {
     }
 
     if (!normalized) {
-      setStatus('Enter a full http(s) URL, e.g. https://api.example.com', 'error');
+      setStatus('Enter a full https:// URL (http is only allowed for localhost), e.g. https://api.example.com', 'error');
       return;
     }
 

@@ -2,4 +2,7 @@
 # Base URL of the orchestrator backend. Overrides the wrangler.jsonc var.
 BACKEND_URL=http://localhost:3001
 # Optional service JWT used when a client connects without a Bearer token.
+# Only honored when ALLOW_FALLBACK_TOKEN=true is also set; otherwise requests
+# without a caller token are rejected with 401.
 BACKEND_TOKEN=
+ALLOW_FALLBACK_TOKEN=false
