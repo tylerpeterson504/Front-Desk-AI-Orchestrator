@@ -570,11 +570,11 @@ export class PropertyService {
     await this.propertyRepository.remove(property);
   }
 
-  async getWifiPassword(id: number, requestId?: string): Promise<{ ssid: string | null; password: string | null }> {
+  async getWifiPassword(id: number, userId: string, requestId?: string): Promise<{ ssid: string | null; password: string | null }> {
     const log = createRequestLogger(requestId || '');
 
     const property = await this.propertyRepository.findOne({
-      where: { id },
+      where: { id, user_id: userId },
       select: ['wifi_ssid', 'wifi_password']
     });
 
@@ -587,10 +587,9 @@ export class PropertyService {
       password = decryptSecret(property.wifi_password);
     }
 
-    log.info('WiFi password retrieved', { property_id: id });
+    log.info('WiFi password retrieved', { property_id: id, user_id: userId });
 
     return {
-
       ssid: property.wifi_ssid,
       password
     };

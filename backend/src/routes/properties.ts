@@ -7,9 +7,10 @@ import logger from '../lib/logger';
 const router = express.Router();
 
 // Get all properties
-router.get('/', requestId, async (req, res, next) => {
+router.get('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const properties = await propertyService.getAll();
+    const userId = req.auth!.userId;
+    const properties = await propertyService.getAll(userId);
     res.json(properties);
   } catch (err) {
     next(err);
@@ -17,8 +18,9 @@ router.get('/', requestId, async (req, res, next) => {
 });
 
 // Get single property
-router.get('/:id', requestId, async (req, res, next) => {
+router.get('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({
@@ -28,7 +30,7 @@ router.get('/:id', requestId, async (req, res, next) => {
       });
     }
 
-    const property = await propertyService.getById(id);
+    const property = await propertyService.getById(id, userId);
     res.json(property);
   } catch (err) {
     next(err);
@@ -36,10 +38,11 @@ router.get('/:id', requestId, async (req, res, next) => {
 });
 
 // Create property
-router.post('/', requestId, async (req, res, next) => {
+router.post('/', requestId, requireAuth, async (req, res, next) => {
   try {
-    const property = await propertyService.create(req.body, req.requestId);
-    logger.info('Property created', { property_id: property.id, request_id: req.requestId });
+    const userId = req.auth!.userId;
+    const property = await propertyService.create(req.body, userId, req.requestId);
+    logger.info('Property created', { property_id: property.id, user_id: userId, request_id: req.requestId });
     res.status(201).json(property);
   } catch (err) {
     next(err);
@@ -47,8 +50,9 @@ router.post('/', requestId, async (req, res, next) => {
 });
 
 // Update property
-router.put('/:id', requestId, async (req, res, next) => {
+router.put('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({
@@ -58,8 +62,8 @@ router.put('/:id', requestId, async (req, res, next) => {
       });
     }
 
-    const property = await propertyService.update(id, req.body);
-    logger.info('Property updated', { property_id: property.id, request_id: req.requestId });
+    const property = await propertyService.update(id, req.body, userId);
+    logger.info('Property updated', { property_id: property.id, user_id: userId, request_id: req.requestId });
     res.json(property);
   } catch (err) {
     next(err);
@@ -67,8 +71,9 @@ router.put('/:id', requestId, async (req, res, next) => {
 });
 
 // Delete property
-router.delete('/:id', requestId, async (req, res, next) => {
+router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
+    const userId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({
@@ -78,8 +83,8 @@ router.delete('/:id', requestId, async (req, res, next) => {
       });
     }
 
-    await propertyService.delete(id);
-    logger.info('Property deleted', { property_id: id, request_id: req.requestId });
+    await propertyService.delete(id, userId);
+    logger.info('Property deleted', { property_id: id, user_id: userId, request_id: req.requestId });
     res.json({ message: 'Property deleted successfully' });
   } catch (err) {
     next(err);
@@ -98,7 +103,7 @@ router.get('/:id/wifi', requestId, requireAuth, async (req, res, next) => {
       });
     }
 
-    const wifi = await propertyService.getWifiPassword(id, req.requestId);
+    const wifi = await propertyService.getWifiPassword(id, req.auth!.userId, req.requestId);
     logger.info('WiFi password retrieved', { property_id: id, user_id: req.auth!.userId, request_id: req.requestId });
     res.json(wifi);
   } catch (err) {
