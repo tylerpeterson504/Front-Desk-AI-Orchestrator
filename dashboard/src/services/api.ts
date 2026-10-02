@@ -16,7 +16,8 @@ interface RetryableConfig extends AxiosRequestConfig {
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
 // Vite injects import.meta.env at runtime
-const baseURL = (import.meta.env as { VITE_API_URL?: string }).VITE_API_URL || 'http://localhost:3001';
+const baseURL =
+  (import.meta.env as { VITE_API_URL?: string }).VITE_API_URL || 'http://localhost:3001';
 
 let onUnauthorized: (() => void) | null = null;
 
@@ -53,7 +54,7 @@ api.interceptors.response.use(
           const data = res.data as { token: string; refreshToken: string };
           localStorage.setItem('access_token', data.token);
           localStorage.setItem('refresh_token', data.refreshToken);
-          original.headers.Authorization = 'Bearer ' + data.token;
+          original.headers = { ...original.headers, Authorization: 'Bearer ' + data.token };
           return api(original);
         } catch {
           // fall through to logout
@@ -131,8 +132,7 @@ export const propertyAPI = {
   list: (): Promise<Property[]> => getData<Property[]>('/properties'),
   getOne: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
   get: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
-  create: (data: Partial<Property>): Promise<Property> =>
-    postData<Property>('/properties', data),
+  create: (data: Partial<Property>): Promise<Property> => postData<Property>('/properties', data),
   update: (id: number, data: Partial<Property>): Promise<Property> =>
     putData<Property>('/properties/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/properties/' + id),
@@ -147,8 +147,7 @@ export const templateAPI = {
   list: (): Promise<Template[]> => getData<Template[]>('/templates'),
   getOne: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
   get: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
-  create: (data: Partial<Template>): Promise<Template> =>
-    postData<Template>('/templates', data),
+  create: (data: Partial<Template>): Promise<Template> => postData<Template>('/templates', data),
   update: (id: number, data: Partial<Template>): Promise<Template> =>
     putData<Template>('/templates/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/templates/' + id),
