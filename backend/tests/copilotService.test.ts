@@ -11,6 +11,7 @@ jest.mock('../src/config/database', () => ({
 
 // Mock logger
 jest.mock('../src/lib/logger', () => ({
+  __esModule: true,
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -20,13 +21,28 @@ jest.mock('../src/lib/logger', () => ({
 }));
 
 // Mock LLM client - must be configured for tests to pass
-jest.mock('../src/services/llm/mistralClient', () => ({
-  isConfigured: jest.fn(() => true),
-  complete: jest.fn().mockResolvedValue({
+jest.mock('../src/services/llm/mistralClient', () => {
+  const completeMock = jest.fn().mockResolvedValue({
     text: 'Test response from LLM',
-    model: 'mistral-small-latest'
-  })
-}));
+    model: 'mistral-small-latest',
+    provider: 'mistral'
+  });
+  class MockMistralClient {
+    readonly provider = 'mistral';
+    isConfigured() { return true; }
+    async complete() { return completeMock(); }
+    async completeText() { return completeMock(); }
+    async listModels() { return ['mistral-small-latest']; }
+    getConfig() { return { provider: 'mistral', model: 'mistral-small-latest' }; }
+  }
+  return {
+    __esModule: true,
+    MistralClient: MockMistralClient,
+    mistralClient: new MockMistralClient(),
+    isConfigured: jest.fn(() => true),
+    complete: completeMock
+  };
+});
 
 // Import CopilotService AFTER mocks are set up
 import { CopilotService, copilotService } from '../src/services/copilotService';

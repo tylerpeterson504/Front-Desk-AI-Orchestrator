@@ -1,5 +1,6 @@
-import { getRepository, MoreThanOrEqual } from 'typeorm';
-import { Escalation, ESCALATION_PRIORITIES, ESCALATION_STATUSES, ESCALATION_CATEGORIES } from '../entities/Escalation';
+import { MoreThanOrEqual } from 'typeorm';
+import { getRepository } from '../config/database';
+import { Escalation, ESCALATION_PRIORITIES, ESCALATION_STATUSES, ESCALATION_CATEGORIES, EscalationPriority } from '../entities/Escalation';
 import { Property } from '../entities/Property';
 import { AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 

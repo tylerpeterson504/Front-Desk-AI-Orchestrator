@@ -30,6 +30,7 @@ jest.mock('fs/promises', () => ({
 
 // Mock logger
 jest.mock('../src/lib/logger', () => ({
+  __esModule: true,
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -39,13 +40,12 @@ jest.mock('../src/lib/logger', () => ({
 }));
 
 // Mock config
-const mockConfig = {
-  NODE_ENV: 'test',
-  SUPPORTED_LANGUAGES: 'en,es,fr,de'
-};
-
 jest.mock('../src/config', () => ({
-  config: mockConfig
+  __esModule: true,
+  config: {
+    NODE_ENV: 'test',
+    SUPPORTED_LANGUAGES: 'en,es,fr,de,ar,he'
+  }
 }));
 
 describe('i18n Service', () => {
@@ -628,7 +628,7 @@ describe('i18n Service', () => {
         'common'
       );
       
-      expect(logger.error).toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalled();
       expect(template).toEqual({});
     });
   });
@@ -802,10 +802,7 @@ describe('i18n Service', () => {
       const logger = require('../src/lib/logger').default;
       service.clearCache();
       
-      expect(logger.info).toHaveBeenCalledWith(
-        'i18n cache cleared',
-        undefined
-      );
+      expect(logger.info).toHaveBeenCalledWith('i18n cache cleared');
     });
   });
 

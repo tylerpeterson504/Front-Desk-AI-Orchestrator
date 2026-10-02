@@ -5,7 +5,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../lib/logger';
-import '../types/express';
 
 /**
  * Threshold in milliseconds for logging slow requests

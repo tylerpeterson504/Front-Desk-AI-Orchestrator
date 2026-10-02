@@ -1,4 +1,5 @@
-import { getRepository, In } from 'typeorm';
+import { In } from 'typeorm';
+import { getRepository } from '../config/database';
 import { ResponseEvent } from '../entities/ResponseEvent';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
@@ -223,7 +224,7 @@ export class AnalyticsService {
       total_requests: events.length,
       unique_users: userIds.length,
       templates_used: templateUsage.size,
-      most_used_templates
+      most_used_templates: mostUsedTemplates
     };
   }
 

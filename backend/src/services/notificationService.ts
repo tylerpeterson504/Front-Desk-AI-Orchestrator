@@ -298,10 +298,11 @@ export class NotificationService {
     // In-app notification is always stored
     result.inApp = { success: true, notificationId: id };
 
-    // Update notification status
-    notification.status = Object.values(result).every(r => 
-      r === undefined || (typeof r === 'object' && r && 'success' in r && r.success)
-    ) ? 'sent' : 'failed';
+    // Update notification status based on channel results only
+    const channelResults = [result.email, result.slack, result.webhook, result.inApp];
+    notification.status = channelResults.every(r => r === undefined || r.success)
+      ? 'sent'
+      : 'failed';
 
     if (notification.status === 'sent') {
       logger.info('Notification sent successfully', { id, type: options.type });
@@ -464,7 +465,7 @@ Timestamp: ${notification.createdAt.toISOString()}`;
         })
       });
 
-      const result = await response.json();
+      const result = await response.json() as { ok?: boolean; error?: string; ts?: string };
 
       if (!result.ok) {
         throw new Error(result.error || 'Failed to send Slack message');
@@ -511,7 +512,7 @@ Timestamp: ${notification.createdAt.toISOString()}`;
     const color = priorityColors[notification.priority];
     const priorityText = notification.priority.toUpperCase();
 
-    const blocks = [
+    const blocks: unknown[] = [
       {
         type: 'header',
         text: {
@@ -996,15 +997,3 @@ Timestamp: ${notification.createdAt.toISOString()}`;
 
 export const notificationService = new NotificationService();
 
-// Re-export types for convenience
-export type {
-  Notification,
-  NotificationRecipient,
-  NotificationType,
-  NotificationPriority,
-  NotificationStatus,
-  NotificationSettings,
-  CreateNotificationOptions,
-  NotificationResult,
-  NotificationStats
-};

@@ -190,7 +190,7 @@ export class ShiftNoteService {
   }
 
   async update(id: number, data: UpdateShiftNoteDto, userId: string): Promise<ShiftNote> {
-    const shiftNote = await this.getById(id, userId);
+    const shiftNote = await this.getById(id, userId) as unknown as ShiftNote;
 
     if (data.content) {
       shiftNote.content = this.readContent(data.content);
@@ -269,8 +269,8 @@ export class ShiftNoteService {
       id: task.id || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       description: task.description,
       completed: Boolean(task.completed),
-      completed_at: task.completed_at || null,
-      assigned_to: task.assigned_to || null
+      completed_at: task.completed_at || undefined,
+      assigned_to: task.assigned_to || undefined
     }));
   }
 
@@ -296,8 +296,8 @@ export class ShiftNoteService {
       id: item.id || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       item: item.item,
       completed: Boolean(item.completed),
-      completed_at: item.completed_at || null,
-      notes: item.notes || null
+      completed_at: item.completed_at || undefined,
+      notes: item.notes || undefined
     }));
   }
 
@@ -360,7 +360,7 @@ export class ShiftNoteService {
    * Mark task as completed
    */
   async completeTask(shiftNoteId: number, taskId: string, userId: string): Promise<ShiftNote> {
-    const shiftNote = await this.getById(shiftNoteId, userId);
+    const shiftNote = await this.getById(shiftNoteId, userId) as unknown as ShiftNote;
 
     if (!shiftNote.tasks || shiftNote.tasks.length === 0) {
       throw new ValidationError('No tasks found in this shift note');
@@ -388,7 +388,7 @@ export class ShiftNoteService {
    * Complete handover checklist item
    */
   async completeHandoverItem(shiftNoteId: number, itemId: string, userId: string, notes?: string): Promise<ShiftNote> {
-    const shiftNote = await this.getById(shiftNoteId, userId);
+    const shiftNote = await this.getById(shiftNoteId, userId) as unknown as ShiftNote;
 
     if (!shiftNote.handover_checklist || shiftNote.handover_checklist.length === 0) {
       throw new ValidationError('No handover checklist found in this shift note');
@@ -423,7 +423,7 @@ export class ShiftNoteService {
    * Complete shift handover
    */
   async completeHandover(shiftNoteId: number, handedOverTo: string, userId: string, notes?: string): Promise<ShiftNote> {
-    const shiftNote = await this.getById(shiftNoteId, userId);
+    const shiftNote = await this.getById(shiftNoteId, userId) as unknown as ShiftNote;
 
     shiftNote.status = 'handed_over';
     shiftNote.handed_over_to = handedOverTo;
@@ -543,7 +543,7 @@ export class ShiftNoteService {
   }
 
   async delete(id: number, userId: string): Promise<void> {
-    const shiftNote = await this.getById(id, userId);
+    const shiftNote = await this.getById(id, userId) as unknown as ShiftNote;
     await this.shiftNoteRepository.remove(shiftNote);
   }
 }

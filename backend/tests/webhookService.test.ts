@@ -4,6 +4,7 @@ import logger from '../src/lib/logger';
 
 // Mock logger
 jest.mock('../src/lib/logger', () => ({
+  __esModule: true,
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -75,7 +76,7 @@ describe('WebhookService', () => {
 
   describe('registerWebhook', () => {
     it('should register a new webhook with auto-generated ID', () => {
-      const webhookConfig: Omit<WebhookConfig, 'createdAt' | 'updatedAt'> = {
+      const webhookConfig: Omit<WebhookConfig, 'id' | 'createdAt' | 'updatedAt'> = {
         name: 'Test Webhook',
         url: 'https://example.com/webhook',
         events: ['test.event'],
@@ -93,7 +94,7 @@ describe('WebhookService', () => {
     });
 
     it('should register a webhook with provided ID', () => {
-      const webhookConfig: Omit<WebhookConfig, 'createdAt' | 'updatedAt'> = {
+      const webhookConfig: Omit<WebhookConfig, 'id' | 'createdAt' | 'updatedAt'> & { id?: string } = {
         id: 'custom-id',
         name: 'Test Webhook',
         url: 'https://example.com/webhook',
@@ -107,7 +108,7 @@ describe('WebhookService', () => {
     });
 
     it('should register a webhook with default events', () => {
-      const webhookConfig: Omit<WebhookConfig, 'createdAt' | 'updatedAt' | 'events'> = {
+      const webhookConfig: Omit<WebhookConfig, 'id' | 'createdAt' | 'updatedAt' | 'events'> = {
         name: 'Test Webhook',
         url: 'https://example.com/webhook',
         isActive: true

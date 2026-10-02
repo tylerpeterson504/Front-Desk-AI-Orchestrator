@@ -121,14 +121,13 @@ export interface MissingTranslationHandler {
 /**
  * Loaded translations cache
  */
-const translationsCache = new Map<string, TranslationObject>();
-
 /**
  * i18n Service
  */
 export class I18nService {
   private readonly localesPath: string;
   private readonly config: I18nConfig;
+  private translationsCache = new Map<string, TranslationObject>();
   private currentLanguage: SupportedLanguage;
   private currentNamespace: string;
   private missingTranslationHandler: MissingTranslationHandler | null = null;
@@ -309,8 +308,8 @@ export class I18nService {
     const cacheKey = `${language}:${namespace}`;
 
     // Check cache
-    if (translationsCache.has(cacheKey)) {
-      return translationsCache.get(cacheKey)!;
+    if (this.translationsCache.has(cacheKey)) {
+      return this.translationsCache.get(cacheKey)!;
     }
 
     try {
@@ -319,7 +318,7 @@ export class I18nService {
       const content = await fs.readFile(filePath, 'utf-8');
       const translations = JSON.parse(content) as TranslationObject;
 
-      translationsCache.set(cacheKey, translations);
+      this.translationsCache.set(cacheKey, translations);
       logger.debug('Translations loaded', { language, namespace, file: filePath });
 
       return translations;
@@ -409,11 +408,11 @@ export class I18nService {
    */
   private getValueFromPath(obj: TranslationObject, path: string): unknown {
     const keys = path.split(this.config.keySeparator);
-    let current = obj;
+    let current: unknown = obj;
 
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
-        current = (current as TranslationObject)[key];
+        current = (current as Record<string, unknown>)[key];
       } else {
         return undefined;
       }
@@ -428,9 +427,10 @@ export class I18nService {
   private interpolate(template: string, values: Record<string, string | number>): string {
     const prefix = this.config.interpolation.prefix;
     const suffix = this.config.interpolation.suffix;
+    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\$&');
 
     return template.replace(
-      new RegExp(`${prefix}(\\w+}${suffix}`, 'g'),
+      new RegExp(`${escapeRegex(prefix)}(\\w+)${escapeRegex(suffix)}`, 'g'),
       (match, key) => {
         const value = values[key];
         return value !== undefined ? String(value) : match;
@@ -534,7 +534,7 @@ export class I18nService {
     let match;
 
     while ((match = pattern.exec(content)) !== null) {
-      strings.add(match[1]);
+      strings.add(match[1].replace(/\\(['"])/g, '$1'));
     }
 
     return Array.from(strings);
@@ -645,12 +645,13 @@ export class I18nService {
       const allKeys = this.getAllKeys(sourceTranslations);
       const translatedKeys = this.getAllKeys(targetTranslations);
       const missingKeys = allKeys.filter(key => !translatedKeys.includes(key));
+      const translatedCount = allKeys.length - missingKeys.length;
 
       return {
         total: allKeys.length,
-        translated: translatedKeys.length,
+        translated: translatedCount,
         missing: missingKeys.length,
-        completeness: Math.round((translatedKeys.length / allKeys.length) * 100),
+        completeness: allKeys.length > 0 ? Math.round((translatedCount / allKeys.length) * 100) : 0,
         missingKeys
       };
     } catch (error) {
@@ -911,7 +912,7 @@ export class I18nService {
    * Clear all cached translations
    */
   clearCache(): void {
-    translationsCache.clear();
+    this.translationsCache.clear();
     logger.info('i18n cache cleared');
   }
 
@@ -920,7 +921,7 @@ export class I18nService {
    */
   clearNamespaceCache(language: SupportedLanguage, namespace: string): void {
     const cacheKey = `${language}:${namespace}`;
-    translationsCache.delete(cacheKey);
+    this.translationsCache.delete(cacheKey);
     logger.debug('i18n namespace cache cleared', { language, namespace });
   }
 }
@@ -928,12 +929,3 @@ export class I18nService {
 // Singleton instance
 export const i18nService = new I18nService();
 
-// Re-export types and constants
-export {
-  I18nConfig,
-  TranslationObject,
-  NamespaceConfig,
-  LanguageConfig,
-  I18nRuntimeConfig,
-  MissingTranslationHandler
-};

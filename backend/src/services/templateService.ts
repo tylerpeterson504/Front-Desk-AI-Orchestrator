@@ -54,7 +54,7 @@ const MAX_NAME_LENGTH = 255;
 export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
 
-  private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto {
+  private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto & { is_active?: boolean } {
     const typedBody = (body || {}) as unknown as Record<string, unknown>;
     const { name, category, content, tags, property_id, is_global, description, status } = typedBody;
 
@@ -98,21 +98,21 @@ export class TemplateService {
       }
     }
 
-    const baseData = {
+    const baseData: CreateTemplateDto = {
       name: name.trim(),
-      category: category ?? null,
+      category: typeof category === 'string' ? category : null,
       content,
-      tags: tags || [],
-      description: description ?? null,
+      tags: (tags as string[]) || [],
+      description: typeof description === 'string' ? description : null,
       property_id: property_id ? Number(property_id) : undefined,
       is_global: is_global === true,
-      status: status ?? null
+      status: typeof status === 'string' ? status : null
     };
     
     // Include is_active if it's an UpdateTemplateDto
     return {
       ...baseData,
-      is_active: 'is_active' in data ? Boolean(data.is_active) : undefined
+      is_active: 'is_active' in body ? Boolean((body as UpdateTemplateDto).is_active) : undefined
     };
   }
 

@@ -88,11 +88,11 @@ export function isConfigured(): boolean {
 }
 
 export async function complete(
-  messages: Array<{ role: string; content: string }>,
+  messages: LLMMessage[],
   options: LLMOptions = {}
 ): Promise<{ text: string; model: string }> {
   const result = await mistralClient.complete(messages, options);
   return { text: result.text, model: result.model };
 }
 
-export { MistralClient, mistralClient };
+export { mistralClient };

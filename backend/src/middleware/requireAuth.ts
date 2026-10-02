@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 import { authService } from '../services/authService';
-import '../types/express';
 
 export interface AuthUser {
   userId: string;

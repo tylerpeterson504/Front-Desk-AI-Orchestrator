@@ -17,7 +17,7 @@ export interface WebhookConfig {
 export interface WebhookEvent {
   id: string;
   type: string;
-  data: Record<string, unknown>;
+  data: WebhookPayload | Record<string, unknown>;
   timestamp: Date;
   attempts: number;
   maxAttempts: number;
@@ -115,11 +115,12 @@ export class WebhookService {
   /**
    * Register a new webhook
    */
-  registerWebhook(webhook: Omit<WebhookConfig, 'createdAt' | 'updatedAt'>): WebhookConfig {
+  registerWebhook(webhook: Omit<WebhookConfig, 'id' | 'createdAt' | 'updatedAt' | 'events'> & { id?: string; events?: string[] }): WebhookConfig {
     const id = webhook.id || crypto.randomUUID();
     
     const newWebhook: WebhookConfig = {
       ...webhook,
+      events: webhook.events || ['*'],
       id,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -154,9 +155,13 @@ export class WebhookService {
    * List all registered webhooks
    */
   listWebhooks(): WebhookConfig[] {
-    return Array.from(webhookRegistry.values()).sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    );
+    return Array.from(webhookRegistry.entries())
+      .map(([id, webhook], index) => ({ id, webhook, index }))
+      .sort((a, b) =>
+        b.webhook.createdAt.getTime() - a.webhook.createdAt.getTime() ||
+        b.index - a.index
+      )
+      .map(entry => entry.webhook);
   }
 
   /**
@@ -654,5 +659,3 @@ export class WebhookService {
 
 export const webhookService = new WebhookService();
 
-// Re-export types for convenience
-export type { WebhookConfig, WebhookEvent, WebhookPayload, WebhookDeliveryResult, WebhookStats };

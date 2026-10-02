@@ -777,12 +777,11 @@ export default {
   detectError,
   recoverFromError,
   retryWithBackoff,
-  DEFAULT_RECOVERY_OPTIONS,
-  MistralError
+  DEFAULT_RECOVERY_OPTIONS
 };
 
 // Custom error class for Mistral API errors
-class MistralError extends Error {
+export class MistralError extends Error {
   constructor(message: string, public code: string, public status?: number) {
     super(message);
     this.name = 'MistralError';

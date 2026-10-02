@@ -36,7 +36,8 @@ describe('LLM Clients Configuration', () => {
       process.env.MISTRAL_BASE_URL = 'https://custom.mistral.ai';
       jest.resetModules();
       const m = require('../src/services/llm/mistralClient');
-      expect(m.MODEL_NAME).toBeDefined();
+      expect(m.mistralClient).toBeDefined();
+      expect(m.mistralClient.isConfigured()).toBe(true);
     });
   });
 });

@@ -126,7 +126,7 @@ export interface LLMProviderFactory {
   /**
    * Get client with fallback chain
    */
-  getClientWithFallback(providers: LLMProvider[]): LLMClient;
+  getClientWithFallback(providers?: LLMProvider[]): LLMClient;
 }
 
 /**

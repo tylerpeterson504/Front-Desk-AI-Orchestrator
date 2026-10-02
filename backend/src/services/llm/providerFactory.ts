@@ -122,12 +122,13 @@ export function getClientWithFallback(
  * Fallback LLM Client that tries multiple providers
  */
 class FallbackLLMClient implements LLMClient {
-  readonly provider: LLMProvider = 'fallback';
+  readonly provider: LLMProvider;
   private providers: LLMProvider[];
   private clients: LLMClient[];
 
   constructor(providers: LLMProvider[]) {
     this.providers = providers;
+    this.provider = providers[0] ?? 'mistral';
     this.clients = providers.map(p => getClient(p));
   }
 
@@ -153,7 +154,7 @@ class FallbackLLMClient implements LLMClient {
     }
     
     // All providers failed
-    throw lastError || new LLMConfigurationError('fallback', 'All LLM providers failed');
+    throw lastError || new LLMConfigurationError(this.provider, 'All LLM providers failed');
   }
 
   async completeText(prompt: string, options?: LLMOptions): Promise<LLMResult> {
@@ -167,7 +168,7 @@ class FallbackLLMClient implements LLMClient {
       }
     }
     
-    throw lastError || new LLMConfigurationError('fallback', 'All LLM providers failed');
+    throw lastError || new LLMConfigurationError(this.provider, 'All LLM providers failed');
   }
 
   async listModels(): Promise<string[]> {
@@ -200,5 +201,6 @@ export const llmProviderFactory: LLMProviderFactory = {
 // Re-export Mistral client for backwards compatibility
 export { MistralClient, mistralClient } from './mistralClient';
 export { PROVIDER_CONFIGS } from './types';
+export type { LLMMessage, LLMResult, LLMOptions, LLMProvider } from './types';
 
 export default llmProviderFactory;

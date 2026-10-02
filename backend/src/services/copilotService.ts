@@ -218,6 +218,7 @@ export class CopilotService {
         role: 'user',
         content: userMessageContent,
         metadata: {
+          length: userMessageContent.length,
           template_ids: ids, // Track which templates are being used
           template_count: templates.length
         }
@@ -263,6 +264,7 @@ export class CopilotService {
         role: 'assistant',
         content: llmResult.text,
         metadata: {
+          length: llmResult.text.length,
           template_ids: ids, // Pass template IDs for analytics tracking
           provider: llmResult.provider,
           model: llmResult.model

@@ -3,6 +3,7 @@
  * Manages conversation history and context for multi-turn interactions
  */
 
+import { createHash } from 'crypto';
 import { getRepository } from '../config/database';
 import { ResponseEvent } from '../entities/ResponseEvent';
 import logger from '../lib/logger';
@@ -36,6 +37,10 @@ export interface ConversationMessage {
     sender?: string;
     length: number;
     tokens?: number;
+    template_ids?: number[];
+    template_count?: number;
+    provider?: string;
+    model?: string;
   };
 }
 
@@ -197,7 +202,7 @@ export class ConversationService {
   async getConversationContext(
     conversationId: string,
     maxMessages?: number
-  ): Promise<Array<{ role: string; content: string }>> {
+  ): Promise<Array<{ role: 'user' | 'assistant' | 'system'; content: string }>> {
     const conversation = await this.getConversation(conversationId);
     
     if (!conversation) {
@@ -256,9 +261,11 @@ export class ConversationService {
   ): Promise<void> {
     try {
       const responseEvent = responseEventRepo.create({
-        conversation_id: conversation.id,
+        conversation_hash: this.hashConversationId(conversation.id),
         user_id: conversation.userId,
         property_id: conversation.propertyId,
+        first_seen_at: new Date(),
+        replied_at: message.role === 'assistant' ? new Date() : null,
         response_text: message.content,
         metadata: {
           role: message.role,
@@ -273,6 +280,13 @@ export class ConversationService {
     } catch (error) {
       logger.error('Failed to save response event', { error });
     }
+  }
+
+  /**
+   * Stable hash of a conversation ID for analytics (no PII stored)
+   */
+  private hashConversationId(id: string): string {
+    return createHash('sha256').update(id).digest('hex').slice(0, 64);
   }
 
   /**

@@ -208,7 +208,7 @@ ${Array.from(routeMetrics.entries()).map(([routeKey, routeMetric]) =>
 # HELP http_duration_by_route_seconds_avg Average duration by route in seconds
 # TYPE http_duration_by_route_seconds_avg gauge
 ${Array.from(routeMetrics.entries()).map(([routeKey, routeMetric]) =>
-  `http_duration_by_route_seconds_avg{route="${routeKey}"} ${routeMetric.avgDuration / 1000}`
+  `http_duration_by_route_seconds_avg{route="${routeKey}"} ${routeMetric.requestDurationSum / Math.max(routeMetric.requestDurationCount, 1) / 1000}`
 ).join('\n')}`;
 
   res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
@@ -259,18 +259,19 @@ export function structuredLoggingMiddleware(req: Request, res: Response, next: N
   };
   
   // Override logger methods temporarily to include context
+  type ContextualLogMethod = (message: string, meta?: Record<string, unknown>) => void;
   logger.info = function (message: string, meta: Record<string, unknown> = {}) {
-    originalInfo.call(this, message, { ...context, ...meta });
-  };
+    (originalInfo as unknown as ContextualLogMethod)(message, { ...context, ...meta });
+  } as unknown as typeof logger.info;
   logger.error = function (message: string, meta: Record<string, unknown> = {}) {
-    originalError.call(this, message, { ...context, ...meta });
-  };
+    (originalError as unknown as ContextualLogMethod)(message, { ...context, ...meta });
+  } as unknown as typeof logger.error;
   logger.warn = function (message: string, meta: Record<string, unknown> = {}) {
-    originalWarn.call(this, message, { ...context, ...meta });
-  };
+    (originalWarn as unknown as ContextualLogMethod)(message, { ...context, ...meta });
+  } as unknown as typeof logger.warn;
   logger.debug = function (message: string, meta: Record<string, unknown> = {}) {
-    originalDebug.call(this, message, { ...context, ...meta });
-  };
+    (originalDebug as unknown as ContextualLogMethod)(message, { ...context, ...meta });
+  } as unknown as typeof logger.debug;
 
   // Restore on response finish
   res.on('finish', () => {

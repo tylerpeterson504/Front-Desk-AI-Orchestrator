@@ -117,7 +117,7 @@ export class EmailService {
     }
 
     return {
-      configured: this.isConfigured(),
+      configured: smtpConfigured || sendGridConfigured,
       transportType
     };
   }
@@ -273,12 +273,16 @@ export class EmailService {
    */
   async sendTestEmail(to: string): Promise<{ success: boolean; error?: string }> {
     try {
-      await this.sendEmail({
+      const result = await this.sendEmail({
         to,
         subject: 'Front Desk AI - Email Configuration Test',
         text: 'This is a test email to verify that the email service is properly configured.',
         html: '<h1>Email Test</h1><p>This is a test email to verify that the email service is properly configured.</p>'
       });
+
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
 
       return { success: true };
     } catch (error) {

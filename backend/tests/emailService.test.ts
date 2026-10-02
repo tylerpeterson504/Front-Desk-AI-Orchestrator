@@ -11,6 +11,7 @@ jest.mock('nodemailer', () => ({
 
 // Mock logger
 jest.mock('../src/lib/logger', () => ({
+  __esModule: true,
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -32,9 +33,6 @@ describe('EmailService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Reset the singleton
-    service = new EmailService();
-    
     // Mock configuration
     mockConfig = {
       SMTP_HOST: 'smtp.test.com',
@@ -49,6 +47,9 @@ describe('EmailService', () => {
     
     // Override config
     Object.assign(config, mockConfig);
+    
+    // Reset the singleton after config is set so its cache matches
+    service = new EmailService();
   });
 
   afterEach(() => {
@@ -104,7 +105,8 @@ describe('EmailService', () => {
         SENDGRID_API_KEY: undefined
       });
       
-      expect(service.isConfigured()).toBe(false);
+      const unconfiguredService = new EmailService();
+      expect(unconfiguredService.isConfigured()).toBe(false);
     });
 
     it('should cache the configuration check result', () => {
@@ -201,7 +203,8 @@ describe('EmailService', () => {
         SENDGRID_API_KEY: undefined
       });
       
-      await expect(service.sendEmail({
+      const unconfiguredService = new EmailService();
+      await expect(unconfiguredService.sendEmail({
         to: 'test@example.com',
         subject: 'Test Subject',
         text: 'Test message'
@@ -242,9 +245,10 @@ describe('EmailService', () => {
           return Promise.resolve({ messageId: 'test-id' });
         })
       };
-      nodemailer.createTransport.mockReturnValue(mockTransporter);
+      nodemailer.createTransport.mockReturnValueOnce(mockTransporter);
       
-      await service.sendEmail({
+      const localService = new EmailService();
+      await localService.sendEmail({
         to: 'test@example.com',
         subject: 'Test Subject',
         text: 'Test message',
@@ -263,9 +267,10 @@ describe('EmailService', () => {
       const mockTransporter = {
         sendMail: jest.fn().mockRejectedValue(new Error('SMTP connection failed'))
       };
-      nodemailer.createTransport.mockReturnValue(mockTransporter);
+      nodemailer.createTransport.mockReturnValueOnce(mockTransporter);
       
-      const result = await service.sendEmail({
+      const localService = new EmailService();
+      const result = await localService.sendEmail({
         to: 'test@example.com',
         subject: 'Test Subject',
         text: 'Test message'
@@ -346,9 +351,10 @@ describe('EmailService', () => {
       const mockTransporter = {
         sendMail: jest.fn().mockRejectedValue(new Error('Connection failed'))
       };
-      nodemailer.createTransport.mockReturnValue(mockTransporter);
+      nodemailer.createTransport.mockReturnValueOnce(mockTransporter);
       
-      const result = await service.sendTestEmail('test@example.com');
+      const localService = new EmailService();
+      const result = await localService.sendTestEmail('test@example.com');
       
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();

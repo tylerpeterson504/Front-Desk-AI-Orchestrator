@@ -1,7 +1,7 @@
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { PropertyGroup } from '../entities/PropertyGroup';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
+import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 import { encryptSecret, decryptSecret } from '../lib/secretBox';
 import { createRequestLogger } from '../lib/logger';
 
@@ -498,7 +498,7 @@ export class PropertyService {
   }
 
   async update(id: number, data: UpdatePropertyDto, userId: string): Promise<Property> {
-    const property = await this.getById(id);
+    const property = await this.getById(id, userId);
 
     // Verify ownership
     if (property.user_id !== userId) {
@@ -536,7 +536,7 @@ export class PropertyService {
     property.region = propertyData.region ?? property.region;
     property.timezone = propertyData.timezone ?? property.timezone;
     property.currency = propertyData.currency ?? property.currency;
-    property.checkout_time = propertyData.checkout_time;
+    property.checkout_time = propertyData.checkout_time ?? property.checkout_time;
     property.checkin_time = propertyData.checkin_time ?? property.checkin_time;
     property.wifi_ssid = propertyData.wifi_ssid ?? property.wifi_ssid;
     property.tone_guidelines = propertyData.tone_guidelines ?? property.tone_guidelines;

@@ -31,7 +31,7 @@ export interface AccessibilityConfig {
 /**
  * Default accessibility configuration
  */
-const defaultAccessibilityConfig: AccessibilityConfig = {
+export const defaultAccessibilityConfig: AccessibilityConfig = {
   enabled: true,
   enforceWCAG: config.NODE_ENV === 'production',
   addAccessibilityHeaders: true,
@@ -100,7 +100,7 @@ export interface AccessibilityMetadata {
   conformanceLevel: 'A' | 'AA' | 'AAA';
   accessibilityFeatures: string[];
   language: string;
-  skipLinks: string[];
+  skipLinks: Array<{ id: string; text: string }>;
   focusOrder: string[];
   screenReaderHint?: string;
   keyboardNavigation: boolean;
@@ -109,7 +109,7 @@ export interface AccessibilityMetadata {
 /**
  * WCAG 2.1 guidelines and success criteria
  */
-const wcagGuidelines: Record<string, {
+export const wcagGuidelines: Record<string, {
   description: string;
   level: 'A' | 'AA' | 'AAA';
   category: 'Perceivable' | 'Operable' | 'Understandable' | 'Robust';
@@ -160,7 +160,21 @@ const wcagGuidelines: Record<string, {
   // Robust
   '4.1.1': { description: 'Parsing', level: 'A', category: 'Robust' },
   '4.1.2': { description: 'Name, Role, Value', level: 'A', category: 'Robust' },
-  '4.1.3': { description: 'Status Messages', level: 'AA', category: 'Robust' }
+  '4.1.3': { description: 'Status Messages', level: 'AA', category: 'Robust' },
+  
+  // Level AAA
+  '1.4.6': { description: 'Contrast (Enhanced)', level: 'AAA', category: 'Perceivable' },
+  '1.4.9': { description: 'Images of Text (No Exception)', level: 'AAA', category: 'Perceivable' },
+  '2.1.3': { description: 'Keyboard (No Exception)', level: 'AAA', category: 'Operable' },
+  '2.2.4': { description: 'Interruptions', level: 'AAA', category: 'Operable' },
+  '2.4.8': { description: 'Location', level: 'AAA', category: 'Operable' },
+  '2.4.9': { description: 'Link Purpose (Link Only)', level: 'AAA', category: 'Operable' },
+  '2.4.10': { description: 'Section Headings', level: 'AAA', category: 'Operable' },
+  '3.1.5': { description: 'Reading Level', level: 'AAA', category: 'Understandable' },
+  '3.1.6': { description: 'Pronunciation', level: 'AAA', category: 'Understandable' },
+  '3.2.5': { description: 'Change on Request', level: 'AAA', category: 'Understandable' },
+  '3.3.5': { description: 'Help', level: 'AAA', category: 'Understandable' },
+  '3.3.6': { description: 'Error Prevention (All)', level: 'AAA', category: 'Understandable' },
 };
 
 /**
@@ -218,6 +232,7 @@ export const ariaRoles = {
   rowheader: 'rowheader',
   scrollbar: 'scrollbar',
   search: 'search',
+  section: 'section',
   searchbox: 'searchbox',
   separator: 'separator',
   slider: 'slider',
@@ -389,6 +404,24 @@ export function validateColorContrast(data: unknown): { valid: boolean; issues: 
         if (contrastWithWhite < defaultAccessibilityConfig.colorContrast.minimumRatio &&
             contrastWithBlack < defaultAccessibilityConfig.colorContrast.minimumRatio) {
           issues.push(`Color ${value} at ${key} has insufficient contrast (white: ${contrastWithWhite.toFixed(2)}, black: ${contrastWithBlack.toFixed(2)})`);
+        }
+      }
+    }
+  }
+
+  // Check foreground/background color pairs for sufficient contrast
+  const backgroundKeys = Object.keys(flatData).filter(k => k.toLowerCase().includes('background'));
+  const foregroundKeys = Object.keys(flatData).filter(
+    k => k.toLowerCase().includes('color') && !k.toLowerCase().includes('background')
+  );
+  for (const bgKey of backgroundKeys) {
+    for (const fgKey of foregroundKeys) {
+      const bg = flatData[bgKey];
+      const fg = flatData[fgKey];
+      if (typeof bg === 'string' && typeof fg === 'string') {
+        const ratio = calculateContrast(fg, bg);
+        if (ratio < defaultAccessibilityConfig.colorContrast.minimumRatio) {
+          issues.push(`Insufficient contrast between ${fgKey} (${fg}) and ${bgKey} (${bg}): ${ratio.toFixed(2)}`);
         }
       }
     }
@@ -785,6 +818,11 @@ export function generateAltText(
     elements.push(String(properties.title));
   }
 
+  // Mark decorative elements
+  if (properties.decorative === true) {
+    elements.push('(decorative)');
+  }
+
   // Add description if available
   if (properties.description) {
     elements.push(String(properties.description));
@@ -797,7 +835,7 @@ export function generateAltText(
 
   // Add action if available
   if (properties.action) {
-    elements.push(String(properties.action));
+    elements.push(`which ${properties.action}`);
   }
 
   // Add label if available
@@ -890,15 +928,15 @@ export function validateAccessibility(
   const recommendations: string[] = [];
 
   // Run all accessibility checks
-  issues.push(...this.checkImages(html, mergedConfig));
-  issues.push(...this.checkLinks(html, mergedConfig));
-  issues.push(...this.checkHeadings(html, mergedConfig));
-  issues.push(...this.checkForms(html, mergedConfig));
-  issues.push(...this.checkColors(html, mergedConfig));
+  issues.push(...checkImages(html, mergedConfig));
+  issues.push(...checkLinks(html, mergedConfig));
+  issues.push(...checkHeadings(html, mergedConfig));
+  issues.push(...checkForms(html, mergedConfig));
+  issues.push(...checkColors(html, mergedConfig));
 
   // Add warnings
-  warnings.push(...this.checkLanguage(html, mergedConfig));
-  warnings.push(...this.checkSkipLinks(html, mergedConfig));
+  warnings.push(...checkLanguage(html, mergedConfig));
+  warnings.push(...checkSkipLinks(html, mergedConfig));
 
   // Generate recommendations
   if (issues.length > 0) {
@@ -937,7 +975,7 @@ export function validateAccessibility(
 /**
  * Check images for accessibility issues
  */
-private static checkImages(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkImages(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const issues: AccessibilityCheckResult[] = [];
   const imgRegex = /<img\s+[^>]*>/gi;
   
@@ -979,7 +1017,7 @@ private static checkImages(html: string, config: AccessibilityConfig): Accessibi
 /**
  * Check links for accessibility issues
  */
-private static checkLinks(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkLinks(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const issues: AccessibilityCheckResult[] = [];
   const linkRegex = /<a\s+[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
   
@@ -1022,7 +1060,7 @@ private static checkLinks(html: string, config: AccessibilityConfig): Accessibil
 /**
  * Check headings for accessibility issues
  */
-private static checkHeadings(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkHeadings(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const issues: AccessibilityCheckResult[] = [];
   const headingRegex = /<h([1-6])\s*[^>]*>(.*?)<\/h\1>/gi;
   
@@ -1083,7 +1121,7 @@ private static checkHeadings(html: string, config: AccessibilityConfig): Accessi
 /**
  * Check forms for accessibility issues
  */
-private static checkForms(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkForms(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const issues: AccessibilityCheckResult[] = [];
   const inputRegex = /<input\s+[^>]*>/gi;
   
@@ -1146,7 +1184,7 @@ private static checkForms(html: string, config: AccessibilityConfig): Accessibil
 /**
  * Check colors for contrast issues
  */
-private static checkColors(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkColors(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const issues: AccessibilityCheckResult[] = [];
   const styleRegex = /style="[^"]*"|style='[^']*'/gi;
   
@@ -1192,7 +1230,7 @@ private static checkColors(html: string, config: AccessibilityConfig): Accessibi
 /**
  * Check for language attribute
  */
-private static checkLanguage(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkLanguage(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const warnings: AccessibilityCheckResult[] = [];
   const htmlTagMatch = html.match(/<html[^>]*>/i);
   
@@ -1213,7 +1251,7 @@ private static checkLanguage(html: string, config: AccessibilityConfig): Accessi
 /**
  * Check for skip links
  */
-private static checkSkipLinks(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
+function checkSkipLinks(html: string, config: AccessibilityConfig): AccessibilityCheckResult[] {
   const warnings: AccessibilityCheckResult[] = [];
   
   // Check for skip to main content link
@@ -1355,26 +1393,3 @@ This accessibility statement was last updated on ${new Date().toLocaleDateString
 `;
 }
 
-// Export functions for use in tests
-export {
-  calculateContrast,
-  generateAriaAttributes,
-  generateAltText,
-  generateScreenReaderText,
-  validateColorContrast,
-  validateAccessibility,
-  accessibilityHeaders,
-  accessibilityMetadataMiddleware,
-  colorContrastValidator,
-  keyboardNavigationMiddleware,
-  skipLinksMiddleware,
-  languageHeaders,
-  generateAccessibilityStatement,
-  wcagGuidelines,
-  defaultAccessibilityConfig,
-  AccessibilityConfig,
-  AccessibilityError,
-  AccessibilityCheckResult,
-  AccessibilityAuditResult,
-  AccessibilityMetadata
-};

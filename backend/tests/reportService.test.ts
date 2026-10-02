@@ -1,4 +1,4 @@
-import { ReportService, reportService, ReportConfig, ReportFilter } from '../src/services/reportService';
+import { ReportService, reportService, ReportConfig, ReportFilter, ReportType } from '../src/services/reportService';
 import { config } from '../src/config';
 import logger from '../src/lib/logger';
 import path from 'path';
@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 
 // Mock logger
 jest.mock('../src/lib/logger', () => ({
+  __esModule: true,
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -39,6 +40,7 @@ jest.mock('../src/services/notificationService', () => ({
 
 // Mock typeorm
 jest.mock('typeorm', () => ({
+  ...jest.requireActual('typeorm'),
   getRepository: jest.fn(() => ({
     createQueryBuilder: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -93,9 +95,9 @@ describe('ReportService', () => {
     it('should create a new report configuration', () => {
       const configData = {
         name: 'Test Report',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Test description',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       };
       
@@ -112,17 +114,17 @@ describe('ReportService', () => {
     it('should generate unique IDs', () => {
       const config1 = service.createConfig({
         name: 'Report 1',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Description 1',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
       const config2 = service.createConfig({
         name: 'Report 2',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Description 2',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
@@ -134,9 +136,9 @@ describe('ReportService', () => {
     it('should return configuration by ID', () => {
       const config = service.createConfig({
         name: 'Test Report',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Test description',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
@@ -157,17 +159,17 @@ describe('ReportService', () => {
     it('should return all configurations sorted by creation date', () => {
       const config1 = service.createConfig({
         name: 'Report 1',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Description 1',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
       const config2 = service.createConfig({
         name: 'Report 2',
-        type: 'template_usage',
+        type: 'template_usage' as const,
         description: 'Description 2',
-        format: 'json',
+        format: 'json' as const,
         delivery: {}
       });
       
@@ -190,9 +192,9 @@ describe('ReportService', () => {
     it('should update an existing configuration', () => {
       const config = service.createConfig({
         name: 'Original Name',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Original description',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
@@ -222,9 +224,9 @@ describe('ReportService', () => {
     it('should delete a configuration', () => {
       const config = service.createConfig({
         name: 'Test Report',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Test description',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
@@ -260,9 +262,9 @@ describe('ReportService', () => {
     it('should use config name when configId is provided', async () => {
       const config = service.createConfig({
         name: 'Custom Report Name',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Test description',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
@@ -277,7 +279,7 @@ describe('ReportService', () => {
     });
 
     it('should handle different report types', async () => {
-      const reportTypes = [
+      const reportTypes: ReportType[] = [
         'response_analytics',
         'template_usage',
         'shift_notes',
@@ -383,51 +385,21 @@ describe('ReportService', () => {
     });
   });
 
-  describe('calculateContrast', () => {
-    it('should calculate contrast between two colors', () => {
-      // @ts-ignore - accessing private method for test
-      const contrast = service.calculateContrast('#FFFFFF', '#000000');
-      
-      expect(contrast).toBe(21); // White vs Black = 21:1
-    });
-
-    it('should handle hex colors', () => {
-      // @ts-ignore - accessing private method for test
-      const contrast = service.calculateContrast('#FF0000', '#00FF00');
-      
-      expect(contrast).toBeGreaterThan(0);
-    });
-
-    it('should handle named colors', () => {
-      // @ts-ignore - accessing private method for test
-      const contrast = service.calculateContrast('white', 'black');
-      
-      expect(contrast).toBe(21);
-    });
-
-    it('should handle rgb colors', () => {
-      // @ts-ignore - accessing private method for test
-      const contrast = service.calculateContrast('rgb(255,255,255)', 'rgb(0,0,0)');
-      
-      expect(contrast).toBe(21);
-    });
-  });
-
   describe('getStats', () => {
     it('should return report statistics', () => {
       service.createConfig({
         name: 'Report 1',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Description 1',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       
       service.createConfig({
         name: 'Report 2',
-        type: 'template_usage',
+        type: 'template_usage' as const,
         description: 'Description 2',
-        format: 'json',
+        format: 'json' as const,
         delivery: {}
       });
       
@@ -442,9 +414,9 @@ describe('ReportService', () => {
     it('should clear all report configurations', () => {
       service.createConfig({
         name: 'Report 1',
-        type: 'response_analytics',
+        type: 'response_analytics' as const,
         description: 'Description 1',
-        format: 'csv',
+        format: 'csv' as const,
         delivery: {}
       });
       

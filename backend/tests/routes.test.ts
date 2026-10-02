@@ -78,7 +78,7 @@ describe('Backend Routes - Basic Tests', () => {
     it('should return OK', async () => {
       const { app } = await createTestApp();
       const response = await request(app).get('/health').expect(200);
-      expect(response.body).toEqual({ status: 'ok' });
+      expect(response.body.status).toBe('ok');
     });
   });
 

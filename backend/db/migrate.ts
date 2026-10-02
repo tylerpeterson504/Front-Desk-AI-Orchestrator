@@ -127,7 +127,7 @@ async function getMigrationHistory(): Promise<Array<{ name: string; executedAt: 
     
     return migrations.map(m => ({
       name: m.name,
-      executedAt: m.timestamp
+      executedAt: new Date(m.timestamp)
     }));
   } catch (error) {
     logger.error('Failed to get migration history', { error: (error as Error).message });

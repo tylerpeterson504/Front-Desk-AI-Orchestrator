@@ -162,7 +162,7 @@ export class ReportService {
   /**
    * Create a new report configuration
    */
-  createConfig(config: Omit<ReportConfig, 'id' | 'createdAt' | 'updatedAt'>): ReportConfig {
+  createConfig(config: Omit<ReportConfig, 'id' | 'createdAt' | 'updatedAt' | 'isActive'> & { isActive?: boolean }): ReportConfig {
     const id = this.generateId();
     const now = new Date();
 
@@ -170,8 +170,8 @@ export class ReportService {
       id,
       createdAt: now,
       updatedAt: now,
-      isActive: true,
-      ...config
+      ...config,
+      isActive: config.isActive ?? true
     };
 
     reportConfigs.set(id, newConfig);
@@ -191,9 +191,13 @@ export class ReportService {
    * List all report configurations
    */
   listConfigs(): ReportConfig[] {
-    return Array.from(reportConfigs.values()).sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    );
+    return Array.from(reportConfigs.entries())
+      .map(([id, config], index) => ({ id, config, index }))
+      .sort((a, b) =>
+        b.config.createdAt.getTime() - a.config.createdAt.getTime() ||
+        b.index - a.index
+      )
+      .map(entry => entry.config);
   }
 
   /**
@@ -587,8 +591,7 @@ export class ReportService {
             config.name,
             await this.readReportFile(result.filePath),
             config.filters?.dateRange?.start?.toString() || '',
-            config.filters?.dateRange?.end?.toString() || '',
-            config.data?.propertyName
+            config.filters?.dateRange?.end?.toString() || ''
           );
           logger.info('Report emailed', { reportId: result.id, to: email });
         } catch (error) {
@@ -672,7 +675,8 @@ export class ReportService {
         await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
       }
 
-      logger.info('Report saved to file', { filePath, size: data.length });
+      const size = typeof data === 'string' ? data.length : JSON.stringify(data).length;
+      logger.info('Report saved to file', { filePath, size });
       return filePath;
     } catch (error) {
       logger.error('Failed to save report', {
@@ -720,20 +724,18 @@ export class ReportService {
    * Format data as CSV
    */
   private formatAsCSV(data: unknown): string {
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
+    const rows: unknown[] = Array.isArray(data) ? data : [data];
 
-    if (data.length === 0) {
+    if (rows.length === 0) {
       return '';
     }
 
-    const firstItem = data[0] as Record<string, unknown>;
+    const firstItem = rows[0] as Record<string, unknown>;
     const headers = Object.keys(firstItem);
     
     const lines: string[] = [
       headers.map(h => this.escapeCSV(h)).join(','),
-      ...data.map(item => {
+      ...rows.map(item => {
         const record = item as Record<string, unknown>;
         return headers.map(h => this.escapeCSV(String(record[h] || ''))).join(',');
       })
@@ -820,7 +822,9 @@ export class ReportService {
     return events.map(event => ({
       id: event.id,
       propertyId: event.property_id,
-      templateId: event.template_id,
+      templateId: event.metadata && Array.isArray(event.metadata.template_ids) && typeof event.metadata.template_ids[0] === 'number'
+        ? event.metadata.template_ids[0]
+        : null,
       conversationHash: event.conversation_hash,
       firstSeenAt: event.first_seen_at,
       repliedAt: event.replied_at,
@@ -907,12 +911,11 @@ export class ReportService {
   /**
    * Generate template usage report
    */
-  private async generateTemplateUsageReport(filters?: ReportFilter): Promise<unknown> {
+  private async generateTemplateUsageReport(filters?: ReportFilter): Promise<Array<{ templateId: number; usageCount: number }>> {
     const repo = getRepository(ResponseEvent);
     
     let query = repo.createQueryBuilder('response')
-      .select(['response.template_id', 'COUNT(*) as count'])
-      .groupBy('response.template_id');
+      .select(['response.metadata']);
 
     if (filters?.properties) {
       query = query.andWhere('response.property_id IN (:...properties)', {
@@ -929,10 +932,19 @@ export class ReportService {
 
     const results = await query.getRawMany();
 
-    return results.map(row => ({
-      templateId: row.template_id,
-      usageCount: parseInt(row.count, 10)
-    }));
+    const counts = new Map<number, number>();
+    for (const row of results) {
+      const metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata;
+      const templateIds: unknown = metadata?.template_ids;
+      if (!Array.isArray(templateIds)) continue;
+      for (const id of templateIds) {
+        if (typeof id === 'number') {
+          counts.set(id, (counts.get(id) || 0) + 1);
+        }
+      }
+    }
+
+    return Array.from(counts.entries()).map(([templateId, usageCount]) => ({ templateId, usageCount }));
   }
 
   /**
@@ -950,13 +962,13 @@ export class ReportService {
    */
   private async getTemplateUsageSummary(filters?: ReportFilter): Promise<Record<string, unknown>> {
     const usage = await this.generateTemplateUsageReport(filters);
-    const total = (usage as Array<{ usageCount: number }>).reduce((sum, item) => sum + item.usageCount, 0);
+    const total = usage.reduce((sum, item) => sum + item.usageCount, 0);
     
     return {
       totalUsage: total,
       uniqueTemplates: usage.length,
       mostUsedTemplate: usage.length > 0 
-        ? Math.max(...(usage as Array<{ usageCount: number }>).map(item => item.usageCount))
+        ? Math.max(...usage.map(item => item.usageCount))
         : 0
     };
   }
@@ -994,9 +1006,9 @@ export class ReportService {
       id: note.id,
       propertyId: note.property_id,
       userId: note.user_id,
-      title: note.title,
+      title: note.shift_type,
       content: note.content,
-      completed: note.completed,
+      completed: note.is_complete,
       createdAt: note.created_at,
       updatedAt: note.updated_at
     }));
@@ -1071,8 +1083,8 @@ export class ReportService {
     return escalations.map(escalation => ({
       id: escalation.id,
       propertyId: escalation.property_id,
-      title: escalation.title,
-      description: escalation.description,
+      title: escalation.category,
+      description: escalation.reason,
       priority: escalation.priority,
       status: escalation.status,
       assignedTo: escalation.assigned_to,
@@ -1140,7 +1152,7 @@ export class ReportService {
   /**
    * Generate user activity report
    */
-  private async generateUserActivityReport(filters?: ReportFilter): Promise<unknown> {
+  private async generateUserActivityReport(filters?: ReportFilter): Promise<Array<{ userId: string; activityCount: number }>> {
     const repo = getRepository(ResponseEvent);
     
     let query = repo.createQueryBuilder('response')
@@ -1162,7 +1174,7 @@ export class ReportService {
 
     const results = await query.getRawMany();
 
-    return results.map(row => ({
+    return results.map((row: { user_id: string; count: string }) => ({
       userId: row.user_id,
       activityCount: parseInt(row.count, 10)
     }));
@@ -1183,7 +1195,7 @@ export class ReportService {
    */
   private async getUserActivitySummary(filters?: ReportFilter): Promise<Record<string, unknown>> {
     const activity = await this.generateUserActivityReport(filters);
-    const total = (activity as Array<{ activityCount: number }>).reduce((sum, item) => sum + item.activityCount, 0);
+    const total = activity.reduce((sum, item) => sum + item.activityCount, 0);
     
     return {
       totalActivity: total,
@@ -1314,17 +1326,3 @@ export class ReportService {
 
 export const reportService = new ReportService();
 
-// Re-export types for convenience
-export type {
-  ReportConfig,
-  ReportSchedule,
-  ReportFilter,
-  ReportType,
-  ReportFormat,
-  ReportDelivery,
-  ReportData,
-  ReportResult,
-  ScheduledReport,
-  ReportColumn,
-  ReportStats
-};

@@ -20,10 +20,10 @@ const swaggerOptions: swaggerJsdoc.Options = {
         API for the Front Desk AI Orchestrator - a hotel front desk assistant system.
         
         ## Authentication
-        All endpoints require JWT authentication via the `Authorization` header:
-        ```
+        All endpoints require JWT authentication via the \`Authorization\` header:
+        \`\`\`
         Authorization: Bearer <your-jwt-token>
-        ```
+        \`\`\`
         
         ## Rate Limiting
         - General API: 200 requests per 15 minutes

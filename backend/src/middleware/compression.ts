@@ -46,7 +46,6 @@ export function createBrotliCompression() {
       filter: compressionOptions.filter,
       brotli: {
         quality: 11,
-        // @ts-expect-error - Type mismatch with shrink-ray
         threshold: compressionOptions.threshold
       }
     });
