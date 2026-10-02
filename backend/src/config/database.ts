@@ -42,7 +42,7 @@ export const AppDataSource = new DataSource({
     Escalation,
     ResponseEvent,
   ],
-  migrations: [__dirname + '/../migrations/**/*.ts'],
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false,
   logging: config.LOG_LEVEL === 'debug',
   migrationsRun: true,
