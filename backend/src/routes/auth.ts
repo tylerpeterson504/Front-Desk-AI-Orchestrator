@@ -14,15 +14,22 @@ const MIN_PASSWORD_LENGTH = 12;
 const REFRESH_COOKIE = 'refresh_token';
 const cookieOptions = { httpOnly: true, secure: true, sameSite: 'none' as const, path: '/api/auth' };
 
+/** Returns whether the request explicitly selects cookie-based refresh-token transport. */
 function usesCookie(req: Request): boolean {
   return req.get('X-Refresh-Token-Transport') === 'cookie';
 }
 
+/** Reads the refresh-token cookie value, or returns undefined when it is absent. */
 function refreshCookie(req: Request): string | undefined {
   return req.headers.cookie?.split(';').map((part) => part.trim())
     .find((part) => part.startsWith(`${REFRESH_COOKIE}=`))?.slice(REFRESH_COOKIE.length + 1);
 }
 
+/**
+ * Sends an auth response with the requested status (200 by default).
+ * Cookie transport sets the refresh token in an HttpOnly cookie and omits it
+ * from JSON; other clients receive the full response in JSON.
+ */
 function sendAuthResponse(req: Request, res: Response, response: AuthResponse, status = 200): void {
   if (usesCookie(req)) {
     res.cookie(REFRESH_COOKIE, response.refresh_token, {

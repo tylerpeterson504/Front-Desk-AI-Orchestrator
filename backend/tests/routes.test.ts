@@ -10,7 +10,7 @@ import { createMockRepository, createMockUser, createMockProperty } from './util
 // Create a test user for the auth tests
 const testUser = createMockUser({ email: 'test@example.com', password_hash: 'hashed-password', name: 'Test User' });
 
-// Helper to create a fresh app with mocks for each test
+/** Resets Jest mocks and modules, then returns the app and repositories with optional mock overrides. */
 async function createTestApp(userRepoMock?: any, propertyRepoMock?: any, authServiceMock?: any) {
   // Clear and reset all mocks
   jest.clearAllMocks();
