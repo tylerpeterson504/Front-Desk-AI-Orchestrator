@@ -16,6 +16,8 @@ import { additionalSecurityHeaders, sanitizeInput, createCopilotRateLimiter } fr
 import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
+import { monitoringMiddleware, tracingMiddleware, prometheusMetricsHandler } from './middleware/monitoring';
+import { setupSwagger } from './config/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -44,10 +46,12 @@ app.set('trust proxy', 1);
 app.use(cookieParser());
 app.use(compressionMiddleware);
 app.use(requestIpLogger);
+app.use(tracingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
 app.use(requestId);
 app.use(performanceMonitor());
+app.use(monitoringMiddleware);
 app.use(csrfProtection);
 
 // CORS configuration
@@ -153,6 +157,12 @@ app.use('/api/github', apiLimiter, githubRouter);
 
 // Health check routes
 app.use('/health', healthRouter);
+
+// Prometheus metrics endpoint
+app.get('/metrics', prometheusMetricsHandler);
+
+// Setup Swagger API documentation
+setupSwagger(app);
 
 // Serve dashboard static files in production.
 // The SPA catch-all is registered BEFORE the notFound middleware so unknown

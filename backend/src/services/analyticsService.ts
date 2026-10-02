@@ -1,7 +1,11 @@
-import { getRepository } from '../config/database';
+import { getRepository, In } from 'typeorm';
 import { ResponseEvent } from '../entities/ResponseEvent';
 import { Property } from '../entities/Property';
+import { Template } from '../entities/Template';
+import { ShiftNote } from '../entities/ShiftNote';
+import { Escalation } from '../entities/Escalation';
 import { AuthorizationError, ValidationError } from '../lib/errors';
+import logger from '../lib/logger';
 
 export interface RecordEventDto {
   property_id: number;
@@ -19,6 +23,39 @@ export interface ResponseTimesSummary {
   p95_seconds: number | null;
 }
 
+export interface CopilotUsageSummary {
+  property_id: number;
+  days: number;
+  total_requests: number;
+  unique_users: number;
+  templates_used: number;
+  most_used_templates: Array<{ template_id: number; count: number }>;
+}
+
+export interface TemplateEffectivenessSummary {
+  template_id: number;
+  usage_count: number;
+  avg_response_length: number;
+  property_id: number;
+}
+
+export interface ShiftNoteCompletionSummary {
+  property_id: number;
+  days: number;
+  total_notes: number;
+  completed_notes: number;
+  completion_rate: number;
+}
+
+export interface EscalationResolutionSummary {
+  property_id: number;
+  days: number;
+  total_escalations: number;
+  resolved_escalations: number;
+  avg_resolution_time_seconds: number | null;
+  resolution_rate: number;
+}
+
 const MAX_BATCH = 100;
 const MAX_WINDOW_DAYS = 90;
 
@@ -30,6 +67,9 @@ function percentile(sorted: number[], p: number): number {
 export class AnalyticsService {
   private eventRepository = getRepository<ResponseEvent>(ResponseEvent);
   private propertyRepository = getRepository<Property>(Property);
+  private templateRepository = getRepository<Template>(Template);
+  private shiftNoteRepository = getRepository<ShiftNote>(ShiftNote);
+  private escalationRepository = getRepository<Escalation>(Escalation);
 
   async record(events: RecordEventDto[], userId: string): Promise<number> {
     if (!Array.isArray(events) || !events.length) {
@@ -124,6 +164,209 @@ export class AnalyticsService {
       median_seconds: Math.round(median),
       avg_seconds: Math.round(avg),
       p95_seconds: Math.round(percentile(seconds, 95))
+    };
+  }
+
+  /**
+   * Get copilot usage analytics by property
+   */
+  async copilotUsage(property_id: number, userId: string, days = 30): Promise<CopilotUsageSummary> {
+    if (!Number.isInteger(property_id)) {
+      throw new ValidationError('property_id is required');
+    }
+    if (!Number.isInteger(days) || days < 1 || days > MAX_WINDOW_DAYS) {
+      throw new ValidationError('days must be between 1 and ' + MAX_WINDOW_DAYS);
+    }
+
+    // Verify property ownership
+    const property = await this.propertyRepository.findOne({
+      where: { id: property_id, user_id: userId }
+    });
+    if (!property) {
+      throw new AuthorizationError('Property not found or access denied');
+    }
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Get response events for this property in the time period
+    const events = await this.eventRepository
+      .createQueryBuilder('e')
+      .where('e.property_id = :property_id', { property_id })
+      .andWhere('e.created_at >= :since', { since })
+      .getMany();
+
+    // Count unique users
+    const userIds = [...new Set(events.map(e => e.user_id))];
+    
+    // Get template usage from the response events
+    // Note: This assumes we track template usage in metadata - we need to enhance this
+    const templateUsage: Map<number, number> = new Map();
+    for (const event of events) {
+      if (event.metadata?.template_ids) {
+        const templateIds = Array.isArray(event.metadata.template_ids) ? event.metadata.template_ids : [];
+        for (const templateId of templateIds) {
+          templateUsage.set(templateId, (templateUsage.get(templateId) || 0) + 1);
+        }
+      }
+    }
+
+    // Convert to sorted array
+    const mostUsedTemplates = Array.from(templateUsage.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([template_id, count]) => ({ template_id, count }));
+
+    return {
+      property_id,
+      days,
+      total_requests: events.length,
+      unique_users: userIds.length,
+      templates_used: templateUsage.size,
+      most_used_templates
+    };
+  }
+
+  /**
+   * Get template effectiveness metrics
+   */
+  async templateEffectiveness(property_id: number, userId: string, template_id: number): Promise<TemplateEffectivenessSummary> {
+    if (!Number.isInteger(property_id)) {
+      throw new ValidationError('property_id is required');
+    }
+    if (!Number.isInteger(template_id)) {
+      throw new ValidationError('template_id is required');
+    }
+
+    // Verify property and template ownership
+    const property = await this.propertyRepository.findOne({
+      where: { id: property_id, user_id: userId }
+    });
+    if (!property) {
+      throw new AuthorizationError('Property not found or access denied');
+    }
+
+    const template = await this.templateRepository.findOne({
+      where: { id: template_id, user_id: userId }
+    });
+    if (!template) {
+      throw new AuthorizationError('Template not found or access denied');
+    }
+
+    // Get response events that used this template
+    const events = await this.eventRepository
+      .createQueryBuilder('e')
+      .where('e.property_id = :property_id', { property_id })
+      .andWhere('e.metadata->>\'template_ids\' LIKE :template_id', { template_id: `%${template_id}%` })
+      .getMany();
+
+    // Calculate average response length
+    const responseLengths = events
+      .map(e => e.response_text?.length || 0)
+      .filter(len => len > 0);
+
+    const avgLength = responseLengths.length > 0
+      ? responseLengths.reduce((a, b) => a + b, 0) / responseLengths.length
+      : 0;
+
+    return {
+      template_id,
+      usage_count: events.length,
+      avg_response_length: Math.round(avgLength),
+      property_id
+    };
+  }
+
+  /**
+   * Get shift note completion rates
+   */
+  async shiftNoteCompletion(property_id: number, userId: string, days = 30): Promise<ShiftNoteCompletionSummary> {
+    if (!Number.isInteger(property_id)) {
+      throw new ValidationError('property_id is required');
+    }
+    if (!Number.isInteger(days) || days < 1 || days > MAX_WINDOW_DAYS) {
+      throw new ValidationError('days must be between 1 and ' + MAX_WINDOW_DAYS);
+    }
+
+    // Verify property ownership
+    const property = await this.propertyRepository.findOne({
+      where: { id: property_id, user_id: userId }
+    });
+    if (!property) {
+      throw new AuthorizationError('Property not found or access denied');
+    }
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Get all shift notes for this property
+    const notes = await this.shiftNoteRepository
+      .createQueryBuilder('note')
+      .where('note.property_id = :property_id', { property_id })
+      .andWhere('note.created_at >= :since', { since })
+      .getMany();
+
+    // For now, assume all shift notes are "completed" if they have content
+    // In a more sophisticated system, we might have a status field
+    const completed_notes = notes.filter(note => note.content && note.content.trim().length > 0).length;
+
+    const completion_rate = notes.length > 0 ? (completed_notes / notes.length) * 100 : 0;
+
+    return {
+      property_id,
+      days,
+      total_notes: notes.length,
+      completed_notes,
+      completion_rate: Math.round(completion_rate * 100) / 100 // Round to 2 decimal places
+    };
+  }
+
+  /**
+   * Get escalation resolution time tracking
+   */
+  async escalationResolutionTimes(property_id: number, userId: string, days = 30): Promise<EscalationResolutionSummary> {
+    if (!Number.isInteger(property_id)) {
+      throw new ValidationError('property_id is required');
+    }
+    if (!Number.isInteger(days) || days < 1 || days > MAX_WINDOW_DAYS) {
+      throw new ValidationError('days must be between 1 and ' + MAX_WINDOW_DAYS);
+    }
+
+    // Verify property ownership
+    const property = await this.propertyRepository.findOne({
+      where: { id: property_id, user_id: userId }
+    });
+    if (!property) {
+      throw new AuthorizationError('Property not found or access denied');
+    }
+
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Get all escalations for this property
+    const escalations = await this.escalationRepository
+      .createQueryBuilder('e')
+      .where('e.property_id = :property_id', { property_id })
+      .andWhere('e.created_at >= :since', { since })
+      .getMany();
+
+    const resolved_escalations = escalations.filter(e => e.resolved_at !== null);
+    const resolution_times = resolved_escalations
+      .map(e => (e.resolved_at!.getTime() - e.created_at.getTime()) / 1000)
+      .filter(t => t >= 0);
+
+    const avg_resolution_time = resolution_times.length > 0
+      ? resolution_times.reduce((a, b) => a + b, 0) / resolution_times.length
+      : null;
+
+    const resolution_rate = escalations.length > 0 
+      ? (resolved_escalations.length / escalations.length) * 100 
+      : 0;
+
+    return {
+      property_id,
+      days,
+      total_escalations: escalations.length,
+      resolved_escalations: resolved_escalations.length,
+      avg_resolution_time_seconds: avg_resolution_time ? Math.round(avg_resolution_time) : null,
+      resolution_rate: Math.round(resolution_rate * 100) / 100 // Round to 2 decimal places
     };
   }
 }

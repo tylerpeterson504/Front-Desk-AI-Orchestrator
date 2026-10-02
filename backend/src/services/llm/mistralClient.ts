@@ -1,72 +1,98 @@
 // Mistral AI chat completions client.
 // Uses the OpenAI-compatible endpoint at api.mistral.ai - no SDK dependency needed.
+// Implements the LLMClient interface for multi-provider support.
 
 import { MistralError } from '../../lib/errors';
+import { BaseLLMClient } from './baseClient';
+import {
+  LLMOptions,
+  LLMResult,
+  LLMMessage,
+  LLMProvider,
+  PROVIDER_CONFIGS
+} from './types';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
-const MODEL_NAME = process.env.MISTRAL_MODEL || 'mistral-medium';
-const BASE_URL = process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai';
 
-export interface LLMOptions {
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  timeoutMs?: number;
+/**
+ * Mistral-specific LLM client
+ */
+export class MistralClient extends BaseLLMClient {
+  readonly provider: LLMProvider = 'mistral';
+
+  constructor() {
+    super(PROVIDER_CONFIGS.mistral);
+  }
+
+  protected getDefaultBaseUrl(): string {
+    return process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai';
+  }
+
+  async complete(messages: LLMMessage[], options: LLMOptions = {}): Promise<LLMResult> {
+    this.validateConfigured();
+    
+    if (!Array.isArray(messages) || messages.length === 0) {
+      throw new MistralError('Messages are required', 'INVALID_MESSAGES');
+    }
+
+    const mergedOptions = this.getMergedOptions(options);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), mergedOptions.timeoutMs);
+    
+    try {
+      const response = await fetch(`${this.buildUrl('/v1/chat/completions')}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          model: mergedOptions.model,
+          messages,
+          temperature: mergedOptions.temperature,
+          max_tokens: mergedOptions.maxTokens
+        }),
+        signal: controller.signal
+      });
+      
+      const payload = await this.handleResponse<{
+        model?: string;
+        choices?: Array<{ message?: { content?: string } }>;
+      }>(response, '/v1/chat/completions');
+      
+      const text = payload?.choices?.[0]?.message?.content;
+      if (!text || !String(text).trim()) {
+        throw new Error('Empty Mistral response');
+      }
+      
+      return {
+        text: String(text).trim(),
+        model: payload.model || mergedOptions.model,
+        provider: this.provider
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async listModels(): Promise<string[]> {
+    // Mistral doesn't have a standard models endpoint in their OpenAI-compatible API
+    // Return the configured model for now
+    return [this.config.model];
+  }
 }
 
-export interface LLMResult {
-  text: string;
-  model: string;
-}
+// Singleton instance
+const mistralClient = new MistralClient();
 
+// Legacy exports for backwards compatibility
 export function isConfigured(): boolean {
-  return Boolean(String(process.env.MISTRAL_API_KEY || '').trim());
+  return mistralClient.isConfigured();
 }
 
-export async function complete(messages: Array<{ role: string; content: string }>, options: LLMOptions = {}): Promise<LLMResult> {
-  if (!isConfigured()) {
-    throw new MistralError('Mistral is not configured', 'MISTRAL_NOT_CONFIGURED');
-  }
-  if (!Array.isArray(messages) || messages.length === 0) {
-    throw new MistralError('Messages are required', 'INVALID_MESSAGES');
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.timeoutMs || DEFAULT_TIMEOUT_MS);
-  try {
-    const response = await fetch(`${BASE_URL}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: options.model || MODEL_NAME,
-        messages,
-        temperature: options.temperature ?? 0.2,
-        max_tokens: options.maxTokens || 500
-      }),
-      signal: controller.signal
-    });
-    if (!response.ok) {
-      throw new MistralError(
-        `Mistral request failed with status ${response.status}`,
-        'MISTRAL_REQUEST_FAILED',
-        response.status
-      );
-    }
-    const payload = (await response.json()) as {
-      model?: string;
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = payload?.choices?.[0]?.message?.content;
-    if (!text || !String(text).trim()) {
-      throw new Error('Empty Mistral response');
-    }
-    return { text: String(text).trim(), model: payload.model || options.model || MODEL_NAME };
-  } finally {
-    clearTimeout(timeout);
-  }
+export async function complete(
+  messages: Array<{ role: string; content: string }>,
+  options: LLMOptions = {}
+): Promise<{ text: string; model: string }> {
+  const result = await mistralClient.complete(messages, options);
+  return { text: result.text, model: result.model };
 }
 
-export { MODEL_NAME };
+export { MistralClient, mistralClient };
