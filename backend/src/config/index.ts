@@ -36,6 +36,17 @@ const envSchema = z.object({
   GITHUB_REPOSITORY: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
   BCRYPT_ROUNDS: z.string().optional(),
+  // Security settings
+  CSRF_ENABLED: z.enum(['true', 'false']).default('true').optional(),
+  CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
+  CSRF_HEADER_NAME: z.string().default('x-csrf-token').optional(),
+  LOG_IP_ADDRESS: z.enum(['true', 'false']).default('true').optional(),
+  // Performance settings
+  COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30).optional(),
+  COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000).optional(),
+  // Database caching settings
+  CACHE_TTL_SECONDS: z.coerce.number().default(60).optional(),
+  CACHE_MAX_SIZE: z.coerce.number().default(1000).optional()
 });
 
 // Parse and validate

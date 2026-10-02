@@ -3,6 +3,7 @@ import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import logger from './lib/logger';
 import { requestId, notFound, errorHandler } from './middleware/errorHandler';
@@ -11,7 +12,10 @@ import { initializeDatabase } from './config/database';
 import { config } from './config';
 import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
-import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
+import { additionalSecurityHeaders, sanitizeInput, createCopilotRateLimiter } from './middleware/security';
+import csrfProtection from './middleware/csrf';
+import compressionMiddleware from './middleware/compression';
+import { requestIpLogger } from './middleware/requestIpLogger';
 
 // Load environment variables
 dotenv.config();
@@ -37,10 +41,14 @@ app.disable('x-powered-by');
 // Without this, express-rate-limit raises ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and
 // rate-limit keys resolve to the proxy instead of the client.
 app.set('trust proxy', 1);
+app.use(cookieParser());
+app.use(compressionMiddleware);
+app.use(requestIpLogger);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
 app.use(requestId);
 app.use(performanceMonitor());
+app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
@@ -57,7 +65,13 @@ if (!corsOrigins.length) {
 app.use(cors({
   origin: corsOrigins.length
     ? corsOrigins
-    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]
+    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
+  credentials: true,
+  maxAge: 86400, // 24 hours preflight cache
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
@@ -98,6 +112,10 @@ const refreshLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' }
 });
 
+// Copilot-specific rate limiter to prevent LLM cost exhaustion
+// LLM calls are expensive, so we use a stricter limit than the general API
+const copilotLimiter = createCopilotRateLimiter();
+
 // The dashboard shell is a single static file read from disk. Give it a high
 // ceiling so normal browser refreshes are unaffected while still putting a
 // bound on repeated filesystem hits from one client.
@@ -118,6 +136,7 @@ import propertiesRouter from './routes/properties';
 import templatesRouter from './routes/templates';
 import shiftNotesRouter from './routes/shiftNotes';
 import auditLogsRouter from './routes/auditLogs';
+import healthRouter from './routes/health';
 
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
@@ -128,12 +147,12 @@ app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
 app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
-app.use('/api/copilot', apiLimiter, copilotRouter);
+app.use('/api/copilot', copilotLimiter, apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
 
-// Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+// Health check routes
+app.use('/health', healthRouter);
 
 // Serve dashboard static files in production.
 // The SPA catch-all is registered BEFORE the notFound middleware so unknown

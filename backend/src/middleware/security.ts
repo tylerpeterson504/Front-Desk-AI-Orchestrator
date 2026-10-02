@@ -268,6 +268,28 @@ export function createSensitiveRateLimiter() {
 }
 
 /**
+ * Rate limiter specifically for copilot endpoints.
+ * LLM calls are expensive, so we use a stricter limit to prevent cost exhaustion.
+ * Configured via COPILOT_RATE_LIMIT_MAX and COPILOT_RATE_LIMIT_WINDOW_MS env vars.
+ */
+export function createCopilotRateLimiter(): ReturnType<typeof rateLimit> {
+  return rateLimit({
+    windowMs: parseInt(process.env.COPILOT_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes default
+    max: parseInt(process.env.COPILOT_RATE_LIMIT_MAX || '30', 10), // 30 requests default
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { 
+      error: 'Too many copilot requests, please try again later',
+      code: 'COPILOT_RATE_LIMIT_EXCEEDED'
+    },
+    skip: (req) => {
+      // Skip rate limiting for health checks
+      return req.path === '/health';
+    }
+  });
+}
+
+/**
  * Check for suspicious request patterns
  */
 export function detectSuspiciousRequests(req: Request, res: Response, next: NextFunction): void {

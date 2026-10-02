@@ -11,6 +11,10 @@
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
     "migrate": "node dist/db/migrate.js",
+    "migrate:up": "node dist/db/migrate.js",
+    "migrate:rollback": "node dist/db/migrate.js rollback",
+    "migrate:history": "node dist/db/migrate.js history",
+    "migrate:status": "node dist/db/migrate.js status",
     "seed": "node db/seed-runner.js",
     "db-setup": "node db/db-setup.js",
     "encrypt-wifi": "node db/encrypt-wifi.js",
@@ -26,6 +30,8 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -41,6 +47,8 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
@@ -57,4 +65,3 @@
     "typescript": "^5.3.3"
   }
 }
-
