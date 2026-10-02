@@ -37,7 +37,7 @@ scripts/     Repo maintenance scripts (corruption guard)
 ```bash
 npm run dev             # backend + dashboard
 npm run test             # all packages
-npm run lint:check       # eslint without fixing
+npm run lint             # eslint without fixing
 npm run typecheck        # tsc --noEmit across workspaces
 node scripts/check-source-corruption.mjs   # scan for corrupted source
 ```

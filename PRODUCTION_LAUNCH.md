@@ -6,6 +6,15 @@
 **Authorized By:** Tyler Peterson
 
 ---
+> **UPDATE (October 2, 2026):** This guide was last updated September 14, 2026 and predates
+> the Phase 1-4 improvement work (CSRF, compression, health checks, integrations, reporting,
+> accessibility, i18n). Environment variables added since then (e.g. SMTP/SendGrid, Slack,
+> webhook settings — see `backend/.env.example`) are not covered here. The codebase itself was
+> verified on October 2, 2026 (commit b0c3270): clean build, 20/20 test suites, 467/467 tests
+> passing. Treat the operational steps here as a baseline and cross-check against
+> DEPLOYMENT_PLAN.md for the Phase 4 rollout.
+
+---
 
 ## 📋 TABLE OF CONTENTS
 

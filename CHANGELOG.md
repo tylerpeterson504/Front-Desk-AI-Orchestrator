@@ -2,6 +2,40 @@
 
 Front Desk AI Orchestrator — notable changes by date, newest first.
 
+## 2026-10-02 — Phase 4 Verification: Build & Test Suite Repairs
+
+**The Phase 4 commit (2a9d662) did not compile and its test suite could not run. This entry records the verification and the fixes that made the build and tests genuinely pass.**
+
+### Verification Results (before fixes)
+- `tsc -p tsconfig.build.json`: failed with ~200 errors across 24 files (syntax errors in `accessibility.ts` and `swagger.ts` prevented compilation)
+- `jest`: 15 of 20 suites failed to run; only 34 tests passed
+- The earlier claims of "all code compiles", "230+ tests passing", and "9.5/10 production ready" were not verified at the time and were incorrect
+
+### Build Fixes (tsc now clean)
+- **accessibility.ts**: six `private static` class methods were declared at module top level (invalid syntax); converted to functions and fixed their `this.` call sites; removed a duplicate trailing export block
+- **swagger.ts**: unescaped backticks inside the OpenAPI description template literal terminated the string early
+- **Duplicate export blocks** removed from i18n, notificationService, reportService, and webhookService (conflicted with inline exports)
+- **conversationService**: `saveResponseEvent` wrote to a nonexistent `conversation_id` column; now writes `conversation_hash` (SHA-256 of the conversation ID), `first_seen_at`, and `replied_at` per the `ResponseEvent` entity
+- **reportService**: the template usage report queried a nonexistent `template_id` column; now aggregates from `metadata.template_ids`; shift note and escalation report mappings used nonexistent entity fields (`title`, `completed`, `description`) — remapped to real columns
+- **i18n**: the interpolation regex was malformed and threw on every translated string containing placeholders; translations cache moved to the service instance
+- **requireAuth / performance middleware**: side-effect imports of a `.d.ts` file were emitted as runtime `require()` calls and crash in the compiled output; removed (the ambient types are included via tsconfig)
+- **escalationService / analyticsService**: now import `getRepository` from `config/database` (codebase convention) instead of `typeorm` directly, matching every other service and making the repository mockable in tests
+- **emailService**: `sendTestEmail` now honors the `sendEmail` result instead of always reporting success; `getStatus` reflects current configuration rather than a stale cached check
+- **notificationService**: notification status was always `'failed'` (the success check scanned non-channel result fields); now evaluates channel results only
+- **webhookService**: `registerWebhook` defaults `events` to `['*']`; `listWebhooks` sorts deterministically when timestamps tie
+- **nodemailer** added to `backend/package.json` (imported by emailService but never installed)
+- Assorted type and nullability fixes in monitoring, validation, compression, migrate, templateService, propertyService, shiftNoteService, copilotService, and the LLM client/factory
+
+### Test Suite Fixes
+- Logger mock factories were missing `__esModule: true`, so default imports wrapped the mock in an extra `default` layer and every logger call threw
+- Fixed test-vs-implementation API mismatches, a temporal-dead-zone error, stale configuration caches, and mock leakage between tests across the Phase 4 test files
+- Removed a `calculateContrast` test block targeting a method `ReportService` never had (the function lives in the accessibility middleware, where it is tested)
+
+### Verified State (after fixes, commit b0c3270)
+- `tsc -p tsconfig.build.json`: clean (0 errors), emit build succeeds
+- `jest`: 20/20 suites, 467/467 tests pass
+- Known issue: the husky pre-commit hook calls a nonexistent root `lint:check` script and always fails; commits currently require `--no-verify`. The backend typecheck the hook runs (`npm run typecheck:backend`) passes.
+
 ## 2026-10-02 — Phase 4 Testing & Documentation Complete
 
 **All Phase 4 Tasks Completed with Comprehensive Test Coverage - 100% Implementation & Testing Coverage**

@@ -5,6 +5,12 @@
 **Version:** 1.0.0
 
 ---
+> **UPDATE (October 2, 2026, commit b0c3270):** This review is dated October 1, 2026 and
+> predates the Phase 4 work. Its "210+ tests" figure predates both Phase 4 and the Phase 4
+> verification. As of commit b0c3270 the verified state is: clean TypeScript build,
+> 20/20 test suites, 467/467 tests passing (see CHANGELOG.md, 2026-10-02 entry).
+
+---
 
 ## 📋 Table of Contents
 

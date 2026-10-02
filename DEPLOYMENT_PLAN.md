@@ -7,6 +7,15 @@
 **Last Updated:** October 2, 2026  
 
 ---
+> **VALIDATION STATUS UPDATE (October 2, 2026, commit b0c3270):** The "Security Review: Passed",
+> "Performance Testing: Passed", and "210+ tests" figures below were recorded without executing
+> the build or tests; at that time the code did not compile and the suite could not run.
+> The plan itself (canary -> staged -> full rollout) remains valid. The codebase has since been
+> repaired and verified: `tsc -p tsconfig.build.json` clean, `jest` 20/20 suites, 467/467 tests
+> passing (see CHANGELOG.md, 2026-10-02 entry). Re-run the validation gates in this plan against
+> commit b0c3270 or later before starting the canary.
+
+---
 
 ## 📊 Executive Summary
 
