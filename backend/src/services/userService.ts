@@ -113,14 +113,13 @@ export class UserService {
     }
     const propertyRepository = getRepository<Property>(Property);
     const property = await propertyRepository.findOne({
-      where: { id: propertyId } as never
+      where: { id: propertyId } as never,
     });
     if (!property) {
       return [];
     }
-    const callerAuthorized = caller.role === 'admin'
-      || property.user_id === callerId
-      || caller.property_id === propertyId;
+    const callerAuthorized =
+      caller.role === 'admin' || property.user_id === callerId || caller.property_id === propertyId;
     if (!callerAuthorized) {
       return [];
     }
@@ -132,7 +131,7 @@ export class UserService {
       result.push(owner);
     }
     const staff = await this.userRepository.find({
-      where: { property_id: propertyId }
+      where: { property_id: propertyId },
     });
     for (const u of staff) {
       if (!seen.has(u.id)) {
@@ -188,7 +187,6 @@ export class UserService {
     if (!user) {
       throw new NotFoundError('User', id);
     }
-
 
     user.role = role;
     await this.userRepository.save(user);

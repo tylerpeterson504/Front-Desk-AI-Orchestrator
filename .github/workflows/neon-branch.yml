@@ -15,6 +15,7 @@ concurrency:
 # not the GitHub token, so read access to the checkout is all any job needs.
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   NEON_BRANCH_NAME: preview-pr-${{ github.event.number }}
@@ -27,7 +28,7 @@ jobs:
       github.event.action == 'synchronize'
       || github.event.action == 'opened'
       || github.event.action == 'reopened')
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
       - name: Get branch expiration date as an env variable (2 weeks from now)
         id: get_expiration_date
@@ -39,30 +40,37 @@ jobs:
           echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
           echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
 
+      - name: Prune preview branches for closed PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: |
+          open_prs=" $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number --jq '[.[].number] | join(" ")') "
+          npm i -g neonctl@v6 >/dev/null 2>&1
+          # Skip branches younger than 30 minutes: a PR may have just closed
+          # and reopened (or another workflow may be mid-provision), making the
+          # open-PR snapshot stale. Young branches are left for a later run to
+          # reconsider, so a concurrent reopen never loses a live preview.
+          mapfile -t stale < <(neonctl branches list --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY" --output json \
+            | jq -r '.[] | select((.name // "") | startswith("preview-pr-")) | select((.created_at // 0) | fromdateiso8601 < (now - 1800)) | .name')
+          for name in "${stale[@]}"; do
+            n="${name#preview-pr-}"
+            if [[ "$open_prs" != *" $n "* ]]; then
+              echo "Deleting stale branch $name"
+              if ! neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"; then
+                echo "::warning::Failed to delete stale branch $name; a later run will retry"
+              fi
+            fi
+          done
+          if [[ "${{ github.event.action }}" == "synchronize" ]]; then
+            echo "Deleting current branch ${{ env.NEON_BRANCH_NAME }} so it is recreated fresh"
+            if ! neonctl branches delete "${{ env.NEON_BRANCH_NAME }}" --project-id "$NEON_PROJECT_ID" --api-key "$NEON_API_KEY"; then
+              echo "::warning::Failed to delete current branch ${{ env.NEON_BRANCH_NAME }}; create-branch step will attempt to reuse or recreate it"
+            fi
+          fi
       - name: Create or reuse Neon Branch
         id: create_neon_branch
-        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c
-        with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: ${{ env.NEON_BRANCH_NAME }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-          expires_at: ${{ env.EXPIRES_AT }}
-
-      # This Neon project defines multiple roles (neondb_owner, authenticator,
-      # anonymous, authenticated), which reset-branch-action cannot disambiguate
-      # and fails on. To guarantee fresh parent data on synchronize, delete the
-      # stale branch and recreate it from the parent instead of resetting it.
-      - name: Delete stale branch on synchronize
-        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
-        id: delete_neon_branch
-        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776
-        with:
-          project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: ${{ env.NEON_BRANCH_NAME }}
-          api_key: ${{ secrets.NEON_API_KEY }}
-      - name: Recreate branch from parent on synchronize
-        if: github.event.action == 'synchronize' && steps.create_neon_branch.outputs.created != 'true'
-        id: recreate_neon_branch
         uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
@@ -79,21 +87,21 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Run Migrations
         working-directory: backend
-        run: npm ci && npm run migrate
+        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
-          DATABASE_URL: "${{ steps.recreate_neon_branch.outputs.db_url || steps.create_neon_branch.outputs.db_url }}"
-          JWT_SECRET: ci-only-secret-not-for-production
-
+          DATABASE_URL: '${{ steps.create_neon_branch.outputs.db_url }}'
+          # config validation requires JWT_SECRET even for migrations
+          JWT_SECRET: 'ci-migrations-placeholder-secret-32chars!!'
 
   delete_neon_branch:
     name: Delete Neon Branch
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
       - name: Delete Neon Branch
         uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776

@@ -2,19 +2,23 @@
   "name": "front-desk-ai-backend",
   "version": "1.0.0",
   "description": "Backend API for Front Desk AI Orchestrator",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
-    "migrate": "ts-node db/migrate.ts",
-    "seed": "ts-node db/seed-runner.ts",
-    "db-setup": "ts-node db/db-setup.ts",
-    "encrypt-wifi": "ts-node db/encrypt-wifi.ts",
-    "set-role": "ts-node db/set-role.ts",
+    "migrate": "node dist/db/migrate.js",
+    "migrate:up": "node dist/db/migrate.js",
+    "migrate:rollback": "node dist/db/migrate.js rollback",
+    "migrate:history": "node dist/db/migrate.js history",
+    "migrate:status": "node dist/db/migrate.js status",
+    "seed": "node db/seed-runner.js",
+    "db-setup": "node db/db-setup.js",
+    "encrypt-wifi": "node db/encrypt-wifi.js",
+    "set-role": "node db/set-role.js",
     "prune-sessions": "node db/prune-sessions.js",
     "test": "jest --runInBand --forceExit",
     "test:api": "jest tests/api.test.ts",
@@ -25,15 +29,24 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.2",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "bcrypt": "^6.0.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.13",
+    "pg": "^8.23.0",
     "pg-promise": "^11.9.1",
     "reflect-metadata": "^0.2.2",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.20",
     "uuid": "^9.0.1",
     "winston": "^3.13.1",
@@ -41,6 +54,8 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
@@ -57,4 +72,3 @@
     "typescript": "^5.3.3"
   }
 }
-

@@ -19,6 +19,7 @@ permissions:
 jobs:
   test:
     name: Test
+    # Service containers (postgres) require GitHub-hosted Linux runners
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -50,7 +51,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          HUSKY: "0"
+          HUSKY: '0'
         run: |
           npm ci --no-audit --no-fund --ignore-scripts
           cd backend && npm ci --no-audit --no-fund --ignore-scripts
@@ -83,7 +84,7 @@ jobs:
           MISTRAL_API_KEY: ci-dummy-key-not-used-by-tests
           DATABASE_URL: postgres://ci:ci@localhost:5432/ci
           NODE_ENV: test
-          CI: "true"
+          CI: 'true'
 
       - name: Test dashboard
         run: npm run test:dashboard
@@ -93,7 +94,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     needs: test
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -109,7 +110,7 @@ jobs:
 
       - name: Install dependencies
         env:
-          HUSKY: "0"
+          HUSKY: '0'
         run: |
           npm ci --no-audit --no-fund --ignore-scripts
           cd backend && npm ci --no-audit --no-fund --ignore-scripts
@@ -123,4 +124,3 @@ jobs:
         run: npm run build:dashboard
         env:
           CI: true
-          NODE_ENV: production

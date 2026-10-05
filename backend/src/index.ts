@@ -3,6 +3,7 @@ import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import logger from './lib/logger';
 import { requestId, notFound, errorHandler } from './middleware/errorHandler';
@@ -11,20 +12,30 @@ import { initializeDatabase } from './config/database';
 import { config } from './config';
 import { responseCache } from './middleware/cache';
 import { performanceMonitor } from './middleware/performance';
-import { additionalSecurityHeaders, sanitizeInput } from './middleware/security';
+import {
+  additionalSecurityHeaders,
+  sanitizeInput,
+  createCopilotRateLimiter,
+} from './middleware/security';
+import csrfProtection from './middleware/csrf';
+import compressionMiddleware from './middleware/compression';
+import { requestIpLogger } from './middleware/requestIpLogger';
+import {
+  monitoringMiddleware,
+  tracingMiddleware,
+  structuredLoggingMiddleware,
+  prometheusMetricsHandler,
+} from './middleware/monitoring';
+import { setupSwagger } from './config/swagger';
 
 // Load environment variables
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '../../.env.local') });
 
 // Validate required environment variables
-const requiredEnvVars = [
-  'MISTRAL_API_KEY',
-  'JWT_SECRET',
-  'DATABASE_URL'
-];
+const requiredEnvVars = ['MISTRAL_API_KEY', 'JWT_SECRET', 'DATABASE_URL'];
 
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 if (missingEnvVars.length > 0) {
   logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
   process.exit(1);
@@ -37,14 +48,23 @@ app.disable('x-powered-by');
 // Without this, express-rate-limit raises ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and
 // rate-limit keys resolve to the proxy instead of the client.
 app.set('trust proxy', 1);
+app.use(cookieParser());
+app.use(compressionMiddleware);
+app.use(requestIpLogger);
+app.use(tracingMiddleware);
+app.use(structuredLoggingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
 app.use(requestId);
 app.use(performanceMonitor());
+app.use(monitoringMiddleware);
+app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
-  ? config.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  ? config.CORS_ORIGIN.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
   : [];
 
 if (!corsOrigins.length) {
@@ -54,11 +74,25 @@ if (!corsOrigins.length) {
   logger.warn('CORS_ORIGIN is not set; allowing localhost origins for development only');
 }
 
-app.use(cors({
-  origin: corsOrigins.length
-    ? corsOrigins
-    : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//]
-}));
+app.use(
+  cors({
+    credentials: true,
+    origin: corsOrigins.length
+      ? corsOrigins
+      : [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/, /^chrome-extension:\/\//],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Request-ID',
+      'X-CSRF-Token',
+      'x-refresh-token-transport',
+    ],
+    maxAge: 86400, // 24 hours preflight cache
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
 app.use(express.json({ limit: '256kb' }));
 app.use(sanitizeInput);
 
@@ -71,7 +105,7 @@ const apiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Rate limit credential-guessing endpoints to mitigate brute-force attacks.
@@ -85,7 +119,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout'
+  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -95,8 +129,12 @@ const refreshLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
+
+// Copilot-specific rate limiter to prevent LLM cost exhaustion
+// LLM calls are expensive, so we use a stricter limit than the general API
+const copilotLimiter = createCopilotRateLimiter();
 
 // The dashboard shell is a single static file read from disk. Give it a high
 // ceiling so normal browser refreshes are unaffected while still putting a
@@ -106,7 +144,7 @@ const appShellLimiter = rateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 // Database is initialized only when the server starts (see isMainModule below),
@@ -118,6 +156,7 @@ import propertiesRouter from './routes/properties';
 import templatesRouter from './routes/templates';
 import shiftNotesRouter from './routes/shiftNotes';
 import auditLogsRouter from './routes/auditLogs';
+import healthRouter from './routes/health';
 
 import copilotRouter from './routes/copilot';
 import databricksRouter from './routes/databricks';
@@ -130,14 +169,20 @@ app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
 app.use('/api/audit-logs', apiLimiter, auditLogsRouter);
-app.use('/api/copilot', apiLimiter, copilotRouter);
+app.use('/api/copilot', copilotLimiter, apiLimiter, copilotRouter);
 app.use('/api/databricks', apiLimiter, databricksRouter);
 app.use('/api/github', apiLimiter, githubRouter);
 app.use('/api/analytics', apiLimiter, analyticsRouter);
 app.use('/api/escalations', apiLimiter, escalationsRouter);
 
-// Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+// Health check routes
+app.use('/health', healthRouter);
+
+// Prometheus metrics endpoint
+app.get('/metrics', prometheusMetricsHandler);
+
+// Setup Swagger API documentation
+setupSwagger(app);
 
 // Serve dashboard static files in production.
 // The SPA catch-all is registered BEFORE the notFound middleware so unknown
@@ -169,7 +214,7 @@ if (isMainModule) {
         logger.info('backend started', {
           port: PORT,
           env: config.NODE_ENV || 'development',
-          registration_mode: getMode()
+          registration_mode: getMode(),
         });
       });
     })

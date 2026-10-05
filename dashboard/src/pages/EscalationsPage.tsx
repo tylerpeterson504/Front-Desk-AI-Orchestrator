@@ -15,13 +15,13 @@ const PRIORITY_BADGE: Record<string, string> = {
   low: 'bg-gray-100 text-gray-700',
   normal: 'bg-blue-100 text-blue-700',
   high: 'bg-orange-100 text-orange-700',
-  urgent: 'bg-red-100 text-red-700'
+  urgent: 'bg-red-100 text-red-700',
 };
 
 const STATUS_BADGE: Record<string, string> = {
   open: 'bg-yellow-100 text-yellow-800',
   assigned: 'bg-blue-100 text-blue-800',
-  resolved: 'bg-green-100 text-green-800'
+  resolved: 'bg-green-100 text-green-800',
 };
 
 export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = false }) => {
@@ -29,16 +29,19 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [users, setUsers] = React.useState<User[]>([]);
   const [assignOptions, setAssignOptions] = React.useState<Record<number, User[]>>({});
-  const ensureAssignOptions = React.useCallback(async (propertyId: number) => {
-    if (assignOptions[propertyId]) return;
-    try {
-      const opts = await userAPI.listForProperty(propertyId);
-      setAssignOptions((prev) => ({ ...prev, [propertyId]: opts }));
-      setError((current) => (current === 'Failed to load assignment options' ? '' : current));
-    } catch {
-      setError('Failed to load assignment options');
-    }
-  }, [assignOptions]);
+  const ensureAssignOptions = React.useCallback(
+    async (propertyId: number) => {
+      if (assignOptions[propertyId]) return;
+      try {
+        const opts = await userAPI.listForProperty(propertyId);
+        setAssignOptions((prev) => ({ ...prev, [propertyId]: opts }));
+        setError((current) => (current === 'Failed to load assignment options' ? '' : current));
+      } catch {
+        setError('Failed to load assignment options');
+      }
+    },
+    [assignOptions]
+  );
   const [statusFilter, setStatusFilter] = React.useState<(typeof STATUS_FILTERS)[number]>('all');
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -59,7 +62,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
       const [escRes, propsRes, usersRes] = await Promise.all([
         escalationAPI.getAll(statusFilter === 'all' ? undefined : statusFilter),
         propertyAPI.getAll(),
-        userAPI.list().catch(() => [] as User[])
+        userAPI.list().catch(() => [] as User[]),
       ]);
       setEscalations(escRes);
       setProperties(propsRes);
@@ -94,7 +97,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
         reason: reason.trim(),
         priority,
         guest_name: guestName.trim() || undefined,
-        room_number: roomNumber.trim() || undefined
+        room_number: roomNumber.trim() || undefined,
       });
       setReason('');
       setGuestName('');
@@ -152,7 +155,8 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
         <div className="p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Escalations</h1>
           <p className="text-gray-500 mb-6">
-            Flag guest issues that need follow-up, assign them to another agent, and track them to resolution.
+            Flag guest issues that need follow-up, assign them to another agent, and track them to
+            resolution.
           </p>
 
           {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -163,9 +167,11 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={statusFilter === s
-                  ? 'px-4 py-2 rounded-lg bg-blue-600 text-white capitalize'
-                  : 'px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 capitalize hover:bg-gray-50'}
+                className={
+                  statusFilter === s
+                    ? 'px-4 py-2 rounded-lg bg-blue-600 text-white capitalize'
+                    : 'px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 capitalize hover:bg-gray-50'
+                }
               >
                 {s}
               </button>
@@ -185,7 +191,9 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                 >
                   {properties.length === 0 && <option value="">No properties</option>}
                   {properties.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -228,7 +236,9 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                   className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -243,20 +253,43 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
           </form>
 
           {escalations.length === 0 ? (
-            <p className="text-gray-500">No escalations {statusFilter !== 'all' ? 'with status "' + statusFilter + '"' : ''}.</p>
+            <p className="text-gray-500">
+              No escalations {statusFilter !== 'all' ? 'with status "' + statusFilter + '"' : ''}.
+            </p>
           ) : (
             <ul className="space-y-3">
               {escalations.map((esc) => (
-                <li key={esc.id} className="bg-white p-5 rounded-lg shadow flex items-start justify-between gap-4">
+                <li
+                  key={esc.id}
+                  className="bg-white p-5 rounded-lg shadow flex items-start justify-between gap-4"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' + (STATUS_BADGE[esc.status] || '')}>{esc.status}</span>
-                      <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' + (PRIORITY_BADGE[esc.priority] || '')}>{esc.priority}</span>
+                      <span
+                        className={
+                          'px-2 py-0.5 rounded-full text-xs font-medium ' +
+                          (STATUS_BADGE[esc.status] || '')
+                        }
+                      >
+                        {esc.status}
+                      </span>
+                      <span
+                        className={
+                          'px-2 py-0.5 rounded-full text-xs font-medium ' +
+                          (PRIORITY_BADGE[esc.priority] || '')
+                        }
+                      >
+                        {esc.priority}
+                      </span>
                       <span className="text-xs text-gray-400">{propertyName(esc.property_id)}</span>
                     </div>
                     <p className="text-gray-800 break-words">{esc.reason}</p>
                     <p className="text-sm text-gray-500 mt-1">
-                      {esc.guest_name ? esc.guest_name + (esc.room_number ? ' · Room ' + esc.room_number : '') : esc.room_number ? 'Room ' + esc.room_number : ''}
+                      {esc.guest_name
+                        ? esc.guest_name + (esc.room_number ? ' · Room ' + esc.room_number : '')
+                        : esc.room_number
+                          ? 'Room ' + esc.room_number
+                          : ''}
                       {esc.assigned_to ? ' · assigned to ' + userName(esc.assigned_to) : ''}
                       {' · ' + new Date(esc.created_at).toLocaleString()}
                     </p>
@@ -264,14 +297,18 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                   <div className="flex flex-col gap-2 flex-shrink-0">
                     {esc.status !== 'resolved' ? (
                       <button
-                        onClick={() => handleUpdate(esc.id, { status: 'resolved' } as Partial<Escalation>)}
+                        onClick={() =>
+                          handleUpdate(esc.id, { status: 'resolved' } as Partial<Escalation>)
+                        }
                         className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                       >
                         Resolve
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleUpdate(esc.id, { status: 'open' } as Partial<Escalation>)}
+                        onClick={() =>
+                          handleUpdate(esc.id, { status: 'open' } as Partial<Escalation>)
+                        }
                         className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
                       >
                         Reopen
@@ -280,15 +317,19 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
                     {esc.status !== 'resolved' && (
                       <div className="flex gap-1">
                         <select
-                           aria-label={'Assign escalation ' + esc.id}
+                          aria-label={'Assign escalation ' + esc.id}
                           value={assignTo[esc.id] || ''}
                           onFocus={() => ensureAssignOptions(esc.property_id)}
-                           onChange={(e) => setAssignTo((prev) => ({ ...prev, [esc.id]: e.target.value }))}
-                           className="w-36 px-2 py-1 border border-gray-300 rounded text-xs bg-white"
+                          onChange={(e) =>
+                            setAssignTo((prev) => ({ ...prev, [esc.id]: e.target.value }))
+                          }
+                          className="w-36 px-2 py-1 border border-gray-300 rounded text-xs bg-white"
                         >
                           <option value="">Assign to…</option>
                           {(assignOptions[esc.property_id] || []).map((u) => (
-                            <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                            <option key={u.id} value={u.id}>
+                              {u.name || u.email}
+                            </option>
                           ))}
                         </select>
                         <button

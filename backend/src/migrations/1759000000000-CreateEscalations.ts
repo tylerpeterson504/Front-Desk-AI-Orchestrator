@@ -35,19 +35,31 @@ export class CreateEscalations1759000000000 implements MigrationInterface {
         `SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_escalations_creator') AS constraint_exists`
       );
       if (!constraint_exists) {
-        await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT fk_escalations_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE`);
+        await queryRunner.query(
+          `ALTER TABLE escalations ADD CONSTRAINT fk_escalations_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE`
+        );
       }
       const [{ assignee_constraint_exists }] = await queryRunner.query(
         `SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_escalations_assignee') AS assignee_constraint_exists`
       );
       if (!assignee_constraint_exists) {
-        await queryRunner.query(`ALTER TABLE escalations ADD CONSTRAINT fk_escalations_assignee FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL`);
+        await queryRunner.query(
+          `ALTER TABLE escalations ADD CONSTRAINT fk_escalations_assignee FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL`
+        );
       }
     }
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_property_id ON escalations(property_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_created_by ON escalations(created_by)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_assigned_to ON escalations(assigned_to)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_escalations_status ON escalations(status)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_escalations_property_id ON escalations(property_id)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_escalations_created_by ON escalations(created_by)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_escalations_assigned_to ON escalations(assigned_to)`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_escalations_status ON escalations(status)`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

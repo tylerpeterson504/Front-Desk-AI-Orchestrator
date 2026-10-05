@@ -22,6 +22,12 @@ export class ResponseEvent {
   @Column({ type: 'timestamptz', nullable: true })
   replied_at: Date | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, unknown> | null;
+
+  @Column({ type: 'text', nullable: true })
+  response_text: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

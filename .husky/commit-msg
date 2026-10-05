@@ -9,8 +9,9 @@
 commit_msg="$1"
 pattern="^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|security)(\([a-z-]+)?\): .+$"
 
-if ! echo "$commit_msg" | grep -Eq "$pattern"; then
-  echo "❌ Invalid commit message format."
+first_line=$(head -n 1 "$commit_msg")
+if ! echo "$first_line" | grep -Eq "$pattern"; then
+  echo "Invalid commit message format."
   echo "Expected format: <type>(<scope>): <subject>"
   echo "Example: feat(backend): add user authentication"
   echo "Types: feat, fix, docs, style, refactor, perf, test, chore, build, ci, security"

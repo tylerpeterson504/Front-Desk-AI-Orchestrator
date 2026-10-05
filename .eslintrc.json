@@ -20,12 +20,7 @@
       "jsx": true
     }
   },
-  "plugins": [
-    "@typescript-eslint",
-    "react",
-    "react-hooks",
-    "prettier"
-  ],
+  "plugins": ["@typescript-eslint", "react", "react-hooks", "prettier"],
   "settings": {
     "react": {
       "version": "detect"
@@ -60,13 +55,7 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.test.ts",
-        "**/*.test.tsx",
-        "**/*.spec.ts",
-        "**/*.test.js",
-        "**/*.spec.js"
-      ],
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.test.js", "**/*.spec.js"],
       "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-floating-promises": "off",
@@ -98,11 +87,7 @@
       }
     },
     {
-      "files": [
-        "**/tests/**/*.js",
-        "**/tests/**/*.ts",
-        "**/tests/**/*.tsx"
-      ],
+      "files": ["**/tests/**/*.js", "**/tests/**/*.ts", "**/tests/**/*.tsx"],
       "rules": {
         "no-undef": "off",
         "no-empty": "off",
@@ -131,30 +116,33 @@
       }
     },
     {
-      "files": [
-        "**/backend/**/*.ts"
-      ],
+      "files": ["**/backend/**/*.ts"],
       "rules": {
         "@typescript-eslint/no-var-requires": "off"
       }
     },
     {
-      "files": [
-        "**/backend/**/*.js"
-      ],
+      "files": ["**/backend/**/*.js"],
       "rules": {
         "@typescript-eslint/no-var-requires": "off",
         "@typescript-eslint/no-require-imports": "off"
       }
     },
     {
-      "files": [
-        "vite.config.ts",
-        "vite.config.js"
-      ],
+      "files": ["vite.config.ts", "vite.config.js"],
       "rules": {
         "@typescript-eslint/no-var-requires": "off",
         "@typescript-eslint/no-require-imports": "off"
+      }
+    },
+    {
+      "files": ["extension/src/**/*.js", "extension/src/**/*.ts"],
+      "env": {
+        "browser": true,
+        "webextensions": true
+      },
+      "globals": {
+        "chrome": "readonly"
       }
     }
   ],

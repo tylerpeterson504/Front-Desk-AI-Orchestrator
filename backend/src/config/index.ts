@@ -20,7 +20,10 @@ const envSchema = z.object({
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
-  WIFI_ENCRYPTION_KEY: z.string().min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters').optional(),
+  WIFI_ENCRYPTION_KEY: z
+    .string()
+    .min(32, 'WIFI_ENCRYPTION_KEY must be at least 32 characters')
+    .optional(),
   REGISTRATION_MODE: z.enum(['open', 'invite', 'closed']).default('invite'),
   REGISTRATION_INVITE_TOKEN: z.string().optional(),
   MISTRAL_API_KEY: z.string().optional(),
@@ -34,6 +37,39 @@ const envSchema = z.object({
   GITHUB_REPOSITORY: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
   BCRYPT_ROUNDS: z.string().optional(),
+  // Email settings
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587).optional(),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false').optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM_EMAIL: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().optional(),
+  REPLY_TO_EMAIL: z.string().optional(),
+  // Slack settings
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_DEFAULT_CHANNEL: z.string().optional(),
+  SLACK_ESCALATION_CHANNEL: z.string().optional(),
+  SLACK_ERROR_CHANNEL: z.string().optional(),
+  SLACK_SHIFT_CHANNEL: z.string().optional(),
+  SLACK_SIGNING_SECRET: z.string().optional(),
+  // Webhook settings
+  WEBHOOK_URLS: z.string().optional(),
+  // i18n settings
+  SUPPORTED_LANGUAGES: z.string().optional(),
+  DEFAULT_LANGUAGE: z.string().default('en').optional(),
+  // Security settings
+  CSRF_ENABLED: z.enum(['true', 'false']).default('true').optional(),
+  CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
+  CSRF_HEADER_NAME: z.string().default('x-csrf-token').optional(),
+  LOG_IP_ADDRESS: z.enum(['true', 'false']).default('true').optional(),
+  // Performance settings
+  COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30).optional(),
+  COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000).optional(),
+  // Database caching settings
+  CACHE_TTL_SECONDS: z.coerce.number().default(60).optional(),
+  CACHE_MAX_SIZE: z.coerce.number().default(1000).optional(),
 });
 
 // Parse and validate
@@ -75,4 +111,14 @@ export const getCorsOrigins = () => {
   return config.CORS_ORIGIN.split(',')
     .map((o: string) => o.trim())
     .filter(Boolean);
+};
+
+// Exact origins trusted for cookie-based credential flows (refresh/logout).
+// Regex and wildcard CORS entries are deliberately excluded: cookies with
+// SameSite=None are sent from any origin the browser allows, so the server
+// must independently verify the request origin before honoring them.
+export const getCookieTrustedOrigins = (): string[] => {
+  return getCorsOrigins().filter(
+    (origin): origin is string => typeof origin === 'string' && !origin.includes('*')
+  );
 };

@@ -7,11 +7,9 @@ export interface AuthUser {
   role: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: AuthUser;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    auth?: AuthUser;
   }
 }
 
@@ -29,13 +27,13 @@ function unauthorized(res: Response, requestId: unknown): Response {
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    unauthorized(res, (req as any).requestId);
+    unauthorized(res, req.requestId);
     return;
   }
 
   const token = authHeader.substring(7);
   if (!token) {
-    unauthorized(res, (req as any).requestId);
+    unauthorized(res, req.requestId);
     return;
   }
 
@@ -57,7 +55,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     res.status(403).json({
       error: 'Admin access required',
       code: 'AUTHORIZATION_ERROR',
-      requestId: (req as any).requestId
+      requestId: req.requestId
     });
     return;
   }

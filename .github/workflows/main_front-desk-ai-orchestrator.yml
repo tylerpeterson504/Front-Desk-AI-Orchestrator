@@ -1,5 +1,12 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
+#
+# Assembles a deploy package for the Azure Web App:
+#   /package.json        (backend manifest; Azure runs `npm install` + `npm start`)
+#   /dist/               (compiled backend: dist/src/index.js entry point)
+#   /dashboard/build/    (dashboard static build, served by the backend)
+# The backend runs TypeORM migrations automatically at boot (migrationsRun).
+# Tests are gated by the CI workflow on the same push; this pipeline only builds.
 
 name: Build and deploy Node.js app to Azure Web App - Front-Desk-AI-Orchestrator
 
@@ -8,6 +15,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+
+concurrency:
+  group: azure-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -22,18 +33,37 @@ jobs:
         uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610
         with:
           node-version: '24.x'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            dashboard/package-lock.json
 
-      - name: npm install, build, and test
+      - name: Install and build backend
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          cd backend
+          npm ci --no-audit --no-fund --ignore-scripts
+          npm run build
+
+      - name: Install and build dashboard
+        run: |
+          cd dashboard
+          npm ci --no-audit --no-fund --ignore-scripts
+          npm run build
+
+      - name: Assemble deploy package
+        run: |
+          mkdir -p deploy-package/dashboard
+          cp -r backend/dist deploy-package/dist
+          cp backend/package.json deploy-package/package.json
+          cp backend/package-lock.json deploy-package/package-lock.json
+          cp -r dashboard/dist deploy-package/dashboard/build
+          ls -R deploy-package | head -40
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: node-app
-          path: .
+          path: deploy-package
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,7 +77,7 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: node-app
-      
+
       - name: Login to Azure
         uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
         with:
@@ -62,4 +92,3 @@ jobs:
           app-name: 'Front-Desk-AI-Orchestrator'
           slot-name: 'Production'
           package: .
-          

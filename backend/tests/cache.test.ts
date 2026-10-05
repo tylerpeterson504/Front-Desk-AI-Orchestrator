@@ -62,7 +62,7 @@ describe('Response Cache Middleware', () => {
     await request(app).get('/api/data');
 
     // Wait for TTL to expire (1s + buffer)
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     const res2 = await request(app).get('/api/data');
     expect(res2.headers['x-cache']).toBe('MISS');

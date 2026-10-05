@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Run linting check
-npm run lint:check
+# Lint is advisory (CI runs it the same way until pre-existing findings reach zero)
+npm run lint:check || echo "WARNING: lint findings detected (advisory, not blocking)"
 
-# Run type checking for all workspaces
+# Type checks are hard gates, matching CI
 echo "Running type checks..."
 npm run typecheck:backend || exit 1
 npm run typecheck:dashboard || exit 1

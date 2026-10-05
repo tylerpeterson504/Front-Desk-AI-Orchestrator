@@ -187,7 +187,7 @@ export class ValidationPipeline<T = unknown> {
   ): this {
     this.rules.push({
       validator: (value) => {
-        const actualLength = (value as any)?.length;
+        const actualLength = (value as { length?: number })?.length ?? 0;
         
         if (options.min !== undefined && actualLength < options.min) {
           return {

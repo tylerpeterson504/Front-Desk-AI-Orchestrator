@@ -88,7 +88,7 @@ export function createResponseBuilder(requestId: string) {
 
 // Middleware to add response builder to request
 export function responseBuilder(req: Request, res: Response, next: NextFunction) {
-  (res as any).locals = (res as any).locals || {};
-  (res as any).locals.response = createResponseBuilder(req.requestId || 'unknown');
+  res.locals = res.locals || {};
+  res.locals.response = createResponseBuilder(req.requestId || 'unknown');
   next();
 }

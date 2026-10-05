@@ -4,7 +4,9 @@ import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
 import { AppError, ValidationError, AuthorizationError } from '../lib/errors';
 import logger from '../lib/logger';
-import * as mistral from './llm/mistralClient';
+import { llmProviderFactory, LLMMessage, LLMResult } from './llm/providerFactory';
+import { conversationService } from './conversationService';
+import { Conversation, ConversationMessage } from './conversationService';
 
 // Fence markers the model is told to treat as data boundaries. Any occurrence
 // inside untrusted text is neutralised so a guest cannot close the fence early
@@ -56,15 +58,18 @@ interface DraftRequest {
   template_ids?: number[];
   guest_info?: GuestInfo;
   chat_context?: ChatContext;
+  conversation_id?: string;
 }
 
 interface DraftResponse {
   draft: string;
   meta: {
     provider: string;
+    model?: string;
     template_count: number;
     property?: { id: number; name: string };
     tone: string;
+    conversation_id?: string;
   };
 }
 
@@ -119,7 +124,7 @@ export class CopilotService {
   }
 
   async draft(request: DraftRequest, userId: string): Promise<DraftResponse> {
-    const { property_id, tone, template_ids } = request;
+    const { property_id, tone, template_ids, conversation_id } = request;
 
     const toneSafe = tone === 'friendly' ? 'friendly' : 'professional';
     const guestInfo = this.sanitizeGuestInfo(request.guest_info);
@@ -149,31 +154,133 @@ export class CopilotService {
       });
     }
 
+    // Handle conversation context
+    let conversation: Conversation | null = null;
+    let messages: LLMMessage[] = [
+      { role: 'system', content: SYSTEM_PROMPT }
+    ];
+
+    if (conversation_id) {
+      // Get existing conversation
+      conversation = await conversationService.getConversation(conversation_id);
+      
+      if (conversation) {
+        // Add conversation history to context
+        const history = await conversationService.getConversationContext(conversation_id, 15);
+        messages.push(...history);
+      } else {
+        // Create new conversation if it doesn't exist
+        conversation = await conversationService.createConversation(
+          userId, 
+          property_id,
+          { tone: toneSafe, ...guestInfo }
+        );
+      }
+    } else if (chatContext && chatContext.messages && chatContext.messages.length > 0) {
+      // Create conversation from chat context
+      conversation = await conversationService.createConversation(
+        userId, 
+        property_id,
+        { tone: toneSafe, ...guestInfo }
+      );
+      
+      // Add chat context messages
+      for (const msg of chatContext.messages) {
+        await conversationService.addMessage(conversation.id, {
+          role: msg.sender === 'Guest' ? 'user' : 'assistant',
+          content: msg.text
+        });
+      }
+      
+      // Get the conversation messages for LLM
+      const history = await conversationService.getConversationContext(conversation.id, 15);
+      messages.push(...history);
+    } else {
+      // Create new conversation for this request
+      conversation = await conversationService.createConversation(
+        userId, 
+        property_id,
+        { tone: toneSafe, ...guestInfo }
+      );
+    }
+
     // Build prompt for LLM
     const prompt = this.buildPrompt({ property, guestInfo, chatContext, templates, tone: toneSafe });
 
-    // Provider chain: Mistral only.
-    let result: { text: string; provider: string };
+    // Add user message to conversation and to LLM prompt
+    const userMessageContent = prompt;
+    const userMessage: LLMMessage = { role: 'user', content: userMessageContent };
+    messages.push(userMessage);
 
-    if (mistral.isConfigured()) {
-      const llmResult = await mistral.complete([
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ]);
-      result = { text: llmResult.text, provider: 'mistral' };
-    } else {
-      const err = new Error('Mistral is not configured (MISTRAL_API_KEY missing)');
-      (err as { code?: string }).code = 'MISTRAL_NOT_CONFIGURED';
+    // Add user message to conversation
+    if (conversation) {
+      await conversationService.addMessage(conversation.id, {
+        role: 'user',
+        content: userMessageContent,
+        metadata: {
+          length: userMessageContent.length,
+          template_ids: ids, // Track which templates are being used
+          template_count: templates.length
+        }
+      });
+    }
+
+    // Get LLM client with fallback support
+    if (!llmProviderFactory.hasAnyConfigured()) {
+      const err = new Error('No LLM providers configured');
+      (err as { code?: string }).code = 'LLM_NOT_CONFIGURED';
       throw err;
     }
 
+    const llmClient = llmProviderFactory.getClientWithFallback();
+    let llmResult: LLMResult;
+
+    try {
+      llmResult = await llmClient.complete(messages);
+    } catch (error) {
+      logger.error('LLM completion failed, falling back to placeholder', { 
+        error: error,
+        provider: llmClient.provider 
+      });
+      // Fallback to placeholder generation
+      const placeholderText = this.generatePlaceholderDraft(
+        property, templates, guestInfo, chatContext, toneSafe
+      );
+      return {
+        draft: placeholderText,
+        meta: {
+          provider: 'fallback',
+          template_count: templates.length,
+          property: property ? { id: property.id, name: property.name } : undefined,
+          tone: toneSafe,
+          conversation_id: conversation?.id
+        }
+      };
+    }
+
+    // Add assistant response to conversation with template tracking for analytics
+    if (conversation) {
+      await conversationService.addMessage(conversation.id, {
+        role: 'assistant',
+        content: llmResult.text,
+        metadata: {
+          length: llmResult.text.length,
+          template_ids: ids, // Pass template IDs for analytics tracking
+          provider: llmResult.provider,
+          model: llmResult.model
+        }
+      });
+    }
+
     return {
-      draft: result.text,
+      draft: llmResult.text,
       meta: {
-        provider: result.provider,
+        provider: llmResult.provider,
+        model: llmResult.model,
         template_count: templates.length,
         property: property ? { id: property.id, name: property.name } : undefined,
-        tone: toneSafe
+        tone: toneSafe,
+        conversation_id: conversation?.id
       }
     };
   }

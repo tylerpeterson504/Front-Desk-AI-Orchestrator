@@ -8,10 +8,17 @@ import type {
   AuthResponse,
   Escalation,
 } from '../types';
+import { tokenStore } from '../stores/authStore';
 
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+const baseURL = (import.meta as any).env?.VITE_API_URL || '/api';
+const cookieTransport = {
+  headers: { 'X-Refresh-Token-Transport': 'cookie' },
+  withCredentials: true,
+};
+
+localStorage.removeItem('refresh_token');
 
 let onUnauthorized: (() => void) | null = null;
 
@@ -26,7 +33,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = tokenStore.get();
   if (token) {
     config.headers.Authorization = 'Bearer ' + token;
   }
@@ -37,25 +44,26 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as any;
-    if (error.response?.status === 401 && original && !original._retried) {
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retried &&
+      original.url !== '/auth/login'
+    ) {
       original._retried = true;
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        try {
-          const res = await axios.post(baseURL + '/auth/refresh', {
-            refreshToken,
-          });
-          const data = res.data as { token: string; refreshToken: string };
-          localStorage.setItem('access_token', data.token);
-          localStorage.setItem('refresh_token', data.refreshToken);
-          original.headers.Authorization = 'Bearer ' + data.token;
-          return api(original);
-        } catch {
-          // fall through to logout
-        }
+      try {
+        const res = await axios.post<{ token: string }>(
+          baseURL + '/auth/refresh',
+          {},
+          cookieTransport
+        );
+        tokenStore.set(res.data.token);
+        original.headers.Authorization = 'Bearer ' + res.data.token;
+        return api(original);
+      } catch {
+        // fall through to logout
       }
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      tokenStore.clear();
       if (onUnauthorized) onUnauthorized();
     }
     return Promise.reject(error);
@@ -84,9 +92,12 @@ async function deleteData<T>(url: string): Promise<T> {
 
 export const authAPI = {
   login: (email: string, password: string): Promise<AuthResponse> =>
-    postData<AuthResponse>('/auth/login', { email, password }),
+    api
+      .post<AuthResponse>('/auth/login', { email, password }, cookieTransport)
+      .then((res) => res.data),
   me: (): Promise<User> => getData<User>('/auth/me'),
-  logout: (): Promise<void> => postData<void>('/auth/logout'),
+  logout: (): Promise<void> =>
+    api.post<void>('/auth/logout', {}, cookieTransport).then((res) => res.data),
 };
 
 export const userAPI = {
@@ -118,8 +129,7 @@ export const propertyAPI = {
   list: (): Promise<Property[]> => getData<Property[]>('/properties'),
   getOne: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
   get: (id: number): Promise<Property> => getData<Property>('/properties/' + id),
-  create: (data: Partial<Property>): Promise<Property> =>
-    postData<Property>('/properties', data),
+  create: (data: Partial<Property>): Promise<Property> => postData<Property>('/properties', data),
   update: (id: number, data: Partial<Property>): Promise<Property> =>
     putData<Property>('/properties/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/properties/' + id),
@@ -134,8 +144,7 @@ export const templateAPI = {
   list: (): Promise<Template[]> => getData<Template[]>('/templates'),
   getOne: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
   get: (id: number): Promise<Template> => getData<Template>('/templates/' + id),
-  create: (data: Partial<Template>): Promise<Template> =>
-    postData<Template>('/templates', data),
+  create: (data: Partial<Template>): Promise<Template> => postData<Template>('/templates', data),
   update: (id: number, data: Partial<Template>): Promise<Template> =>
     putData<Template>('/templates/' + id, data),
   delete: (id: number): Promise<void> => deleteData<void>('/templates/' + id),

@@ -4,7 +4,8 @@
 // which owns the chrome.storage.local `apiBaseUrl` override. init() awaits
 // loadApiBaseUrl() before the first request, so this initial value only matters
 // if something calls out before then.
-let API_BASE = (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
+let API_BASE =
+  (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
 
 export {};
 
@@ -59,7 +60,7 @@ let refreshInFlight: Promise<boolean> | null = null;
 function getHeaders(): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    ...(authToken ? { Authorization: 'Bearer ' + authToken } : {})
+    ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}),
   };
 }
 
@@ -94,7 +95,7 @@ function refreshSession(): Promise<boolean> {
   refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
+    body: JSON.stringify({ refresh_token: refreshToken }),
   })
     .then(async (res) => {
       if (!res.ok) return false;
@@ -115,7 +116,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
   return fetch(`${API_BASE}${path}`, {
     method,
     headers: getHeaders(),
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
 }
 
@@ -145,11 +146,15 @@ async function apiRequest(method: string, path: string, body?: unknown): Promise
 }
 
 // ━━━━━━ UI helpers ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function show(id: string): void { document.getElementById(id)?.classList.remove('hidden'); }
-function hide(id: string): void { document.getElementById(id)?.classList.add('hidden'); }
-function setText(id: string, text: string): void { 
+function show(id: string): void {
+  document.getElementById(id)?.classList.remove('hidden');
+}
+function hide(id: string): void {
+  document.getElementById(id)?.classList.add('hidden');
+}
+function setText(id: string, text: string): void {
   const el = document.getElementById(id);
-  if (el) el.textContent = text; 
+  if (el) el.textContent = text;
 }
 function setDot(id: string, active: boolean): void {
   // Boolean() matters: toggle(x, undefined) flips instead of forcing off.
@@ -263,7 +268,7 @@ function updateGuestInfo(data: GuestInfo | null): void {
     data?.roomNumber && `Room: ${data.roomNumber}`,
     data?.checkIn && `Check-in: ${data.checkIn}`,
     data?.checkOut && `Check-out: ${data.checkOut}`,
-    data?.reservationStatus && `Status: ${data.reservationStatus}`
+    data?.reservationStatus && `Status: ${data.reservationStatus}`,
   ].filter(Boolean) as string[];
 
   setText('guest-info-block', parts.length ? parts.join('\n') : 'No guest data found on this page');
@@ -290,11 +295,11 @@ function updateChatContext(data: ChatContext | null): void {
 // be paired with the moment the conversation first appeared in the panel.
 function conversationHash(data: ChatContext | null): string | null {
   if (!data || (!data.activeGuest && !data.messages?.length)) return null;
-  const tail = data.messages?.length ? data.messages[data.messages.length - 1]?.text ?? '' : '';
+  const tail = data.messages?.length ? (data.messages[data.messages.length - 1]?.text ?? '') : '';
   const key = `${data.activeGuest || ''}|${tail}`;
   let h = 0;
   for (let i = 0; i < key.length; i++) {
-    h = ((h * 31) + key.charCodeAt(i)) | 0;
+    h = (h * 31 + key.charCodeAt(i)) | 0;
   }
   return h.toString(36);
 }
@@ -324,12 +329,14 @@ function noteReplySent(): void {
 
   // Fire-and-forget: analytics must never block or break the panel.
   apiRequest('POST', '/analytics/response-events', {
-    events: [{
-      property_id: propertyId,
-      conversation_hash: hash,
-      first_seen_at: new Date(firstSeenAt).toISOString(),
-      replied_at: new Date().toISOString()
-    }]
+    events: [
+      {
+        property_id: propertyId,
+        conversation_hash: hash,
+        first_seen_at: new Date(firstSeenAt).toISOString(),
+        replied_at: new Date().toISOString(),
+      },
+    ],
   }).catch(() => {});
 }
 
@@ -345,7 +352,8 @@ async function loadShiftNotes(): Promise<void> {
       if (block) block.textContent = 'No shift notes for today';
       return;
     }
-    if (block) block.textContent = notes.map((n: { content: string }) => `• ${n.content}`).join('\n');
+    if (block)
+      block.textContent = notes.map((n: { content: string }) => `• ${n.content}`).join('\n');
   } catch {
     setText('shift-notes-block', 'Unable to load shift notes');
   }
@@ -497,7 +505,7 @@ document.getElementById('btn-generate')?.addEventListener('click', async () => {
       tone: currentTone,
       template_ids: selectedTemplates.map((t) => t.id),
       guest_info: guestInfo || undefined,
-      chat_context: chatContext || undefined
+      chat_context: chatContext || undefined,
     });
     if (data && typeof data === 'object' && 'draft' in data && String(data.draft).trim()) {
       showDraft(String(data.draft));
@@ -520,7 +528,9 @@ document.getElementById('btn-copy')?.addEventListener('click', () => {
     const btn = document.getElementById('btn-copy');
     if (btn) {
       btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+      }, 2000);
     }
   });
 });
@@ -536,7 +546,9 @@ document.getElementById('btn-inject')?.addEventListener('click', () => {
         const btn = document.getElementById('btn-inject');
         if (btn) {
           btn.textContent = 'Injected!';
-          setTimeout(() => { btn.textContent = 'Inject to Chat'; }, 2000);
+          setTimeout(() => {
+            btn.textContent = 'Inject to Chat';
+          }, 2000);
         }
       }
     });
