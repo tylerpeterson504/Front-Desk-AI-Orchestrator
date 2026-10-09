@@ -46,7 +46,9 @@ export function mockGetRepository<T>(
   mockRepo: MockRepository<T>
 ): jest.Mock {
   const mock = jest.fn(() => mockRepo);
-  jest.spyOn(require('../src/config/database'), 'getRepository').mockImplementation(
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  const database = require('../src/config/database');
+  jest.spyOn(database, 'getRepository').mockImplementation(
     (target: any) => {
       if (target === entity) {
         return mockRepo;

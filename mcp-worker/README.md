@@ -32,10 +32,14 @@ The caller's Bearer token is an orchestrator JWT (from POST /api/auth/login). To
 resolution order:
 
 1. Authorization: Bearer header
-2. ?token= query parameter (for WS clients that cannot set headers)
-3. BACKEND_TOKEN worker secret (service-token fallback) — only used when
+2. BACKEND_TOKEN worker secret (service-token fallback) — only used when
    ALLOW_FALLBACK_TOKEN="true" is explicitly set; by default, requests without
    a caller token are rejected with 401
+
+Query-parameter tokens (?token=) are not accepted: URLs leak into proxy,
+load-balancer, and CDN access logs. WebSocket clients that cannot set headers
+should use the subprotocols field (`Sec-WebSocket-Protocol`) or the
+ALLOW_FALLBACK_TOKEN service-token fallback instead.
 
 Access tokens expire roughly every 15 minutes; the known silent-refresh bug is tracked in PR
 #309. Until that lands, expect to re-enter the token after expiry.
@@ -56,7 +60,7 @@ Test with MCP inspector:
 Connect to http://127.0.0.1:8787/mcp, add a Bearer token under Authentication, and list
 tools. For the WS lane, any websocket client works:
 
-    websocat "ws://127.0.0.1:8787/ws?token=<JWT>"
+    websocat -H "Authorization: Bearer <JWT>" ws://127.0.0.1:8787/ws
 
 then send an initialize frame, followed by tools/list and tools/call.
 
@@ -88,7 +92,7 @@ If the app supports streamable HTTP instead of ws, use /mcp with https.
 - The worker never stores tokens; it forwards the caller JWT to the backend.
 - CORS is currently permissive (access-control-allow-origin: *). Restrict it before wide
   production use.
-- A WS token passed via query parameter can appear in logs; prefer the header when the
-  client supports it.
+- Query-parameter tokens are rejected to keep JWTs out of access logs; use the
+  Authorization header.
 - Server-to-server calls from the worker to the backend are not subject to browser CORS,
   so no backend CORS_ORIGIN change is required for the worker itself.

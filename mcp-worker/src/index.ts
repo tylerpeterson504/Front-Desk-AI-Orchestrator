@@ -17,7 +17,8 @@ export interface Env {
 }
 
 /**
- * Resolve a token from the Bearer header, then the token query parameter.
+ * Resolve a token from the Bearer header only. Query-parameter tokens are
+ * rejected: URLs leak into proxy, load-balancer, and CDN access logs.
  * The shared BACKEND_TOKEN is only used when ALLOW_FALLBACK_TOKEN="true" is
  * explicitly configured, so an unauthenticated caller cannot act as the
  * service account by default.
@@ -26,8 +27,6 @@ export interface Env {
 function resolveToken(request: Request, env: Env): string | null {
   const header = request.headers.get('Authorization');
   if (header && header.toLowerCase().startsWith('bearer ')) return header.slice(7).trim();
-  const q = new URL(request.url).searchParams.get('token');
-  if (q) return q;
   if (env.BACKEND_TOKEN && env.ALLOW_FALLBACK_TOKEN === 'true') return env.BACKEND_TOKEN;
   return null;
 }

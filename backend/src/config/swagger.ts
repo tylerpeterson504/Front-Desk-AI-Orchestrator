@@ -274,6 +274,7 @@ export function getSwaggerUiOptions(): {
  * Swagger setup function for Express
  */
 export function setupSwagger(app: import('express').Application): void {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const swaggerUi = require('swagger-ui-express');
   const specs = getSwaggerSpec();
   

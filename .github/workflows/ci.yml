@@ -74,10 +74,8 @@ jobs:
       - name: MCP worker type check
         run: cd mcp-worker && npm run typecheck
 
-      # Advisory: the codebase has pre-existing lint findings. Flip to
-      # 'npm run lint' once they reach zero.
-      - name: Lint (advisory)
-        run: npm run lint || true
+      - name: Lint
+        run: npm run lint
 
       - name: Test backend
         run: |

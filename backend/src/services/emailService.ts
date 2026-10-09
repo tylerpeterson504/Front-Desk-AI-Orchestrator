@@ -129,6 +129,7 @@ export class EmailService {
     if (sendGridConfig) {
       // Use SendGrid
       try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
         const sgMail = require('@sendgrid/mail');
         sgMail.setApiKey(sendGridConfig.apiKey);
         this.transporter = {
