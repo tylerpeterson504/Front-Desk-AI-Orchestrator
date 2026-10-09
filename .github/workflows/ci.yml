@@ -48,6 +48,7 @@ jobs:
             backend/package-lock.json
             dashboard/package-lock.json
             extension/package-lock.json
+            mcp-worker/package-lock.json
 
       - name: Install dependencies
         env:
@@ -57,6 +58,7 @@ jobs:
           cd backend && npm ci --no-audit --no-fund --ignore-scripts
           cd ../dashboard && npm ci --no-audit --no-fund --ignore-scripts
           cd ../extension && npm ci --no-audit --no-fund --ignore-scripts
+          cd ../mcp-worker && npm ci --no-audit --no-fund --ignore-scripts
         timeout-minutes: 15
 
       - name: TypeScript type check
@@ -69,6 +71,8 @@ jobs:
 
       - name: Extension type check
         run: cd extension && npm run typecheck
+      - name: MCP worker type check
+        run: cd mcp-worker && npm run typecheck
 
       # Advisory: the codebase has pre-existing lint findings. Flip to
       # 'npm run lint' once they reach zero.
