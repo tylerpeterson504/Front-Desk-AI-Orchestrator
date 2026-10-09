@@ -26,7 +26,7 @@ function createMigrationDataSource() {
   return new DataSource({
     type: 'postgres',
     ...(connectionString ? { url: connectionString } : manualConfig),
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false,
     entities: [],
     migrations: [path.join(__dirname, '../src/migrations/**/*.ts')],
     synchronize: false,

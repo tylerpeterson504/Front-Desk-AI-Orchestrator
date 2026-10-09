@@ -70,10 +70,8 @@ jobs:
       - name: Extension type check
         run: cd extension && npm run typecheck
 
-      # Advisory: the codebase has pre-existing lint findings. Flip to
-      # 'npm run lint' once they reach zero.
-      - name: Lint (advisory)
-        run: npm run lint || true
+      - name: Lint
+        run: npm run lint
 
       - name: Test backend
         run: |

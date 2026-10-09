@@ -30,7 +30,7 @@ export const AppDataSource = new DataSource({
   ...(connectionString ? { url: connectionString } : manualConfig),
   ssl:
     connectionString?.includes('neon.tech') || isProduction()
-      ? { rejectUnauthorized: false }
+      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
       : false,
   entities: [
     User,
@@ -45,7 +45,6 @@ export const AppDataSource = new DataSource({
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false,
   logging: config.LOG_LEVEL === 'debug',
-  migrationsRun: true,
 });
 
 export const initializeDatabase = async () => {
