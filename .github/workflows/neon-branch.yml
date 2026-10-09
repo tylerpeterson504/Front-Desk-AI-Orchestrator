@@ -91,7 +91,7 @@ jobs:
 
       - name: Run Migrations
         working-directory: backend
-        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run migrate
+        run: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run build && npm run migrate
         env:
           # to use unpooled connection (recommended for migrations)
           DATABASE_URL: '${{ steps.create_neon_branch.outputs.db_url }}'
