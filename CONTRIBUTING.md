@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js >= 22 (backend) / >= 24 (root tooling)
+- Node.js >= 24 (backend and root tooling)
 - npm >= 10.7
 - A Neon PostgreSQL connection string for local development
 

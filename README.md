@@ -20,7 +20,7 @@ Requires Node.js >= 24 and a Neon PostgreSQL connection string.
 npm run install:all
 cp backend/.env.example backend/.env   # set DATABASE_URL, JWT_SECRET, MISTRAL_API_KEY
 cd backend && npm run db-setup          # migrations + demo seed
-npm run dev                             # backend :3001 + dashboard :3000
+npm run dev                             # backend :3001 + dashboard :5173
 ```
 
 Demo login: `demo@example.com` / `password123`.
@@ -106,10 +106,9 @@ Tokens never reach the browser and are never logged.
    `db-setup` runs migrations then seeds; seeding is skipped automatically when
    users already exist. Demo login: `demo@example.com` / `password123`.
 3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
-4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm start`
-   (:3000, proxies to `REACT_APP_API_URL`). The dashboard is behind a login gate
-   :
-   it validates any stored token against `GET /api/auth/me` before rendering, and
+4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm run dev`
+   (:5173, proxies `/api` to :3001; override with `VITE_API_URL`). The dashboard
+   is behind a login gate — it validates any stored token against `GET /api/auth/me` before rendering, and
    sends you back to the login form on a 401 from any endpoint.
 
 ### Sessions
@@ -156,7 +155,7 @@ by default) rather than instantly. Making it instant means checking a blocklist
 on every request; that trade is deliberate, and shortening `JWT_TTL` narrows the
 window if you want it tighter.
 
-Styling is Tailwind, compiled by PostCSS through CRA (`dashboard/tailwind.config.js`,
+Styling is Tailwind, compiled by PostCSS through Vite (`dashboard/tailwind.config.js`,
 `src/index.css`) — there is no CDN script, so `npm run build` is what produces the
 stylesheet.
 
@@ -186,25 +185,6 @@ Content-script host matches (MV3 manifest):
 - `https://app.us1.stayntouch.com/*` — Pipeline A (guest info)
 - `https://sys.akia.ai/*` — Pipeline B (chat context + injection)
 
-## Perplexity AI integration
-
-The copilot supports Perplexity's Sonar API for web-grounded responses. It is called only from the backend, so the API key is never exposed to the extension or dashboard. When configured, Perplexity takes priority over Gemini; Gemini remains the fallback when `PERPLEXITY_API_KEY` is absent.
-
-Add this key in
-the project's **Keys** tab:
-
-```text
-PERPLEXITY_API_KEY=your_perplexity_api_key
-```
-
-Optional model override:
-
-```text
-PERPLEXITY_MODEL=sonar
-```
-
-Create the key in the [Perplexity API settings](https://www.perplexity.ai/settings/api), then add it to the Keys tab. Never commit it.
-
 ## Neon database integration
 
 The backend accepts a Neon PostgreSQL connection string through `DATABASE_URL`. When present, it takes precedence over the individual `DB_*` settings and works with the existing `pg-promise` data layer and migrations.
@@ -219,7 +199,7 @@ Create or select a project in the [Neon Console](https://console.neon.tech), ope
 
 ## Databricks integration
 
-The backend includes a server-side Databricks SQL Statement Execution API client at `backend/src/services/databricks.js`. It keeps the personal access token out of the browser and exposes an authenticated configuration check at `GET /api/databricks/status`.
+The backend includes a server-side Databricks SQL Statement Execution API client at `backend/src/services/databricksService.ts`. It keeps the personal access token out of the browser and exposes an authenticated configuration check at `GET /api/databricks/status`.
 
 Add these values in the project's **Keys** tab (or the backend hosting environment):
 
@@ -233,7 +213,7 @@ The integration does not log or return token values. Create the workspace and to
 
 ## GitHub integration
 
-The backend includes a server-side GitHub REST API client at `backend/src/services/github.js` and an authenticated configuration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
+The backend includes a server-side GitHub REST API client at `backend/src/services/githubService.ts` and an authenticated configuration check at `GET /api/github/status`. The token stays on the server and is never returned to the browser.
 
 Add this key in the project's **Keys** tab:
 
@@ -251,7 +231,7 @@ Create a least-privilege token with only the repository permissions your deploym
 
 ## Development
 
-npm workspaces: `npm run install:all`, `npm run build:all`, `npm run test`, `npm run lint`, `npm run typecheck`. Schema changes go through TypeORM migrations (`synchronize` is off). Note: the husky pre-commit hook currently references a nonexistent `lint:check` script and fails; commit with `--no-verify` until the hook is fixed.
+npm workspaces: `npm run install:all`, `npm run build:all`, `npm run test`, `npm run lint`, `npm run typecheck`. Schema changes go through TypeORM migrations (`synchronize` is off).
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — setup, conventions, PR checklist
 - [CHANGELOG.md](CHANGELOG.md) — notable changes
