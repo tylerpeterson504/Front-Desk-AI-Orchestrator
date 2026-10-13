@@ -1,0 +1,11 @@
+name: New mcpServers
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: New MCP server
+    type: stdio
+    command: npx
+    args:
+      - -y
+      - <your-mcp-server>
+    env: {}
