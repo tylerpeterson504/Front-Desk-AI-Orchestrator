@@ -1,0 +1,25 @@
+[Unit]
+Description=Front-Desk-AI-Orchestrator backend (Node/Express)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fdao
+Group=fdao
+WorkingDirectory=/opt/fdao/app/backend
+EnvironmentFile=/opt/fdao/app/backend/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/src/index.js
+Restart=always
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/fdao/app/backend/logs
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+# Caddy reverse proxy for the Front-Desk-AI-Orchestrator backend.
+#
+# The backend serves everything itself on port 3001: the API under /api,
+# health at /health, and the built dashboard SPA with client-side route
+# fallback. Caddy only terminates TLS and proxies.
+#
+# Install: replace /etc/caddy/Caddyfile with this file, edit the hostname,
+# then `sudo systemctl reload caddy`.
+#
+# Hostname: your DuckDNS subdomain (or your own domain). Caddy obtains and
+# renews the Let's Encrypt certificate automatically.
+
+fdao-demo.duckdns.org {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3001
+}

@@ -1,4 +1,0 @@
-
-> front-desk-ai-orchestrator@1.0.0 typecheck
-> cd backend && npx tsc --noEmit && cd ../dashboard && npx tsc --noEmit
-
