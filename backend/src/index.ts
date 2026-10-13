@@ -37,8 +37,15 @@ const requiredEnvVars = ['MISTRAL_API_KEY', 'JWT_SECRET', 'DATABASE_URL'];
 
 const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 if (missingEnvVars.length > 0) {
-  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  process.exit(1);
+  const errorMessage = `Missing required environment variables: ${missingEnvVars.join(', ')}`;
+  logger.error(errorMessage);
+  
+  // In test environment, throw an error instead of exiting the process
+  if (process.env.NODE_ENV === 'test') {
+    throw new Error(errorMessage);
+  } else {
+    process.exit(1);
+  }
 }
 
 const app = express();

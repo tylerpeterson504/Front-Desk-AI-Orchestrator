@@ -31,6 +31,8 @@ services:
         sync: false
       - key: REGISTRATION_MODE
         value: invite
+      - key: MISTRAL_MODEL
+        value: mistral-medium
       - key: WIFI_ENCRYPTION_KEY
         sync: false
 

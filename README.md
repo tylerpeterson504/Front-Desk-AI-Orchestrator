@@ -245,9 +245,44 @@ Create a least-privilege token with only the repository permissions your deploym
 
 ## Deployment
 
-- **Backend**: any Node host. Production requires `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `MISTRAL_API_KEY`, `MISTRAL_MODEL`, `WIFI_ENCRYPTION_KEY`, and a registration policy. The server refuses to boot without `CORS_ORIGIN` in production rather than reflecting every origin.
-- **Dashboard**: static build (`npm run build`), served by the backend in production.
-- **Extension**: load unpacked; no build step.
+### Production Deployment
+
+1. **Prerequisites**:
+   - Node.js v20+
+   - PostgreSQL database (Neon recommended)
+   - Render account (for hosting)
+
+2. **Setup**:
+   ```bash
+   # Install dependencies
+   npm install
+   
+   # Build backend
+   npm run build
+   
+   # Set up environment variables (see .env.example)
+   cp .env.example .env.production
+   # Edit .env.production with your values
+   ```
+
+3. **Deploy to Render**:
+   - Use the `render.yaml` blueprint for one-click deployment
+   - Set all required environment variables in Render dashboard:
+     - `DATABASE_URL` (Neon pooled connection string)
+     - `JWT_SECRET` (32+ random characters)
+     - `MISTRAL_API_KEY` (Mistral AI API key)
+     - `CORS_ORIGIN` (comma-separated list including dashboard and extension origins)
+     - `WIFI_ENCRYPTION_KEY` (optional, 32+ characters)
+   - Deploy backend service
+   - Deploy dashboard service (static build served by backend)
+   - Load Chrome extension unpacked or publish to Chrome Web Store
+
+4. **Post-Deployment**:
+   - Run database migrations: `npm run db-migrate`
+   - Verify health checks: `GET /health`
+   - Test all features
+
+See [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md) for detailed deployment instructions and [PRODUCTION_LAUNCH.md](PRODUCTION_LAUNCH.md) for the production checklist.
 
 ## Development
 
@@ -255,4 +290,17 @@ npm workspaces: `npm run install:all`, `npm run build:all`, `npm run test`, `npm
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — setup, conventions, PR checklist
 - [CHANGELOG.md](CHANGELOG.md) — notable changes
-- [docs/](docs/) — environment setup, test plan, ADRs, Neon branch workflow
+
+## Environment Variables
+
+All required environment variables are documented in [backend/.env.example](backend/.env.example). Key variables include:
+
+- `DATABASE_URL`: PostgreSQL connection string (Neon recommended)
+- `JWT_SECRET`: 32+ random characters for JWT signing
+- `MISTRAL_API_KEY`: Mistral AI API key
+- `CORS_ORIGIN`: Comma-separated list of allowed origins
+- `WIFI_ENCRYPTION_KEY`: 32+ characters for WiFi password encryption (optional)
+- `MISTRAL_MODEL`: AI model to use (default: mistral-medium)
+- `REGISTRATION_MODE`: Registration policy (invite, open, or closed)
+
+See the complete list with detailed descriptions in [backend/.env.example](backend/.env.example).

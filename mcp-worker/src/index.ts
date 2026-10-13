@@ -14,6 +14,12 @@ export interface Env {
   BACKEND_URL: string;
   BACKEND_TOKEN?: string;
   ALLOW_FALLBACK_TOKEN?: string;
+  /**
+   * When set to "true", enables local Unity process fallback for development.
+   * This requires the Unity executable to be available in PATH.
+   * @default false
+   */
+  ENABLE_LOCAL_UNITY?: string;
 }
 
 /**
@@ -114,6 +120,16 @@ export default {
   /** Route requests to service info, health, or an MCP transport; return 404 otherwise. */
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    // Validate environment before processing any requests
+    if (!env.BACKEND_URL) {
+      return withCors(jsonResponse({ error: 'configuration error: BACKEND_URL is required' }, 500));
+    }
+    
+    // Disable local Unity process in production or when not explicitly enabled
+    if (env.ENABLE_LOCAL_UNITY === 'true' && process.env.NODE_ENV !== 'production') {
+      console.log('Local Unity process fallback is enabled but not implemented in this version');
+    }
 
     if (url.pathname === '/') {
       return withCors(
