@@ -98,7 +98,7 @@ beforeEach(() => {
   });
   global.fetch = vi.fn();
   (global as any).navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
-  (global as any).getPropertyConfig = undefined;
+  vi.doUnmock('../src/config');
   global.alert = vi.fn();
 });
 
@@ -335,7 +335,10 @@ describe('guest info and chat context', () => {
 
 describe('property detection', () => {
   it('labels the detected property', async () => {
-    (global as any).getPropertyConfig = () => ({ name: 'St.Pierre Hotel' });
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ name: 'St.Pierre Hotel' })
+    }));
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
     await loadSidepanel();
@@ -347,7 +350,6 @@ describe('property detection', () => {
   });
 
   it('falls back to "No property"', async () => {
-    (global as any).getPropertyConfig = () => null;
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
     await loadSidepanel();
@@ -592,7 +594,10 @@ describe('per-tab page context', () => {
     const lookup = vi.fn((hostname?: string) =>
       hostname === 'app.us1.stayntouch.com' ? { id: 1, name: 'St.Pierre Hotel' } : null
     );
-    (global as any).getPropertyConfig = lookup;
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: lookup
+    }));
     chrome.tabs.get.mockImplementation((_id: any, cb: any) =>
       cb({ id: 1, url: 'https://app.us1.stayntouch.com/inbox' })
     );
@@ -711,5 +716,59 @@ describe('inject targeting', () => {
       { type: 'INJECT_MESSAGE', text: 'Late reply' },
       expect.any(Function)
     );
+  });
+});
+
+describe('backend URL and session changes', () => {
+  // config.ts registers its own storage listener too, so deliver to all of them.
+  function emitStorageChange(changes: Record<string, { oldValue?: unknown; newValue?: unknown }>) {
+    for (const [listener] of chrome.storage.onChanged.addListener.mock.calls) {
+      listener(changes, 'local');
+    }
+  }
+
+  it('a session removed from storage returns the panel to the login prompt', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    expect(document.getElementById('main-panel')!.classList.contains('hidden')).toBe(false);
+
+    emitStorageChange({ token: { oldValue: 'tok' }, refreshToken: { oldValue: 'refresh-1' } });
+    expect(document.getElementById('auth-prompt')!.classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('main-panel')!.classList.contains('hidden')).toBe(true);
+
+    // The next request goes out without the old session token.
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ token: 'jwt-new' }) });
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    const [, options] = (global.fetch as any).mock.calls[0];
+    expect(options.headers.Authorization).toBeUndefined();
+  });
+
+  it('later requests use a backend URL changed in storage', async () => {
+    chrome.storage.local.get.mockResolvedValue({});
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    await loadSidepanel();
+    await flush();
+
+    chrome.storage.local.get.mockResolvedValue({ apiBaseUrl: 'https://api.example.com' });
+    emitStorageChange({ apiBaseUrl: { newValue: 'https://api.example.com' } });
+    await flush();
+    await flush();
+
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    const loginCall = (global.fetch as any).mock.calls.find(([url]: any[]) =>
+      String(url).endsWith('/auth/login')
+    );
+    expect(loginCall[0]).toBe('https://api.example.com/api/auth/login');
   });
 });
