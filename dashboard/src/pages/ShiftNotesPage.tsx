@@ -36,9 +36,8 @@ export const ShiftNotesPage: React.FC<ShiftNotesPageProps> = ({ embedded = false
         setSelectedProperty((current) => current || String(firstProperty.id));
       }
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load shift notes');
-      console.error(err);
     } finally {
       setLoading(false);
     }

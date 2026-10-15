@@ -244,6 +244,7 @@ describe('Zustand Stores', () => {
       expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty(
         'refreshToken'
       );
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty('token');
     });
 
     it('should clear credentials', async () => {
@@ -286,6 +287,7 @@ describe('Zustand Stores', () => {
       expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty(
         'refreshToken'
       );
+      expect(JSON.parse(localStorage.getItem('auth-storage')!).state).not.toHaveProperty('token');
       act(() => useAuthStore.getState().clearCredentials());
     });
   });

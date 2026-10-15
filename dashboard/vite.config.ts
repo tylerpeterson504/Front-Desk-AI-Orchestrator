@@ -9,7 +9,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
   },
 });
 // Note: tests are configured separately in vitest.config.ts
