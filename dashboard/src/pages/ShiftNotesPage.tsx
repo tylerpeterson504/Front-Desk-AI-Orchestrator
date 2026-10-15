@@ -3,6 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { shiftNoteAPI, propertyAPI } from '../services/api';
+import { toUserMessage } from '../lib/errorMessages';
 import { Plus, Trash2 } from '../components/icons';
 import { ShiftNote, Property } from '../types';
 
@@ -61,7 +62,7 @@ trim()
       setNewNote('');
       await loadAll();
     } catch (err: unknown) {
-      setError((err as { message?: string }).message || 'Failed to add shift note');
+      setError(toUserMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -108,8 +109,7 @@ trim()
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="bl
-ock text-sm text-gray-600 mb-1">Note</label>
+                <label className="block text-sm text-gray-600 mb-1">Note</label>
                 <input
                   type="text"
                   placeholder="e.g. Elevator maintenance 2–4 PM"
