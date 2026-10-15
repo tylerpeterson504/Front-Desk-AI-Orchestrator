@@ -23,6 +23,18 @@ router.get('/', requestId, requireAuth, async (req, res, next) => {
   }
 });
 
+// Get template statistics
+router.get('/stats', requestId, requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.auth!.userId;
+
+    const stats = await templateService.getStats(userId);
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Get a single template
 router.get('/:id', requestId, requireAuth, async (req, res, next) => {
   try {
@@ -111,18 +123,6 @@ router.post('/search', requestId, requireAuth, async (req, res, next) => {
 
     const templates = await templateService.search(userId, options);
     res.json(templates);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Get template statistics
-router.get('/stats', requestId, requireAuth, async (req, res, next) => {
-  try {
-    const userId = req.auth!.userId;
-
-    const stats = await templateService.getStats(userId);
-    res.json(stats);
   } catch (err) {
     next(err);
   }
