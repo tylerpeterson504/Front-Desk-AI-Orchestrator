@@ -1,7 +1,9 @@
+import { Brackets } from 'typeorm';
 import { getRepository } from '../config/database';
+import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
 import { User } from '../entities/User';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
+import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { findTemplatePromises } from '../lib/templatePromises';
 
@@ -53,6 +55,7 @@ const MAX_NAME_LENGTH = 255;
 
 export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
+  private propertyRepository = getRepository<Property>(Property);
 
   private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto & { is_active?: boolean } {
     const typedBody = (body || {}) as unknown as Record<string, unknown>;
@@ -342,7 +345,14 @@ export class TemplateService {
    */
   async shareWithProperty(templateId: number, targetPropertyId: number, userId: string): Promise<Template> {
     const template = await this.getById(templateId, userId);
-    
+
+    const property = await this.propertyRepository.findOne({
+      where: { id: targetPropertyId, user_id: userId },
+    });
+    if (!property) {
+      throw new AuthorizationError('Target property not found or access denied');
+    }
+
     // Create a copy of the template for the target property
     const sharedTemplate = this.templateRepository.create({
       name: `${template.name} (Shared)`,
@@ -417,12 +427,24 @@ export class TemplateService {
   /**
    * Increment template usage count
    */
-  async incrementUsageCount(templateId: number): Promise<void> {
+  async incrementUsageCount(templateId: number, userId: string): Promise<void> {
     await this.templateRepository
       .createQueryBuilder()
       .update(Template)
       .set({ usage_count: () => 'usage_count + 1' })
       .where('id = :templateId', { templateId })
+      .andWhere(
+        new Brackets((visible) => {
+          visible.where('user_id = :userId', { userId }).orWhere(
+            new Brackets((shared) => {
+              shared
+                .where('is_global = true')
+                .andWhere("status = 'approved'")
+                .andWhere('is_active = true');
+            })
+          );
+        })
+      )
       .execute();
   }
 }

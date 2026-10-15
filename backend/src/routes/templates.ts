@@ -246,7 +246,7 @@ router.post('/:id/increment-usage', requestId, requireAuth, async (req, res, nex
       });
     }
 
-    await templateService.incrementUsageCount(id);
+    await templateService.incrementUsageCount(id, req.auth!.userId);
     res.status(204).send();
   } catch (err) {
     next(err);
