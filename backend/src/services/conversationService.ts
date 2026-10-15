@@ -266,8 +266,9 @@ export class ConversationService {
         conversation_hash: this.hashConversationId(conversation.id),
         user_id: conversation.userId,
         property_id: conversation.propertyId,
-        first_seen_at: new Date(),
-        replied_at: message.role === 'assistant' ? new Date() : null,
+        first_seen_at: conversation.createdAt,
+        // Drafts are not replies: replied_at stays unset
+        replied_at: null,
         response_text: message.content,
         metadata: {
           role: message.role,
