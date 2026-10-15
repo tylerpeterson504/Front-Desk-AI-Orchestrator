@@ -2,7 +2,7 @@ import { In } from 'typeorm';
 import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
-import { AppError, ValidationError, AuthorizationError } from '../lib/errors';
+import { AppError, ValidationError, AuthorizationError, ErrorCategory } from '../lib/errors';
 import logger from '../lib/logger';
 import { llmProviderFactory, LLMMessage, LLMResult } from './llm/providerFactory';
 import { conversationService } from './conversationService';
@@ -239,24 +239,14 @@ export class CopilotService {
     try {
       llmResult = await llmClient.complete(messages);
     } catch (error) {
-      logger.error('LLM completion failed, falling back to placeholder', { 
+      logger.error('LLM completion failed for all providers', {
         error: error,
-        provider: llmClient.provider 
+        provider: llmClient.provider
       });
-      // Fallback to placeholder generation
-      const placeholderText = this.generatePlaceholderDraft(
-        property, templates, guestInfo, chatContext, toneSafe
-      );
-      return {
-        draft: placeholderText,
-        meta: {
-          provider: 'fallback',
-          template_count: templates.length,
-          property: property ? { id: property.id, name: property.name } : undefined,
-          tone: toneSafe,
-          conversation_id: conversation?.id
-        }
-      };
+      throw new AppError(503, 'LLM_UNAVAILABLE', 'LLM providers are unavailable', {
+        category: ErrorCategory.EXTERNAL_SERVICE,
+        cause: error as Error
+      });
     }
 
     // Add assistant response to conversation with template tracking for analytics
@@ -388,55 +378,6 @@ export class CopilotService {
 
     lines.push('');
     lines.push('Draft the reply now.');
-    return lines.join('\n');
-  }
-
-  /**
-   * Fallback method for when no LLM is configured. Generates a placeholder response.
-   */
-  protected generatePlaceholderDraft(
-    property: Property | null,
-    templates: Template[],
-    guestInfo: GuestInfo | null,
-    chatContext: ChatContext | null,
-    tone: string
-  ): string {
-    const lines: string[] = [];
-
-    if (tone === 'friendly') {
-      lines.push('Hello!');
-    } else {
-      lines.push('Dear Guest,');
-    }
-
-    if (guestInfo?.guestName) {
-      lines[0] = `Hello ${guestInfo.guestName},`;
-    }
-
-    if (property) {
-      lines.push(`\nThank you for choosing ${property.name}.`);
-      if (property.checkout_time) {
-        lines.push(`\nOur checkout time is ${property.checkout_time}.`);
-      }
-    }
-
-    if (templates.length > 0) {
-      lines.push('\nBased on our templates, here\'s what we can help you with:');
-      templates.forEach(t => {
-        lines.push(`\n- ${t.name}: ${t.content.slice(0, 100)}...`);
-      });
-  
-  }
-
-    if (chatContext?.messages?.length) {
-      lines.push('\nFollowing up on your previous messages:');
-      chatContext.messages.slice(-3).forEach(msg => {
-        lines.push(`\n  [${msg.sender}]: ${msg.text.slice(0, 50)}...`);
-      });
-    }
-
-    lines.push('\n\nHow can we assist you further?');
-
     return lines.join('\n');
   }
 }

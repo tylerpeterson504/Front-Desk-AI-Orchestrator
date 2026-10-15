@@ -344,6 +344,30 @@ describe('CopilotService', () => {
     });
   });
 
+  describe('provider failure', () => {
+    let hasConfigured: jest.SpyInstance;
+    let getClient: jest.SpyInstance;
+
+    beforeEach(() => {
+      hasConfigured = jest.spyOn(llmProviderFactory, 'hasAnyConfigured').mockReturnValue(true);
+      getClient = jest.spyOn(llmProviderFactory, 'getClientWithFallback').mockReturnValue(
+        { provider: 'mistral', complete: jest.fn().mockRejectedValue(new Error('upstream down')) } as unknown as LLMClient
+      );
+    });
+
+    afterEach(() => {
+      hasConfigured.mockRestore();
+      getClient.mockRestore();
+    });
+
+    it('responds 503 with LLM_UNAVAILABLE when every provider fails', async () => {
+      await expect(service.draft({}, 'user-1')).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'LLM_UNAVAILABLE'
+      });
+    });
+  });
+
   describe('neutralizeFences', () => {
     it('should neutralize fence markers', () => {
       const result = (service as any).neutralizeFences('<<<UNTRUSTED_DATA test');

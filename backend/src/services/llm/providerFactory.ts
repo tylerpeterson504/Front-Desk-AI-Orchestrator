@@ -108,7 +108,14 @@ export function hasAnyConfigured(): boolean {
 export function getClientWithFallback(
   providers: LLMProvider[] = DEFAULT_PROVIDER_ORDER
 ): LLMClient {
-  const configuredProviders = providers.filter(p => getClient(p).isConfigured());
+  const configuredProviders: LLMProvider[] = [];
+  const seen = new Set<LLMProvider>();
+  for (const provider of providers) {
+    const client = getClient(provider);
+    if (!client.isConfigured() || seen.has(client.provider)) continue;
+    seen.add(client.provider);
+    configuredProviders.push(provider);
+  }
   
   if (configuredProviders.length === 0) {
     throw new LLMConfigurationError('mistral', 'No LLM providers configured');
@@ -116,6 +123,21 @@ export function getClientWithFallback(
   
   // Return a wrapper that tries each provider in order
   return new FallbackLLMClient(configuredProviders);
+}
+
+/**
+ * Server errors and timeouts get one more attempt on the same provider; client errors do not
+ */
+function isTransient(error: unknown): boolean {
+  const { statusCode, status, name, message } = (error ?? {}) as {
+    statusCode?: number;
+    status?: number;
+    name?: string;
+    message?: string;
+  };
+  const httpStatus = statusCode ?? status;
+  if (typeof httpStatus === 'number') return httpStatus >= 500;
+  return name === 'AbortError' || /timeout/i.test(message ?? '');
 }
 
 /**
@@ -141,12 +163,21 @@ class FallbackLLMClient implements LLMClient {
     return this.clients[0].getConfig();
   }
 
+  private async attemptWithRetry<T>(call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      if (!isTransient(error)) throw error;
+      return call();
+    }
+  }
+
   async complete(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResult> {
     let lastError: Error | undefined;
     
     for (const client of this.clients) {
       try {
-        return await client.complete(messages, options);
+        return await this.attemptWithRetry(() => client.complete(messages, options));
       } catch (error) {
         lastError = error as Error;
         // Continue to next provider
@@ -162,7 +193,7 @@ class FallbackLLMClient implements LLMClient {
     
     for (const client of this.clients) {
       try {
-        return await client.completeText(prompt, options);
+        return await this.attemptWithRetry(() => client.completeText(prompt, options));
       } catch (error) {
         lastError = error as Error;
       }
