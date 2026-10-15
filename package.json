@@ -20,7 +20,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck:backend && npm run typecheck:dashboard",
-    "typecheck:backend": "cd backend && node node_modules/typescript/bin/tsc --noEmit --project tsconfig.json",
+    "typecheck:backend": "cd backend && node node_modules/typescript/bin/tsc --noEmit --project tsconfig.test.json",
     "typecheck:dashboard": "cd dashboard && node node_modules/typescript/bin/tsc --noEmit --project tsconfig.json",
     "clean": "rm -rf node_modules backend/dist dashboard/dist",
     "clean:all": "rm -rf node_modules backend/node_modules dashboard/node_modules backend/dist dashboard/dist",
