@@ -244,9 +244,27 @@ document.getElementById('btn-logout')?.addEventListener('click', async () => {
     // Nothing useful to show: we are logging out either way.
   } finally {
     await clearSession();
+    clearPanelState();
     showAuthPrompt();
   }
 });
+
+function clearPanelState(): void {
+  guestInfoByTab.clear();
+  chatContextByTab.clear();
+  applyGuestInfo(null);
+  applyChatContext(null);
+  selectedTemplates = [];
+  renderTemplates(allTemplates);
+  renderSelected();
+  activePropertyId = null;
+  setDot('dot-property', false);
+  setText('label-property', 'No property');
+  setText('response-box', 'Response will appear here…');
+  document.getElementById('response-box')?.classList.add('empty');
+  hide('btn-copy');
+  hide('btn-inject');
+}
 
 // ━━━━━━ Property detection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // The side panel's own location is the extension page, so the property is read

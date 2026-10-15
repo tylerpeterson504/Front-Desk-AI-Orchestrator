@@ -772,3 +772,114 @@ describe('backend URL and session changes', () => {
     expect(loginCall[0]).toBe('https://api.example.com/api/auth/login');
   });
 });
+
+describe('logout clears the panel', () => {
+  it('removes guest, chat, selected templates, property, and the draft from the screen', async () => {
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ name: 'St.Pierre Hotel' })
+    }));
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    global.fetch = vi.fn().mockImplementation((url: any) => {
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout at 11', tags: [] }]
+        });
+      }
+      if (String(url).includes('/copilot/draft')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'Drafted reply' }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane', roomNumber: '204' } });
+    runtimeListener({
+      type: 'CHAT_CONTEXT_UPDATED',
+      tabId: 1,
+      data: { activeGuest: 'Jane Doe', messages: [{ sender: 'Jane', text: 'hello' }] }
+    });
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    await flush();
+    expect(document.getElementById('response-box')!.textContent).toBe('Drafted reply');
+    expect(document.getElementById('label-property')!.textContent).toBe('St.Pierre Hotel');
+
+    document.getElementById('btn-logout')!.click();
+    await flush();
+    await flush();
+
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+    expect(document.getElementById('guest-info-block')!.textContent).toBe('No guest data found on this page');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+    expect(document.querySelectorAll('#selected-list .selected-item')).toHaveLength(0);
+    expect(document.querySelectorAll('#template-list .template-item.selected')).toHaveLength(0);
+    expect(document.getElementById('section-selected')!.style.display).toBe('none');
+    expect(document.getElementById('response-box')!.textContent).toBe('Response will appear here…');
+    expect(document.getElementById('response-box')!.classList.contains('empty')).toBe(true);
+    expect(document.getElementById('btn-copy')!.classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('btn-inject')!.classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('label-property')!.textContent).toBe('No property');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(false);
+    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token', 'refreshToken']);
+  });
+
+  it('does not send the previous property id after logging out', async () => {
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ id: 7, name: 'St.Pierre Hotel' })
+    }));
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    const drafted: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: any, opts: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        drafted.push(JSON.parse(opts.body));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'Drafted reply' }) });
+      }
+      if (String(url).includes('/auth/login')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ token: 'jwt-new', refresh_token: 'refresh-2' })
+        });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout at 11', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    expect(drafted[0].property_id).toBe(7);
+
+    document.getElementById('btn-logout')!.click();
+    await flush();
+    await flush();
+
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    expect(drafted).toHaveLength(2);
+    expect(drafted[1].property_id).toBeUndefined();
+  });
+});
