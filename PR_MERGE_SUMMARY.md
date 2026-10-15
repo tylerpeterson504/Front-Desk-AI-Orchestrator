@@ -130,7 +130,6 @@ e8f9232 test(auth): audit role updates through requireAuth/requireAdmin (#303)
 2. **MCP Worker Token Authentication** (PR #351)
    - **What:** Query parameter tokens (`?token=`) are no longer supported
    - **Action:** Ensure all clients use `Authorization: Bearer <token>` header
-   - **Alternative:** Set `ALLOW_FALLBACK_TOKEN` environment variable for service token fallback
    - **Documentation:** See updated `mcp-worker/README.md` for usage examples
 
 ### Recommended Actions

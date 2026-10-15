@@ -4,7 +4,6 @@ const testMcpConnection = async () => {
     // Test with production configuration
     const env = {
       BACKEND_URL: 'https://your-backend-url.onrender.com',
-      BACKEND_TOKEN: 'test-token',
       NODE_ENV: 'production'
     };
     
