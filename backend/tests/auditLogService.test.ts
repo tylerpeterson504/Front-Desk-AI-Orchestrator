@@ -70,3 +70,26 @@ describe('AuditLogService request-context handling', () => {
     expect(created.user_agent).toBe('Chrome');
   });
 });
+
+describe('AuditLogService property attachment', () => {
+  it('joins the property with explicit columns that exclude wifi_password and user_id', async () => {
+    const qb: any = {
+      leftJoin: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      getMany: jest.fn(async () => []),
+    };
+    auditRepo.createQueryBuilder = jest.fn(() => qb);
+
+    await auditLogService.getAll('u1');
+
+    expect(qb.leftJoin).toHaveBeenCalledWith('al.property', 'property');
+    const selected: string[] = qb.addSelect.mock.calls[0][0];
+    expect(selected).toEqual(expect.arrayContaining(['property.id', 'property.name', 'property.wifi_ssid']));
+    expect(selected).not.toContain('property.wifi_password');
+    expect(selected).not.toContain('property.user_id');
+  });
+});
