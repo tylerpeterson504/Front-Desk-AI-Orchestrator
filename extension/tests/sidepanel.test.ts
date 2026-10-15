@@ -6,16 +6,51 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Keep track of the module's registered runtime listener.
+// Keep track of the module's registered runtime and tab-activation listeners.
 let runtimeListener: any = null;
+let activatedListener: any = null;
 
 async function loadSidepanel() {
   await import('../src/sidepanel.ts');
   runtimeListener = chrome.runtime.onMessage.addListener.mock.calls[0]?.[0] || null;
+  activatedListener = chrome.tabs.onActivated.addListener.mock.calls[0]?.[0] || null;
 }
 
 function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Make `tab` the active tab of the current window, then fire tabs.onActivated.
+function activateTab(tab: { id: number; url: string }) {
+  chrome.tabs.query.mockImplementation((_q: any, cb: any) => cb([tab]));
+  chrome.tabs.get.mockImplementation((_id: any, cb: any) => cb(tab));
+  activatedListener();
+}
+
+// Load the panel on tab 1 with one template selected and a generated draft.
+async function loadPanelWithDraft(draft: string) {
+  global.fetch = vi.fn().mockImplementation((url: any) => {
+    if (String(url).includes('/copilot/draft')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft }) });
+    }
+    if (String(url).includes('/templates')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout is at 11:00 AM.', tags: [] }]
+      });
+    }
+    return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+  });
+  chrome.storage.local.get.mockResolvedValue({ token: 't' });
+  await loadSidepanel();
+  await flush();
+  await flush();
+  (document.querySelector('#template-list .template-item') as HTMLElement).click();
+  document.getElementById('btn-generate')!.click();
+  await flush();
+  await flush();
+  await flush();
 }
 
 // Build a DOM matching sidepanel.html's structure (ids the script depends on).
@@ -57,6 +92,7 @@ beforeEach(() => {
   setupDom();
   chrome.storage.local.get.mockResolvedValue({});
   chrome.tabs.query.mockImplementation((_q: any, cb: any) => cb([{ id: 1, url: 'https://app.akia.io/chat' }]));
+  chrome.tabs.get.mockImplementation((tabId: any, cb: any) => cb({ id: tabId, url: 'https://app.akia.io/chat' }));
   chrome.tabs.sendMessage.mockImplementation((_id: any, _msg: any, cb: any) => {
     if (cb) cb({});
   });
@@ -255,7 +291,7 @@ describe('access token refresh', () => {
 describe('guest info and chat context', () => {
   it('updateGuestInfo renders guest fields and lights the dot', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane', roomNumber: '204' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane', roomNumber: '204' } });
     expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
     expect(document.getElementById('dot-guest')!.classList.contains('active')).toBe(true);
     expect(document.getElementById('guest-info-block')!.textContent).toContain('Jane');
@@ -264,7 +300,7 @@ describe('guest info and chat context', () => {
 
   it('empty guest data keeps the dot off', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: {} });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: {} });
     expect(document.getElementById('dot-guest')!.classList.contains('active')).toBe(false);
     expect(document.getElementById('guest-info-block')!.textContent).toContain('No guest data');
   });
@@ -273,6 +309,7 @@ describe('guest info and chat context', () => {
     await loadSidepanel();
     runtimeListener({
       type: 'CHAT_CONTEXT_UPDATED',
+      tabId: 1,
       data: {
         activeGuest: 'Jane Doe',
         messages: [
@@ -291,7 +328,7 @@ describe('guest info and chat context', () => {
 
   it('empty chat shows the no-chat placeholder', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', data: { messages: [] } });
+    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', tabId: 1, data: { messages: [] } });
     expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
   });
 });
@@ -457,7 +494,7 @@ describe('response generation', () => {
 
   it('prefixes the guest name when known', async () => {
     await loadAndSelect();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane Doe' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane Doe' } });
     document.getElementById('btn-generate')!.click();
     await flush();
     await flush();
@@ -495,19 +532,183 @@ describe('copy and inject', () => {
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('Hello world');
   });
 
-  it('inject sends INJECT_MESSAGE to the active tab', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
-    chrome.storage.local.get.mockResolvedValue({ token: 't' });
-    await loadSidepanel();
-    await flush();
-    await flush();
-    document.getElementById('response-box')!.textContent = 'Reply text';
-    document.getElementById('btn-inject')!.classList.remove('hidden');
+  it('inject sends INJECT_MESSAGE to the tab the draft was generated for', async () => {
+    await loadPanelWithDraft('Reply text');
     document.getElementById('btn-inject')!.click();
     await flush();
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
       1,
       { type: 'INJECT_MESSAGE', text: 'Reply text' },
+      expect.any(Function)
+    );
+  });
+});
+
+describe('per-tab page context', () => {
+  it("shows only the active tab's guest and chat context", async () => {
+    await loadSidepanel();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 2, data: { guestName: 'Background Guest' } });
+    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', tabId: 2, data: { activeGuest: 'Background Chat', messages: [] } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane' } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Background Guest');
+    expect(document.getElementById('guest-info-block')!.textContent).toContain('Background Guest');
+    expect(document.getElementById('chat-context-block')!.textContent).toContain('Background Chat');
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+  });
+
+  it('ignores context broadcasts that carry no tab id', async () => {
+    await loadSidepanel();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Nobody' } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+  });
+
+  it('requests page data from the newly active tab and stores each answer under its tab', async () => {
+    chrome.tabs.sendMessage.mockImplementation((tabId: any, msg: any, cb: any) => {
+      if (msg.type === 'GET_GUEST_INFO') cb({ data: { guestName: `Guest ${tabId}` } });
+      else cb({});
+    });
+    await loadSidepanel();
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 1');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(2, { type: 'GET_GUEST_INFO' }, expect.any(Function));
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(2, { type: 'GET_CHAT_CONTEXT' }, expect.any(Function));
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 2');
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 1');
+  });
+
+  it("detects the property from the active tab's URL, not the panel page", async () => {
+    const lookup = vi.fn((hostname?: string) =>
+      hostname === 'app.us1.stayntouch.com' ? { id: 1, name: 'St.Pierre Hotel' } : null
+    );
+    (global as any).getPropertyConfig = lookup;
+    chrome.tabs.get.mockImplementation((_id: any, cb: any) =>
+      cb({ id: 1, url: 'https://app.us1.stayntouch.com/inbox' })
+    );
+    await loadSidepanel();
+    expect(lookup).toHaveBeenCalledWith('app.us1.stayntouch.com');
+    expect(document.getElementById('label-property')!.textContent).toBe('St.Pierre Hotel');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(true);
+
+    activateTab({ id: 2, url: 'https://example.com/' });
+    expect(document.getElementById('label-property')!.textContent).toBe('No property');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(false);
+  });
+
+  it("generates drafts from the active tab's guest only", async () => {
+    const drafted: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: any, opts: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        drafted.push(JSON.parse(opts.body));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'ok' }) });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Hi', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    chrome.storage.local.get.mockResolvedValue({ token: 't' });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 2, data: { guestName: 'Other' } });
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+
+    expect(drafted).toHaveLength(1);
+    expect(drafted[0].guest_info).toEqual({ guestName: 'Other' });
+  });
+});
+
+describe('inject targeting', () => {
+  it('refuses to inject while another tab is active and injects again once the draft tab is back', async () => {
+    await loadPanelWithDraft('Reply text');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    const injected = (chrome.tabs.sendMessage as any).mock.calls.filter(
+      ([, msg]: any[]) => msg?.type === 'INJECT_MESSAGE'
+    );
+    expect(injected).toHaveLength(0);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Switch back'));
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      { type: 'INJECT_MESSAGE', text: 'Reply text' },
+      expect.any(Function)
+    );
+  });
+
+  it('keeps a draft bound to the tab it was requested from when the user switches mid-request', async () => {
+    let resolveDraft: (value: unknown) => void = () => {};
+    global.fetch = vi.fn().mockImplementation((url: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        return new Promise((resolve) => {
+          resolveDraft = resolve;
+        });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Hi', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    chrome.storage.local.get.mockResolvedValue({ token: 't' });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    resolveDraft({ ok: true, status: 200, json: async () => ({ draft: 'Late reply' }) });
+    await flush();
+    await flush();
+    await flush();
+    expect(document.getElementById('response-box')!.textContent).toBe('Late reply');
+
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(
+      (chrome.tabs.sendMessage as any).mock.calls.filter(([, msg]: any[]) => msg?.type === 'INJECT_MESSAGE')
+    ).toHaveLength(0);
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      { type: 'INJECT_MESSAGE', text: 'Late reply' },
       expect.any(Function)
     );
   });
