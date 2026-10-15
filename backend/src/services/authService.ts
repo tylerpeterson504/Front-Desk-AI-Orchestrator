@@ -26,6 +26,8 @@ export interface AuthResponse {
   };
 }
 
+const REFRESH_GRACE_MS = 60 * 1000;
+
 function generateToken(user: User): string {
   return jsonwebtoken.sign(
     { userId: user.id, email: user.email, role: user.role },
@@ -127,6 +129,8 @@ data.name
     const newSession = await refreshTokenService.issueSession(user, {
       client: 'unknown'
     });
+
+    await refreshTokenService.shortenSession(session.id, REFRESH_GRACE_MS);
 
     log.info('Token refreshed', { user_id: user.id });
 

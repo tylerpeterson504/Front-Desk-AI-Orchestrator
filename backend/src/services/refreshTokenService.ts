@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { LessThan, MoreThan } from 'typeorm';
 import { getRepository } from '../config/database';
 import { RefreshToken } from '../entities/RefreshToken';
 import { User } from '../entities/User';
@@ -19,6 +20,10 @@ export interface SessionOptions {
 const TOKEN_LENGTH = 64;
 const DEFAULT_TTL_DAYS = 30;
 
+function digestToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 export class RefreshTokenService {
   private refreshTokenRepository = getRepository<RefreshToken>(RefreshToken);
 
@@ -29,7 +34,7 @@ export class RefreshTokenService {
     expiresAt.setDate(expiresAt.getDate() + ttlDays);
 
     const refreshToken = this.refreshTokenRepository.create({
-      token,
+      token: digestToken(token),
       user_id: user.id,
       expires_at: expiresAt,
       is_revoked: false
@@ -39,7 +44,7 @@ export class RefreshTokenService {
 
     return {
       id: refreshToken.id,
-      token: refreshToken.token,
+      token,
       user_id: refreshToken.user_id,
       expiresAt: refreshToken.expires_at
     };
@@ -47,7 +52,7 @@ export class RefreshTokenService {
 
   async validateSession(token: string): Promise<Session> {
     const refreshToken = await this.refreshTokenRepository.findOne({
-      where: { token, is_revoked: false }
+      where: { token: digestToken(token), is_revoked: false }
     });
 
     if (!refreshToken) {
@@ -60,10 +65,18 @@ export class RefreshTokenService {
 
     return {
       id: refreshToken.id,
-      token: refreshToken.token,
+      token,
       user_id: refreshToken.user_id,
       expiresAt: refreshToken.expires_at
     };
+  }
+
+  async shortenSession(sessionId: number, graceMs: number): Promise<void> {
+    const limit = new Date(Date.now() + graceMs);
+    await this.refreshTokenRepository.update(
+      { id: sessionId, expires_at: MoreThan(limit) },
+      { expires_at: limit }
+    );
   }
 
   async revokeSession(sessionId: number): Promise<void> {
@@ -72,7 +85,7 @@ export class RefreshTokenService {
 
   async revokeSessionByToken(token: string): Promise<void> {
     await this.refreshTokenRepository.update(
-      { token },
+      { token: digestToken(token) },
       { is_revoked: true }
     );
   }
@@ -86,7 +99,7 @@ export class RefreshTokenService {
 
   async cleanupExpired(): Promise<number> {
     const result = await this.refreshTokenRepository.delete({
-      expires_at: new Date()
+      expires_at: LessThan(new Date())
     });
     return result.affected || 0;
   }
