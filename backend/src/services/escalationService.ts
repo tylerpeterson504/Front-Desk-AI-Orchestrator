@@ -80,6 +80,8 @@ const MAX_REASON_LENGTH = 2000;
 const MAX_NAME_LENGTH = 255;
 const MAX_ROOM_LENGTH = 50;
 const MAX_NOTES_LENGTH = 2000;
+const DEFAULT_LIST_LIMIT = 100;
+const MAX_LIST_LIMIT = 500;
 
 function clean(value: unknown, maxLength: number): string | null {
   if (value == null) return null;
@@ -99,11 +101,15 @@ export class EscalationService {
   private propertyRepository = getRepository<Property>(Property);
 
   // An agent sees escalations they created and escalations assigned to them.
-  async getAll(userId: string, options?: { status?: string }): Promise<Escalation[]> {
+  async getAll(
+    userId: string,
+    options?: { status?: string; limit?: string; offset?: string }
+  ): Promise<Escalation[]> {
     const qb = this.escalationRepository
       .createQueryBuilder('e')
       .where('(e.created_by = :userId OR e.assigned_to = :userId)', { userId })
-      .orderBy('e.created_at', 'DESC');
+      .orderBy('e.created_at', 'DESC')
+      .addOrderBy('e.id', 'DESC');
 
     const status = options?.status;
     if (status) {
@@ -112,6 +118,17 @@ export class EscalationService {
       }
       qb.andWhere('e.status = :status', { status });
     }
+
+    const limit = options?.limit === undefined ? DEFAULT_LIST_LIMIT : Number(options.limit);
+    const offset = options?.offset === undefined ? 0 : Number(options.offset);
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new ValidationError('limit must be a positive integer');
+    }
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new ValidationError('offset must be a non-negative integer');
+    }
+    qb.take(Math.min(limit, MAX_LIST_LIMIT)).skip(offset);
+
     return qb.getMany();
   }
 

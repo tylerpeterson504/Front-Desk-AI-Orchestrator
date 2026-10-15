@@ -61,11 +61,6 @@ const MAX_BATCH = 100;
 const FUTURE_SLOP_MS = 5 * 60 * 1000;
 const MAX_WINDOW_DAYS = 90;
 
-function percentile(sorted: number[], p: number): number {
-  const rank = Math.ceil((p / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, Math.min(rank, sorted.length - 1))];
-}
-
 export class AnalyticsService {
   private eventRepository = getRepository<ResponseEvent>(ResponseEvent);
   private propertyRepository = getRepository<Property>(Property);
@@ -161,19 +156,26 @@ export class AnalyticsService {
     }
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const events = await this.eventRepository
+    const elapsed =
+      'CAST(EXTRACT(EPOCH FROM (e.replied_at - e.first_seen_at)) AS double precision)';
+    const row = await this.eventRepository
       .createQueryBuilder('e')
+      .select('COUNT(*)', 'count')
+      .addSelect(`AVG(${elapsed})`, 'avg')
+      .addSelect(`percentile_cont(0.5) WITHIN GROUP (ORDER BY ${elapsed})`, 'median')
+      .addSelect(`percentile_disc(0.95) WITHIN GROUP (ORDER BY ${elapsed})`, 'p95')
       .where('e.property_id = :property_id', { property_id })
       .andWhere('e.created_at >= :since', { since })
       .andWhere('e.replied_at IS NOT NULL')
-      .getMany();
+      .andWhere('e.replied_at >= e.first_seen_at')
+      .getRawOne<{
+        count: string;
+        avg: number | null;
+        median: number | null;
+        p95: number | null;
+      }>();
 
-    const seconds = events
-      .map((e) => (e.replied_at!.getTime() - e.first_seen_at.getTime()) / 1000)
-      .filter((s) => s >= 0)
-      .sort((a, b) => a - b);
-
-    if (!seconds.length) {
+    if (!row || !Number(row.count)) {
       return {
         property_id,
         days,
@@ -184,17 +186,13 @@ export class AnalyticsService {
       };
     }
 
-    const mid = Math.floor(seconds.length / 2);
-    const median = seconds.length % 2 ? seconds[mid] : (seconds[mid - 1] + seconds[mid]) / 2;
-    const avg = seconds.reduce((a, b) => a + b, 0) / seconds.length;
-
     return {
       property_id,
       days,
-      count: seconds.length,
-      median_seconds: Math.round(median),
-      avg_seconds: Math.round(avg),
-      p95_seconds: Math.round(percentile(seconds, 95)),
+      count: Number(row.count),
+      median_seconds: Math.round(Number(row.median)),
+      avg_seconds: Math.round(Number(row.avg)),
+      p95_seconds: Math.round(Number(row.p95)),
     };
   }
 

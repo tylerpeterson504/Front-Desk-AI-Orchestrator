@@ -8,7 +8,10 @@ const eventRepo: any = {
 const qb: any = {
   where: jest.fn().mockReturnThis(),
   andWhere: jest.fn().mockReturnThis(),
+  select: jest.fn().mockReturnThis(),
+  addSelect: jest.fn().mockReturnThis(),
   getMany: jest.fn(),
+  getRawOne: jest.fn(),
 };
 const propRepo: any = { find: jest.fn(), findOne: jest.fn() };
 
@@ -70,28 +73,38 @@ describe('AnalyticsService.responseTimes', () => {
     await expect(analyticsService.responseTimes(1, 'u1')).rejects.toThrow(AuthorizationError);
   });
 
-  it('computes median/avg/p95 from replied events', async () => {
+  it('computes median/avg/p95 from replied events in the database', async () => {
     propRepo.findOne.mockResolvedValue({ id: 1, user_id: 'u1' });
-    // 60s, 120s, 600s → median 120, avg 260, p95 600
-    qb.getMany.mockResolvedValue(
-      [60, 120, 600].map((s, i) => ({
-        first_seen_at: new Date('2026-09-25T10:00:00Z'),
-        replied_at: new Date(new Date('2026-09-25T10:00:00Z').getTime() + s * 1000),
-        id: i,
-      }))
-    );
+    // Aggregates for 60s, 120s, 600s: median 120, avg 260, p95 600
+    qb.getRawOne.mockResolvedValue({ count: '3', avg: 260, median: 120, p95: 600 });
     const summary = await analyticsService.responseTimes(1, 'u1', 30);
-    expect(summary.count).toBe(3);
-    expect(summary.median_seconds).toBe(120);
+    expect(summary).toEqual({
+      property_id: 1,
+      days: 30,
+      count: 3,
+      median_seconds: 120,
+      avg_seconds: 260,
+      p95_seconds: 600,
+    });
+    expect(qb.getMany).not.toHaveBeenCalled();
+  });
+
+  it('rounds fractional aggregates to whole seconds', async () => {
+    propRepo.findOne.mockResolvedValue({ id: 1, user_id: 'u1' });
+    qb.getRawOne.mockResolvedValue({ count: '2', avg: 259.6, median: 119.4, p95: 200.5 });
+    const summary = await analyticsService.responseTimes(1, 'u1', 30);
     expect(summary.avg_seconds).toBe(260);
-    expect(summary.p95_seconds).toBe(600);
+    expect(summary.median_seconds).toBe(119);
+    expect(summary.p95_seconds).toBe(201);
   });
 
   it('returns nulls when no replied events exist', async () => {
     propRepo.findOne.mockResolvedValue({ id: 1, user_id: 'u1' });
-    qb.getMany.mockResolvedValue([]);
+    qb.getRawOne.mockResolvedValue({ count: '0', avg: null, median: null, p95: null });
     const summary = await analyticsService.responseTimes(1, 'u1', 30);
     expect(summary.count).toBe(0);
     expect(summary.median_seconds).toBeNull();
+    expect(summary.avg_seconds).toBeNull();
+    expect(summary.p95_seconds).toBeNull();
   });
 });
