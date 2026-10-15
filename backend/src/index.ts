@@ -128,7 +128,6 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -173,7 +172,8 @@ import githubRouter from './routes/github';
 import analyticsRouter from './routes/analytics';
 import escalationsRouter from './routes/escalations';
 
-app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
+app.post(['/api/auth/login', '/api/auth/register'], authLimiter);
+app.use('/api/auth', refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
