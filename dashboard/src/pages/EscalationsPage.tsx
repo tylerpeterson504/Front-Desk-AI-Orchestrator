@@ -2,6 +2,7 @@ import React from 'react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { escalationAPI, propertyAPI, userAPI } from '../services/api';
+import { toUserMessage } from '../lib/errorMessages';
 import { Escalation, Property, User } from '../types';
 
 interface EscalationsPageProps {
@@ -56,7 +57,10 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
   const [roomNumber, setRoomNumber] = React.useState('');
   const [assignTo, setAssignTo] = React.useState<Record<number, string>>({});
 
+  const latestRequestId = React.useRef(0);
+
   const loadAll = React.useCallback(async () => {
+    const requestId = ++latestRequestId.current;
     try {
       setLoading(true);
       const [escRes, propsRes, usersRes] = await Promise.all([
@@ -64,6 +68,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
         propertyAPI.getAll(),
         userAPI.list().catch(() => [] as User[]),
       ]);
+      if (requestId !== latestRequestId.current) return;
       setEscalations(escRes);
       setProperties(propsRes);
       setUsers(usersRes);
@@ -71,9 +76,10 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
       if (first) setPropertyId((current) => current || String(first.id));
       setError('');
     } catch {
+      if (requestId !== latestRequestId.current) return;
       setError('Failed to load escalations');
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) setLoading(false);
     }
   }, [statusFilter]);
 
@@ -104,7 +110,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
       flash('Escalation created');
       await loadAll();
     } catch (err: unknown) {
-      setError((err as { message?: string }).message || 'Failed to create escalation');
+      setError(toUserMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +122,7 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
       flash('Escalation updated');
       await loadAll();
     } catch (err: unknown) {
-      setError((err as { message?: string }).message || 'Failed to update escalation');
+      setError(toUserMessage(err));
     }
   };
 

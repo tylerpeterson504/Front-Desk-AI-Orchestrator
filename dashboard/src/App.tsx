@@ -7,7 +7,7 @@ import { EscalationsPage } from './pages/EscalationsPage';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { authAPI, refreshAccessToken } from './services/api';
+import { authAPI, refreshAccessToken, setOnUnauthorized } from './services/api';
 import { resetDataStores } from './stores';
 import { useAuthStore, tokenStore } from './stores/authStore';
 import type { User } from './types';
@@ -17,6 +17,10 @@ function App() {
   const [user, setUser] = React.useState<User | null>(null);
   const [checking, setChecking] = React.useState(true);
   const { clearCredentials } = useAuthStore();
+
+  React.useEffect(() => {
+    setOnUnauthorized(() => setUser(null));
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
