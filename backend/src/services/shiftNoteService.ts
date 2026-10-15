@@ -469,7 +469,9 @@ export class ShiftNoteService {
     // Calculate average performance score
     const validScores = shiftNotes
       .map(note => note.performance_score)
-      .filter(score => score !== null && !isNaN(score)) as number[];
+      .filter(score => score !== null)
+      .map(score => Number(score))
+      .filter(score => !isNaN(score));
     
     const avg_performance_score = validScores.length > 0 
       ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
