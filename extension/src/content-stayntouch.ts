@@ -17,7 +17,6 @@ interface GuestInfo {
   roomNumber: string;
   checkIn: string;
   checkOut: string;
-  confirmationNumber: string;
   reservationStatus: string;
 }
 
@@ -62,6 +61,10 @@ interface GuestInfo {
     return null;
   }
 
+  function normalizeLabelText(text: string | null): string {
+    return (text || '').replace(/[\s:*]+$/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
   /**
    * Find a form value by matching a <label> element's text and reading the
    * associated input's value.
@@ -71,12 +74,12 @@ interface GuestInfo {
       const labels = root.querySelectorAll('label');
       for (let i = 0; i < labels.length; i++) {
         const label = labels[i] as Element;
-        const text = (label.textContent || '').trim().toLowerCase();
-        if (text.includes(labelText.toLowerCase())) {
+        const text = normalizeLabelText(label.textContent);
+        if (text === labelText.toLowerCase()) {
           const inputId = label.getAttribute('for');
           if (inputId) {
-            const input = root.querySelector('#' + inputId);
-            if (input && 'value' in (input as HTMLInputElement)) {
+            const input = document.getElementById(inputId);
+            if (input && 'value' in input) {
               return (input as HTMLInputElement).value;
             }
           }
@@ -98,15 +101,12 @@ interface GuestInfo {
     const root = getRoot();
     const guestName = 
       firstText(root, [
+        '[data-test="guest-name"]',
+        '[data-testid="guest-name"]',
         '.guest-name',
         '.guestName',
-        '#guestName',
-        '[data-test="guest-name"]',
-        '[data-testid*="guest-name" i]',
-        '[name*="guest" i]',
-        '[name*="name" i]',
-        '[id*="guest" i]',
-        '[id*="name" i]'
+        '#guest-name',
+        '#guestName'
       ]) ||
       textForLabel(root, 'Guest Name') ||
       textForLabel(root, 'Name') ||
@@ -114,13 +114,12 @@ interface GuestInfo {
 
     const roomNumber = 
       firstText(root, [
+        '[data-test="room-number"]',
+        '[data-testid="room-number"]',
         '.room-number',
         '.roomNumber',
-        '#roomNumber',
-        '[data-test="room-number"]',
-        '[data-testid*="room-number" i]',
-        '[name*="room" i]',
-        '[id*="room" i]'
+        '#room-number',
+        '#roomNumber'
       ]) ||
       textForLabel(root, 'Room Number') ||
       textForLabel(root, 'Room') ||
@@ -128,16 +127,15 @@ interface GuestInfo {
 
     const checkIn = 
       firstText(root, [
+        '[data-test="arrival-date"]',
+        '[data-test="check-in"]',
+        '[data-testid="check-in"]',
+        '.arrival-date',
         '.check-in',
         '.check-in-date',
         '.checkIn',
-        '#checkIn',
-        '[data-test="check-in"]',
-        '[data-testid*="check-in" i]',
-        '[name*="checkin" i]',
-        '[name*="check-in" i]',
-        '[id*="checkin" i]',
-        '[id*="check-in" i]'
+        '#arrival-date',
+        '#checkIn'
       ]) ||
       textForLabel(root, 'Check In') ||
       textForLabel(root, 'Arrival') ||
@@ -145,46 +143,30 @@ interface GuestInfo {
 
     const checkOut = 
       firstText(root, [
+        '[data-test="departure-date"]',
+        '[data-test="check-out"]',
+        '[data-testid="check-out"]',
+        '.departure-date',
         '.check-out',
         '.check-out-date',
         '.checkOut',
-        '#checkOut',
-        '[data-test="check-out"]',
-        '[data-testid*="check-out" i]',
-        '[name*="checkout" i]',
-        '[name*="check-out" i]',
-        '[id*="checkout" i]',
-        '[id*="check-out" i]'
+        '#departure-date',
+        '#checkOut'
       ]) ||
       textForLabel(root, 'Check Out') ||
       textForLabel(root, 'Departure') ||
       '';
 
-    const confirmationNumber = 
-      firstText(root, [
-        '.confirmation-number',
-        '.confirmationNumber',
-        '#confirmationNumber',
-        '[data-test="confirmation-number"]',
-        '[data-testid*="confirmation" i]',
-        '[name*="confirmation" i]',
-        '[name*="confirm" i]',
-        '[id*="confirmation" i]',
-        '[id*="confirm" i]'
-      ]) ||
-      textForLabel(root, 'Confirmation Number') ||
-      textForLabel(root, 'Confirmation') ||
-      '';
-
     const reservationStatus = 
       firstText(root, [
+        '[data-test="status"]',
+        '[data-test="reservation-status"]',
+        '[data-testid="reservation-status"]',
+        '.status',
         '.reservation-status',
         '.reservationStatus',
-        '#reservationStatus',
-        '[data-test="reservation-status"]',
-        '[data-testid*="status" i]',
-        '[name*="status" i]',
-        '[id*="status" i]'
+        '#status',
+        '#reservationStatus'
       ]) ||
       textForLabel(root, 'Status') ||
       '';
@@ -194,9 +176,7 @@ interface GuestInfo {
       roomNumber,
       checkIn,
       checkOut,
-      confirmationNumber,
-  
-    reservationStatus
+      reservationStatus
     };
 
     log.log('extracted guest info:', info);
@@ -208,7 +188,7 @@ interface GuestInfo {
   function validateGuestInfo(info: unknown): GuestInfo {
     const validated = info as GuestInfo;
     if (!validated || typeof validated !== 'object') throw new Error('Guest info must be an object');
-    const required: (keyof GuestInfo)[] = ['guestName', 'roomNumber', 'checkIn', 'checkOut', 'confirmationNumber', 'reservationStatus'];
+    const required: (keyof GuestInfo)[] = ['guestName', 'roomNumber', 'checkIn', 'checkOut', 'reservationStatus'];
     required.forEach(function (key) {
       if (validated[key] !== undefined && typeof validated[key] !== 'string') {
         throw new Error(key + ' must be a string');
@@ -232,8 +212,8 @@ interface GuestInfo {
   }
 
   /**
-   * Log counts of candidate selectors for guest, room, date, confirmation,
-   * and status fields to help find new selectors when the site markup
+   * Log counts of candidate selectors for guest, room, date, and status
+   * fields to help find new selectors when the site markup
    * changes.
    */
   function logDiscovery(root: Element): void {
@@ -241,7 +221,6 @@ interface GuestInfo {
       'guest-like': ['[class*="guest" i]', '[data-test*="guest" i]', '[name*="guest" i]', '[id*="guest" i]'],
       'room-like': ['[class*="room" i]', '[data-test*="room" i]', '[name*="room" i]', '[id*="room" i]'],
       'date-like': ['[class*="date" i]', '[data-test*="date" i]', '[name*="date" i]', '[id*="date" i]', '[type="date"]'],
-      'confirmation-like': ['[class*="confirmation" i]', '[data-test*="confirmation" i]', '[name*="confirmation" i]', '[id*="confirmation" i]'],
       'status-like': ['[class*="status" i]', '[data-test*="status" i]', '[name*="status" i]', '[id*="status" i]'],
       'label-like': ['label']
     };
@@ -293,7 +272,7 @@ interface GuestInfo {
         sendResponse({ data: info });
       } catch (e: unknown) {
         log.warn('GET_GUEST_INFO failed:', (e as Error)?.message);
-        sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', confirmationNumber: '', reservationStatus: '' } });
+        sendResponse({ data: { guestName: '', roomNumber: '', checkIn: '', checkOut: '', reservationStatus: '' } });
       }
     }
     return false;
