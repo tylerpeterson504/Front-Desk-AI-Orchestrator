@@ -7,8 +7,7 @@
   },
   "include": [
     "src/**/*",
-    "db/migrate.ts",
-    "tests/**/*"
+    "db/migrate.ts"
   ],
   "exclude": [
     "node_modules",
