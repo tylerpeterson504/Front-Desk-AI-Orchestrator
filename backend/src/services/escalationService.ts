@@ -567,7 +567,7 @@ export class EscalationService {
         name: 'Guest Complaint Apology',
         category: 'guest_complaint',
         content:
-          'Dear {guest_name}, we sincerely apologize for the {issue} you experienced. We have taken immediate action to address this and will follow up with you directly. As a token of our apology, we would like to offer you {compensation}. Thank you for bringing this to our attention.',
+          'Dear {guest_name}, we sincerely apologize for the {issue} you experienced. We have shared this with the appropriate team and logged your concern. {compensation} is under consideration. Thank you for bringing this to our attention.',
         variables: ['guest_name', 'issue', 'compensation'],
       },
       {
@@ -575,8 +575,8 @@ export class EscalationService {
         name: 'Maintenance Request Resolution',
         category: 'maintenance',
         content:
-          'Thank you for reporting the maintenance issue in {room_number}. Our maintenance team has been notified and will address the {issue} within {timeframe}. We apologize for any inconvenience this may have caused. If the issue is urgent, please contact the front desk immediately.',
-        variables: ['room_number', 'issue', 'timeframe'],
+          'Thank you for reporting the maintenance issue in {room_number}. Our maintenance team has been notified of the {issue}. We apologize for any inconvenience this may have caused. If the issue is urgent, please contact the front desk immediately.',
+        variables: ['room_number', 'issue'],
       },
       {
         id: 'billing_dispute',
