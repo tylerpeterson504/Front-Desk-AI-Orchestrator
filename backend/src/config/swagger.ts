@@ -32,7 +32,6 @@ const swaggerOptions: swaggerJsdoc.Options = {
         - Refresh endpoints: 120 requests per 15 minutes
         
         ## Security
-        - CSRF protection enabled on all state-changing requests
         - Request IP logging for security audit
         - All sensitive data encrypted at rest
         
@@ -67,12 +66,6 @@ const swaggerOptions: swaggerJsdoc.Options = {
           scheme: 'bearer',
           bearerFormat: 'JWT',
           description: 'JWT token obtained from /api/auth/login or /api/auth/refresh'
-        },
-        csrfToken: {
-          type: 'apiKey',
-          in: 'header',
-          name: 'X-CSRF-Token',
-          description: 'CSRF token obtained from cookie or GET request'
         }
       },
       schemas: {
