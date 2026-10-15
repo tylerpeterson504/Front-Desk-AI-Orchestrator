@@ -79,6 +79,7 @@ export interface ResolutionTemplate {
 const MAX_REASON_LENGTH = 2000;
 const MAX_NAME_LENGTH = 255;
 const MAX_ROOM_LENGTH = 50;
+const MAX_NOTES_LENGTH = 2000;
 
 function clean(value: unknown, maxLength: number): string | null {
   if (value == null) return null;
@@ -86,6 +87,12 @@ function clean(value: unknown, maxLength: number): string | null {
   if (!text) return null;
   return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
+
+const ALLOWED_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
+  open: ['in_progress', 'resolved'],
+  in_progress: ['open', 'resolved'],
+  resolved: ['open'],
+};
 
 export class EscalationService {
   private escalationRepository = getRepository<Escalation>(Escalation);
@@ -199,14 +206,54 @@ export class EscalationService {
           throw new ValidationError("Assignee cannot access this escalation's property");
         }
       }
+      if (patch.assigned_to !== escalation.assigned_to) {
+        if (escalation.status === 'resolved') {
+          throw new ValidationError('Resolved escalations cannot be reassigned');
+        }
+        patch.assigned_by = patch.assigned_to ? userId : null;
+        patch.assigned_at = patch.assigned_to ? new Date() : null;
+      }
     }
 
     if (dto.status !== undefined) {
       if (!(ESCALATION_STATUSES as readonly string[]).includes(dto.status)) {
         throw new ValidationError('Invalid status');
       }
-      patch.status = dto.status;
-      patch.resolved_at = dto.status === 'resolved' ? new Date() : null;
+      if (dto.status !== escalation.status) {
+        const allowed = ALLOWED_STATUS_TRANSITIONS[escalation.status] ?? [];
+        if (!allowed.includes(dto.status)) {
+          throw new ValidationError(
+            `Cannot change status from ${escalation.status} to ${dto.status}`
+          );
+        }
+        const resolving = dto.status === 'resolved';
+        patch.status = dto.status;
+        patch.resolved_at = resolving ? new Date() : null;
+        patch.resolved_by = resolving ? userId : null;
+      }
+    }
+
+    if (dto.category !== undefined) {
+      const category = dto.category ? String(dto.category) : null;
+      if (category && !(ESCALATION_CATEGORIES as readonly string[]).includes(category)) {
+        throw new ValidationError('Invalid category');
+      }
+      patch.category = category;
+    }
+
+    if (dto.resolution_notes !== undefined) {
+      patch.resolution_notes = clean(dto.resolution_notes, MAX_NOTES_LENGTH);
+    }
+
+    if (dto.sla_minutes !== undefined) {
+      const minutes = dto.sla_minutes as unknown;
+      if (minutes === null || minutes === 0) {
+        patch.sla_minutes = null;
+      } else if (typeof minutes === 'number' && Number.isFinite(minutes) && minutes > 0) {
+        patch.sla_minutes = minutes;
+      } else {
+        throw new ValidationError('sla_minutes must be a positive number');
+      }
     }
     // Keep status consistent with assignment state after all patch fields are in.
     const effectiveAssignee =
