@@ -70,9 +70,6 @@ const envSchema = z.object({
   SUPPORTED_LANGUAGES: z.string().optional(),
   DEFAULT_LANGUAGE: z.string().default('en').optional(),
   // Security settings
-  CSRF_ENABLED: z.enum(['true', 'false']).default('true').optional(),
-  CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
-  CSRF_HEADER_NAME: z.string().default('x-csrf-token').optional(),
   LOG_IP_ADDRESS: z.enum(['true', 'false']).default('true').optional(),
   // Performance settings
   COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30).optional(),
