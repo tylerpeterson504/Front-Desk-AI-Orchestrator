@@ -20,6 +20,9 @@ export interface UpdateTemplateDto extends CreateTemplateDto {
   is_active?: boolean;
 }
 
+const SORTABLE_TEMPLATE_COLUMNS = ['name', 'category', 'usage_count', 'created_at', 'updated_at'] as const;
+export type SortableTemplateColumn = (typeof SORTABLE_TEMPLATE_COLUMNS)[number];
+
 export interface TemplateSearchOptions {
   category?: string;
   search?: string;
@@ -28,8 +31,8 @@ export interface TemplateSearchOptions {
   is_active?: boolean;
   status?: string;
   include_shared?: boolean;
-  sort_by?: 'name' | 'usage_count' | 'created_at' | 'updated_at';
-  sort_order?: 'ASC' | 'DESC';
+  sort_by?: SortableTemplateColumn;
+  sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
 }
 
 export interface TemplateVersion {
@@ -50,6 +53,18 @@ const MAX_TAGS = 25;
 const MAX_TAG_LENGTH = 100;
 const MAX_CATEGORY_LENGTH = 100;
 const MAX_NAME_LENGTH = 255;
+
+function resolveTemplateSort(
+  sortBy: unknown,
+  sortOrder: unknown
+): { column: SortableTemplateColumn; direction: 'ASC' | 'DESC' } {
+  const column = SORTABLE_TEMPLATE_COLUMNS.find((allowed) => allowed === sortBy);
+  if (!column) {
+    return { column: 'name', direction: 'ASC' };
+  }
+  const direction = typeof sortOrder === 'string' && sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  return { column, direction };
+}
 
 export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
@@ -268,11 +283,8 @@ export class TemplateService {
     }
 
     // Sort
-    if (sort_by && sort_order) {
-      queryBuilder.orderBy(`template.${sort_by}`, sort_order);
-    } else {
-      queryBuilder.orderBy('template.name', 'ASC');
-    }
+    const sort = resolveTemplateSort(sort_by, sort_order);
+    queryBuilder.orderBy(`template.${sort.column}`, sort.direction);
 
     return queryBuilder.getMany();
   }
