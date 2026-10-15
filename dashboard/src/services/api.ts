@@ -8,7 +8,7 @@ import type {
   AuthResponse,
   Escalation,
 } from '../types';
-import { tokenStore } from '../stores/authStore';
+import { tokenStore, useAuthStore } from '../stores/authStore';
 
 export type { User, Property, Template, ShiftNote, AuditLog, AuthResponse, Escalation };
 
@@ -40,6 +40,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+class SessionEndedError extends Error {}
+
+let refreshInFlight: { session: number; promise: Promise<string> } | null = null;
+
+export function refreshAccessToken(): Promise<string> {
+  const session = useAuthStore.getState().sessionCounter;
+  if (refreshInFlight?.session === session) return refreshInFlight.promise;
+
+  const promise: Promise<string> = axios
+    .post<{ token: string }>(baseURL + '/auth/refresh', {}, { ...cookieTransport, timeout: 15000 })
+    .then((res) => {
+      if (useAuthStore.getState().sessionCounter !== session) throw new SessionEndedError();
+      tokenStore.set(res.data.token);
+      return res.data.token;
+    })
+    .finally(() => {
+      if (refreshInFlight?.promise === promise) refreshInFlight = null;
+    });
+  refreshInFlight = { session, promise };
+  return promise;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -52,15 +74,11 @@ api.interceptors.response.use(
     ) {
       original._retried = true;
       try {
-        const res = await axios.post<{ token: string }>(
-          baseURL + '/auth/refresh',
-          {},
-          cookieTransport
-        );
-        tokenStore.set(res.data.token);
-        original.headers.Authorization = 'Bearer ' + res.data.token;
+        const token = await refreshAccessToken();
+        original.headers.Authorization = 'Bearer ' + token;
         return api(original);
-      } catch {
+      } catch (refreshError) {
+        if (refreshError instanceof SessionEndedError) return Promise.reject(error);
         // fall through to logout
       }
       tokenStore.clear();
