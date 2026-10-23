@@ -1,7 +1,7 @@
 import { And, MoreThanOrEqual, LessThan } from 'typeorm';
 import { getRepository } from '../config/database';
 import { ShiftNote } from '../entities/ShiftNote';
-import { Property } from '../entities/Property';
+import { Property, PROPERTY_EMBED_COLUMNS } from '../entities/Property';
 import { AppError, NotFoundError, ValidationError, AuthorizationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 
@@ -141,7 +141,10 @@ export class ShiftNoteService {
         created_at: And(MoreThanOrEqual(today), LessThan(tomorrow))
       },
       order: { created_at: 'DESC' },
-      relations: ['property']
+      relations: ['property'],
+      select: {
+        property: Object.fromEntries(PROPERTY_EMBED_COLUMNS.map((column) => [column, true]))
+      }
     });
   }
 

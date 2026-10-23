@@ -1,6 +1,6 @@
 import { getRepository } from '../config/database';
 import { AuditLog } from '../entities/AuditLog';
-import { Property } from '../entities/Property';
+import { Property, PROPERTY_EMBED_COLUMNS } from '../entities/Property';
 import { AppError, ValidationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 
@@ -26,7 +26,8 @@ export class AuditLogService {
 
     const logs = await this.auditLogRepository
       .createQueryBuilder('al')
-      .leftJoinAndSelect('al.property', 'property')
+      .leftJoin('al.property', 'property')
+      .addSelect(PROPERTY_EMBED_COLUMNS.map((column) => `property.${column}`))
       .where('al.user_id = :userId', { userId })
       .orderBy('al.created_at', 'DESC')
       .limit(limit)
