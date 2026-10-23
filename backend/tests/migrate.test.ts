@@ -4,7 +4,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 
 // Exercise the exact entry point used by npm/CI in a fresh process, including
-// ts-node and migration discovery. Only the database connection is replaced.
+// tsx and migration discovery. Only the database connection is replaced.
 describe('migration CLI', () => {
   const backendDir = path.resolve(__dirname, '..');
   let fixtureDir: string;
