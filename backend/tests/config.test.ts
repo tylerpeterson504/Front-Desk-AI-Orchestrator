@@ -1,4 +1,4 @@
-import { isPlaceholderJwtSecret } from '../src/config';
+import { envSchema, isPlaceholderJwtSecret } from '../src/config';
 
 describe('isPlaceholderJwtSecret', () => {
   it('rejects the placeholder value shipped in the example env file', () => {
@@ -46,4 +46,18 @@ describe('JWT_SECRET configuration', () => {
       });
     }
   );
+});
+
+describe('config defaults', () => {
+  it('applies defaults for optional settings when they are unset', () => {
+    const parsed = envSchema.parse({ JWT_SECRET: 'x'.repeat(32) });
+
+    expect(parsed.SMTP_PORT).toBe(587);
+    expect(parsed.SMTP_SECURE).toBe('false');
+    expect(parsed.DEFAULT_LANGUAGE).toBe('en');
+    expect(parsed.COPILOT_RATE_LIMIT_MAX).toBe(30);
+    expect(parsed.COPILOT_RATE_LIMIT_WINDOW_MS).toBe(900000);
+    expect(parsed.CACHE_TTL_SECONDS).toBe(60);
+    expect(parsed.CACHE_MAX_SIZE).toBe(1000);
+  });
 });
