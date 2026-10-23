@@ -34,12 +34,6 @@ jobs:
         id: get_expiration_date
         run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
 
-      - name: Debug - Show branch details
-        run: |
-          echo "Branch name to create: ${{ env.NEON_BRANCH_NAME }}"
-          echo "Project ID: ${{ vars.NEON_PROJECT_ID }}"
-          echo "API Key is set: ${{ secrets.NEON_API_KEY != '' && 'yes' || 'no' }}"
-
       - name: Prune preview branches for closed PRs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -85,7 +79,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
 
