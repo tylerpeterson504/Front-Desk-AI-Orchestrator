@@ -1,10 +1,18 @@
+import bcrypt from 'bcrypt';
 import jsonwebtoken from 'jsonwebtoken';
 import { User } from '../entities/User';
-import { userService } from './userService';
+import { userService, getBcryptRounds } from './userService';
 import { refreshTokenService } from './refreshTokenService';
 import { config } from '../config';
 import { AppError, AuthenticationError, NotFoundError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
+
+let placeholderPasswordHash: Promise<string> | undefined;
+
+function getPlaceholderPasswordHash(): Promise<string> {
+  placeholderPasswordHash ??= bcrypt.hash('placeholder-password', getBcryptRounds());
+  return placeholderPasswordHash;
+}
 
 export interface AuthTokens {
   token: string;
@@ -25,6 +33,8 @@ export interface AuthResponse {
     role: 'admin' | 'agent';
   };
 }
+
+const REFRESH_GRACE_MS = 60 * 1000;
 
 function generateToken(user: User): string {
   return jsonwebtoken.sign(
@@ -91,6 +101,7 @@ data.name
 
     const user = await userService.findByEmail(data.email);
     if (!user) {
+      await bcrypt.compare(data.password, await getPlaceholderPasswordHash());
       throw new AuthenticationError('Invalid email or password');
     }
 
@@ -127,6 +138,8 @@ data.name
     const newSession = await refreshTokenService.issueSession(user, {
       client: 'unknown'
     });
+
+    await refreshTokenService.shortenSession(session.id, REFRESH_GRACE_MS);
 
     log.info('Token refreshed', { user_id: user.id });
 
