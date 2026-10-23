@@ -137,3 +137,33 @@ export class Property {
   @UpdateDateColumn()
   updated_at: Date;
 }
+
+export const PROPERTY_EMBED_COLUMNS: ReadonlyArray<keyof Property> = [
+  'id',
+  'name',
+  'display_name',
+  'code',
+  'group_id',
+  'address',
+  'city',
+  'region',
+  'timezone',
+  'currency',
+  'checkout_time',
+  'checkin_time',
+  'wifi_ssid',
+  'tone_guidelines',
+  'is_active',
+  'branding',
+  'settings',
+  'dashboard_widgets',
+  'performance_metrics',
+  'star_rating',
+  'description',
+  'website_url',
+  'phone_number',
+  'email',
+  'social_media',
+  'created_at',
+  'updated_at',
+];

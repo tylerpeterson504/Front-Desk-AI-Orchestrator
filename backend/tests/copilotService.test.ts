@@ -3,6 +3,9 @@ import { Property } from '../src/entities/Property';
 import { Template } from '../src/entities/Template';
 import { AuthorizationError } from '../src/lib/errors';
 import { createMockRepository, createMockProperty, createMockTemplate } from './utils';
+import { conversationService } from '../src/services/conversationService';
+import { llmProviderFactory, LLMMessage } from '../src/services/llm/providerFactory';
+import { LLMClient } from '../src/services/llm/types';
 
 // Mock database BEFORE importing CopilotService
 jest.mock('../src/config/database', () => ({
@@ -214,6 +217,59 @@ describe('CopilotService', () => {
       expect(result.draft).toBeDefined();
       expect(result.meta.property?.name).toBe('Grand Hotel');
       expect(result.meta.tone).toBe('professional');
+    });
+  });
+
+  describe('conversation reuse', () => {
+    let hasConfigured: jest.SpyInstance;
+    let getClient: jest.SpyInstance;
+    let complete: jest.Mock;
+
+    const sentMessages = (): LLMMessage[] => complete.mock.calls[0][0] as LLMMessage[];
+
+    beforeEach(() => {
+      complete = jest.fn().mockResolvedValue({ text: 'Reply', provider: 'mistral', model: 'mistral-small-latest' });
+      hasConfigured = jest.spyOn(llmProviderFactory, 'hasAnyConfigured').mockReturnValue(true);
+      getClient = jest.spyOn(llmProviderFactory, 'getClientWithFallback').mockReturnValue(
+        { provider: 'mistral', complete } as unknown as LLMClient
+      );
+    });
+
+    afterEach(() => {
+      hasConfigured.mockRestore();
+      getClient.mockRestore();
+    });
+
+    it('reuses the caller\'s own conversation', async () => {
+      const own = await conversationService.createConversation('user-1');
+      await conversationService.addMessage(own.id, 'user-1', { role: 'user', content: 'Earlier guest question' });
+
+      const result = await service.draft({ conversation_id: own.id }, 'user-1');
+
+      expect(result.meta.conversation_id).toBe(own.id);
+      expect(sentMessages().map((m) => m.content)).toContain('Earlier guest question');
+    });
+
+    it('ignores a conversation owned by another user', async () => {
+      const foreign = await conversationService.createConversation('user-2');
+      await conversationService.addMessage(foreign.id, 'user-2', { role: 'user', content: 'Other guest message' });
+
+      const result = await service.draft({ conversation_id: foreign.id }, 'user-1');
+
+      expect(result.meta.conversation_id).toBeDefined();
+      expect(result.meta.conversation_id).not.toBe(foreign.id);
+      expect(sentMessages().map((m) => m.content)).not.toContain('Other guest message');
+      const stored = await conversationService.getConversation(foreign.id, 'user-2');
+      expect(stored?.messages.map((m) => m.content)).toEqual(['Other guest message']);
+    });
+
+    it('creates a new conversation for an unknown id', async () => {
+      const result = await service.draft({ conversation_id: 'unknown-conversation' }, 'user-1');
+
+      const createdId = result.meta.conversation_id ?? '';
+      expect(createdId).not.toBe('');
+      expect(createdId).not.toBe('unknown-conversation');
+      expect(await conversationService.getConversation(createdId, 'user-1')).not.toBeNull();
     });
   });
 

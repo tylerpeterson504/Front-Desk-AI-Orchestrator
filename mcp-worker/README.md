@@ -28,18 +28,11 @@ exposed because those backend routes are currently unauthenticated (ADR-001).
 
 ## Auth
 
-The caller's Bearer token is an orchestrator JWT (from POST /api/auth/login). Token
-resolution order:
+Requests to `/mcp` and `/ws`, including WebSocket upgrades, must send the caller's Bearer
+token in the `Authorization` header. The token is an orchestrator JWT (from POST
+/api/auth/login). Requests without one are rejected with 401.
 
-1. Authorization: Bearer header
-2. BACKEND_TOKEN worker secret (service-token fallback) — only used when
-   ALLOW_FALLBACK_TOKEN="true" is explicitly set; by default, requests without
-   a caller token are rejected with 401
-
-Query-parameter tokens (?token=) are not accepted: URLs leak into proxy,
-load-balancer, and CDN access logs. WebSocket clients that cannot set headers
-should use the subprotocols field (`Sec-WebSocket-Protocol`) or the
-ALLOW_FALLBACK_TOKEN service-token fallback instead.
+Query-parameter tokens (`?token=`) are not accepted.
 
 Access tokens expire roughly every 15 minutes; the known silent-refresh bug is tracked in PR
 #309. Until that lands, expect to re-enter the token after expiry.
@@ -69,9 +62,6 @@ then send an initialize frame, followed by tools/list and tools/call.
     npx wrangler login
     # point BACKEND_URL at the deployed backend (edit wrangler.jsonc vars,
     # or set it in the Workers dashboard)
-    npx wrangler secret put BACKEND_TOKEN   # optional service JWT
-    # opt-in for unauthenticated service-token fallback (off by default):
-    npx wrangler secret put ALLOW_FALLBACK_TOKEN   # "true" to enable
     npx wrangler deploy
 
 The worker deploys to https://fdao-mcp.<your-subdomain>.workers.dev
@@ -92,7 +82,6 @@ If the app supports streamable HTTP instead of ws, use /mcp with https.
 - The worker never stores tokens; it forwards the caller JWT to the backend.
 - CORS is currently permissive (access-control-allow-origin: *). Restrict it before wide
   production use.
-- Query-parameter tokens are rejected to keep JWTs out of access logs; use the
-  Authorization header.
+- Tokens are accepted only from the Authorization header.
 - Server-to-server calls from the worker to the backend are not subject to browser CORS,
   so no backend CORS_ORIGIN change is required for the worker itself.

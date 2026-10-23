@@ -12,8 +12,6 @@ import type { BackendCtx } from './backend';
 
 export interface Env {
   BACKEND_URL: string;
-  BACKEND_TOKEN?: string;
-  ALLOW_FALLBACK_TOKEN?: string;
   /**
    * When set to "true", enables local Unity process fallback for development.
    * This requires the Unity executable to be available in PATH.
@@ -23,17 +21,12 @@ export interface Env {
 }
 
 /**
- * Resolve a token from the Bearer header only. Query-parameter tokens are
- * rejected: URLs leak into proxy, load-balancer, and CDN access logs.
- * The shared BACKEND_TOKEN is only used when ALLOW_FALLBACK_TOKEN="true" is
- * explicitly configured, so an unauthenticated caller cannot act as the
- * service account by default.
+ * Resolve a token from the Bearer header only.
  * Return null when none is present; a Bearer header with an empty value returns an empty string.
  */
-function resolveToken(request: Request, env: Env): string | null {
+function resolveToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
   if (header && header.toLowerCase().startsWith('bearer ')) return header.slice(7).trim();
-  if (env.BACKEND_TOKEN && env.ALLOW_FALLBACK_TOKEN === 'true') return env.BACKEND_TOKEN;
   return null;
 }
 
@@ -145,7 +138,7 @@ export default {
     }
 
     if (url.pathname === '/ws' || url.pathname === '/ws/') {
-      const wsToken = resolveToken(request, env);
+      const wsToken = resolveToken(request);
       if (!wsToken) {
         return withCors(jsonResponse({ error: 'unauthorized: a caller token is required' }, 401));
       }
@@ -154,7 +147,7 @@ export default {
 
     if (url.pathname === '/mcp' || url.pathname === '/mcp/') {
       if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
-      const bctx: BackendCtx = { baseUrl: env.BACKEND_URL, token: resolveToken(request, env) };
+      const bctx: BackendCtx = { baseUrl: env.BACKEND_URL, token: resolveToken(request) };
       if (!bctx.token) {
         return withCors(jsonResponse({ error: 'unauthorized: a caller token is required' }, 401));
       }
