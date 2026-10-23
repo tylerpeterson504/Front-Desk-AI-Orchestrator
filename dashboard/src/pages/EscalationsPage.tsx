@@ -70,9 +70,8 @@ export const EscalationsPage: React.FC<EscalationsPageProps> = ({ embedded = fal
       const first = propsRes[0];
       if (first) setPropertyId((current) => current || String(first.id));
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load escalations');
-      console.error(err);
     } finally {
       setLoading(false);
     }
