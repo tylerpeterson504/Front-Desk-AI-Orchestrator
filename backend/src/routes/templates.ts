@@ -1,6 +1,6 @@
 import express from 'express';
 import { templateService } from '../services/templateService';
-import { requireAuth } from '../middleware/requireAuth';
+import { requireAuth, requireAdmin } from '../middleware/requireAuth';
 import { requestId } from '../middleware/errorHandler';
 import logger from '../lib/logger';
 
@@ -48,7 +48,8 @@ router.get('/:id', requestId, requireAuth, async (req, res, next) => {
 router.post('/', requestId, requireAuth, async (req, res, next) => {
   try {
     const userId = req.auth!.userId;
-    const template = await templateService.create(req.body, userId);
+    const isAdmin = req.auth!.role === 'admin';
+    const template = await templateService.create(req.body, userId, isAdmin);
 
     logger.info('Template created', { template_id: template.id, user_id: userId, request_id: req.requestId });
     res.status(201).json(template);
@@ -71,7 +72,8 @@ router.put('/:id', requestId, requireAuth, async (req, res, next) => {
       });
     }
 
-    const template = await templateService.update(id, req.body, userId);
+    const isAdmin = req.auth!.role === 'admin';
+    const template = await templateService.update(id, req.body, userId, isAdmin);
 
     logger.info('Template updated', { template_id: template.id, user_id: userId, request_id: req.requestId });
     res.json(template);
@@ -94,7 +96,8 @@ router.delete('/:id', requestId, requireAuth, async (req, res, next) => {
       });
     }
 
-    await templateService.delete(id, userId);
+    const isAdmin = req.auth!.role === 'admin';
+    await templateService.delete(id, userId, isAdmin);
 
     logger.info('Template deleted', { template_id: id, user_id: userId, request_id: req.requestId });
     res.status(204).send();
@@ -203,7 +206,7 @@ router.post('/:id/submit-approval', requestId, requireAuth, async (req, res, nex
 });
 
 // Approve/reject/archive template
-router.post('/:id/approve', requestId, requireAuth, async (req, res, next) => {
+router.post('/:id/approve', requestId, requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const approverId = req.auth!.userId;
     const id = parseInt(req.params.id, 10);
@@ -225,7 +228,8 @@ router.post('/:id/approve', requestId, requireAuth, async (req, res, next) => {
       });
     }
 
-    const template = await templateService.approveTemplate(id, action as 'approve' | 'reject' | 'archive', approverId, comments);
+    const isAdmin = req.auth!.role === 'admin';
+    const template = await templateService.approveTemplate(id, action as 'approve' | 'reject' | 'archive', approverId, isAdmin, comments);
     logger.info('Template approval action', { template_id: id, action, approver_id: approverId, request_id: req.requestId });
     res.json(template);
   } catch (err) {

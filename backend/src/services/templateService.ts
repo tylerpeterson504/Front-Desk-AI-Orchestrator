@@ -1,7 +1,7 @@
 import { getRepository } from '../config/database';
 import { Template } from '../entities/Template';
 import { User } from '../entities/User';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
+import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { findTemplatePromises } from '../lib/templatePromises';
 
@@ -162,7 +162,7 @@ export class TemplateService {
     return template;
   }
 
-  async create(data: CreateTemplateDto, userId: string): Promise<Template> {
+  async create(data: CreateTemplateDto, userId: string, isAdmin = false): Promise<Template> {
     const templateData = this.readTemplateBody(data);
 
     const template = this.templateRepository.create({
@@ -173,8 +173,8 @@ export class TemplateService {
       description: templateData.description,
       user_id: userId,
       property_id: templateData.property_id,
-      is_global: templateData.is_global,
-      status: templateData.status || 'approved',
+      is_global: isAdmin ? templateData.is_global : false,
+      status: isAdmin && templateData.status ? templateData.status : 'approved',
       is_active: true,
       version: 1,
       created_by: userId
@@ -185,8 +185,8 @@ export class TemplateService {
     return template;
   }
 
-  async update(id: number, data: UpdateTemplateDto, userId: string): Promise<Template> {
-    const template = await this.getById(id, userId);
+  async update(id: number, data: UpdateTemplateDto, userId: string, isAdmin = false): Promise<Template> {
+    const template = await this.getManageableTemplate(id, userId, isAdmin);
 
     const templateData = this.readTemplateBody(data);
 
@@ -199,11 +199,15 @@ export class TemplateService {
     if (templateData.property_id !== undefined) {
       template.property_id = templateData.property_id;
     }
-    if (templateData.is_global !== undefined) {
-      template.is_global = templateData.is_global;
-    }
-    if (templateData.status !== undefined) {
-      template.status = templateData.status;
+    if (isAdmin) {
+      if (templateData.is_global !== undefined) {
+        template.is_global = templateData.is_global;
+      }
+      if (templateData.status !== undefined) {
+        template.status = templateData.status;
+      }
+    } else {
+      template.is_global = false;
     }
     
     // Increment version if content changed
@@ -221,9 +225,23 @@ export class TemplateService {
     return template;
   }
 
-  async delete(id: number, userId: string): Promise<void> {
-    const template = await this.getById(id, userId);
+  async delete(id: number, userId: string, isAdmin = false): Promise<void> {
+    const template = await this.getManageableTemplate(id, userId, isAdmin);
     await this.templateRepository.remove(template);
+  }
+
+  private async getManageableTemplate(id: number, userId: string, isAdmin: boolean): Promise<Template> {
+    const template = await this.templateRepository.findOne({ where: { id } });
+
+    if (!template) {
+      throw new NotFoundError('Template', id);
+    }
+
+    if (!isAdmin && template.user_id !== userId) {
+      throw new AuthorizationError('Only the template owner or an admin can modify this template');
+    }
+
+    return template;
   }
 
   /**
@@ -393,7 +411,11 @@ export class TemplateService {
   /**
    * Approve or reject a template
    */
-  async approveTemplate(templateId: number, action: 'approve' | 'reject' | 'archive', approverId: string, comments?: string): Promise<Template> {
+  async approveTemplate(templateId: number, action: 'approve' | 'reject' | 'archive', approverId: string, isAdmin = false, comments?: string): Promise<Template> {
+    if (!isAdmin) {
+      throw new AuthorizationError('Only admins can approve, reject, or archive templates');
+    }
+
     const template = await this.templateRepository.findOne({ where: { id: templateId } });
     
     if (!template) {
