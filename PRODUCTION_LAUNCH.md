@@ -130,7 +130,8 @@ DB_USER=your_db_user
 DB_PASSWORD=your_strong_password
 
 # Authentication - REGENERATE THESE FOR PRODUCTION!
-JWT_SECRET=your_32_plus_character_random_string_here
+# Generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+JWT_SECRET=
 JWT_TTL=15m
 REFRESH_TOKEN_TTL_DAYS=30
 BCRYPT_ROUNDS=12
@@ -307,7 +308,7 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3001,
       DATABASE_URL: 'postgresql://...',
-      JWT_SECRET: 'your_jwt_secret',
+      JWT_SECRET: '<generated value, see Authentication>',
       // ... all other env vars
     },
     node_args: '--max-old-space-size=4096'
