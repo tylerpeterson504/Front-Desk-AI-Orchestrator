@@ -748,10 +748,11 @@ export class ReportService {
    * Escape CSV value
    */
   private escapeCSV(value: string): string {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
+    const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+    if (guarded.includes(',') || guarded.includes('"') || guarded.includes('\n')) {
+      return `"${guarded.replace(/"/g, '""')}"`;
     }
-    return value;
+    return guarded;
   }
 
   /**

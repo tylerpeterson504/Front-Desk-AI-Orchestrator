@@ -130,7 +130,8 @@ DB_USER=your_db_user
 DB_PASSWORD=your_strong_password
 
 # Authentication - REGENERATE THESE FOR PRODUCTION!
-JWT_SECRET=your_32_plus_character_random_string_here
+# Generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+JWT_SECRET=
 JWT_TTL=15m
 REFRESH_TOKEN_TTL_DAYS=30
 BCRYPT_ROUNDS=12
@@ -146,6 +147,8 @@ WIFI_ENCRYPTION_KEY=your_32_byte_base64_string_here
 CORS_ORIGIN=https://your-dashboard-domain.com,chrome-extension://hmjpbhiploiaghgnolmlenledgmecblk
 
 # Seeding
+# SEED_ADMIN_PASSWORD=
+# SEED_AGENT_PASSWORD=
 RUN_SEEDS=false
 
 # AI Configuration
@@ -234,17 +237,16 @@ npx ts-node db/migrate.ts
 
 ### Seed Database (Optional)
 
+Seeding refuses to run when `NODE_ENV=production`, so it cannot use `.env.production`.
+It creates `admin@hotel.com` and `agent@hotel.com` only when no users exist, and it needs
+`SEED_ADMIN_PASSWORD` and `SEED_AGENT_PASSWORD` set.
+
 ```bash
-# Set RUN_SEEDS=true temporarily
-cp .env.production .env
-# Edit .env and set RUN_SEEDS=true
+# In a non-production .env, set RUN_SEEDS=true, SEED_ADMIN_PASSWORD, and SEED_AGENT_PASSWORD
 nano .env
 
 # Run seed
 npm run seed
-
-# Restore production .env
-cp .env.production .env
 ```
 
 ---
@@ -306,7 +308,7 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3001,
       DATABASE_URL: 'postgresql://...',
-      JWT_SECRET: 'your_jwt_secret',
+      JWT_SECRET: '<generated value, see Authentication>',
       // ... all other env vars
     },
     node_args: '--max-old-space-size=4096'
@@ -549,7 +551,7 @@ curl http://localhost:3001/api
 # Test login
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@hotel.com","password":"admin123"}'
+  -d '{"email":"admin@hotel.com","password":"<SEED_ADMIN_PASSWORD>"}'
 ```
 
 ### 3. Check Dashboard
