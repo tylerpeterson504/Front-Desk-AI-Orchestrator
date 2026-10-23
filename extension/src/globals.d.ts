@@ -15,5 +15,5 @@ interface PropertyConfig {
   checkoutTime: string;
   wifiSSID: string;
 }
-/** Return the property configuration matching the current page's hostname. */
-declare function getPropertyConfig(): PropertyConfig | null;
+/** Return the property configuration matching a hostname (default: the current page's). */
+declare function getPropertyConfig(hostname?: string): PropertyConfig | null;
