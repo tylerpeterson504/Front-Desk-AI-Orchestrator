@@ -43,6 +43,18 @@ describe('migration CLI', () => {
         record({ event: 'destroy' });
         this.isInitialized = false;
     };
+      DataSource.prototype.getRepository = function () {
+        return {
+          find: async () => process.env.MIGRATION_SCENARIO === 'nothing-applied'
+            ? []
+            : [{ id: 4, name: 'RepairLegacySchema1790000000000', timestamp: 1790000000000 }],
+          delete: async (criteria) => record({ event: 'delete-history-row', criteria }),
+        };
+      };
+      DataSource.prototype.undoLastMigration = async function () {
+        record({ event: 'undo' });
+        if (process.env.MIGRATION_SCENARIO === 'undo-error') throw new Error('test undo failure');
+      };
       `
     );
   });
@@ -53,12 +65,13 @@ describe('migration CLI', () => {
     scenario = 'success',
     databaseEnv: NodeJS.ProcessEnv = {
       DATABASE_URL: 'postgresql://test:test@localhost/test?sslmode=require',
-    }
+    },
+    command?: string
   ) {
     const eventsFile = path.join(fixtureDir, 'events.jsonl');
     const result = spawnSync(
       process.execPath,
-      ['--require', path.join(fixtureDir, 'database.cjs'), 'db/migrate.js'],
+      ['--require', path.join(fixtureDir, 'database.cjs'), 'db/migrate.js', ...(command ? [command] : [])],
       {
         cwd: backendDir,
         // Deliberately exclude JWT_SECRET and other application settings.
@@ -170,5 +183,26 @@ describe('migration CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('test migration failure');
     expect(result.events.map((event) => event.event)).toEqual(['initialize', 'migrate', 'destroy']);
+  });
+
+  it('rolls back the last migration through its down() without deleting the history row directly', () => {
+    const result = run('success', undefined, 'rollback');
+    expect(result.status).toBe(0);
+    expect(result.events.map((event) => event.event)).toEqual(['initialize', 'undo']);
+    expect(result.stdout).toContain('Successfully rolled back migration: RepairLegacySchema1790000000000');
+  });
+
+  it('reports when there is no migration to roll back', () => {
+    const result = run('nothing-applied', undefined, 'rollback');
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('No migrations to rollback');
+    expect(result.events.map((event) => event.event)).toEqual(['initialize']);
+  });
+
+  it('exits non-zero and keeps the history row when the migration down() fails', () => {
+    const result = run('undo-error', undefined, 'rollback');
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('test undo failure');
+    expect(result.events.map((event) => event.event)).toEqual(['initialize', 'undo']);
   });
 });
