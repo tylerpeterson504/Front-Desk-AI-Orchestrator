@@ -19,11 +19,9 @@ Requires Node.js >= 24 and a Neon PostgreSQL connection string.
 ```bash
 npm run install:all
 cp backend/.env.example backend/.env   # set DATABASE_URL, JWT_SECRET, MISTRAL_API_KEY
-cd backend && npm run db-setup          # migrations + demo seed
+cd backend && npm run db-setup          # migrations + seed
 npm run dev                             # backend :3001 + dashboard :5173
 ```
-
-Demo login: `demo@example.com` / `password123`.
 
 Load the extension (ID: `hmjpbhiploiaghgnolmlenledgmecblk`) from `chrome://extensions/` → Developer mode → Load unpacked → `extension/`. Point it at the backend via the popup's **Backend URL** field — no repackaging needed. Details: [extension/README.md](extension/README.md).
 
@@ -99,12 +97,14 @@ Tokens never reach the browser and are never logged.
 1. Copy `backend/.env.example` to `backend/.env` and set `DATABASE_URL` to a Neon
    connection string (create a dev branch in the Neon console so you are not
    pointing at production).
-2. Prepare the schema and demo data:
+2. Prepare the schema and seed data:
    ```bash
    cd backend && npm ci && npm run db-setup
    ```
    `db-setup` runs migrations then seeds; seeding is skipped automatically when
-   users already exist. Demo login: `demo@example.com` / `password123`.
+   users already exist. When it runs, it creates the admin and agent accounts
+   with the passwords in `SEED_ADMIN_PASSWORD` and `SEED_AGENT_PASSWORD` (set both
+   in `backend/.env`). Seeding refuses to run when `NODE_ENV=production`.
 3. Start the API: `npm run dev` (listens on `PORT`, default 3001).
 4. Start the dashboard in a second shell: `cd dashboard && npm ci && npm run dev`
    (:5173, proxies `/api` to :3001; override with `VITE_API_URL`). The dashboard
