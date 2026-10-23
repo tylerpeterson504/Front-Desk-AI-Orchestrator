@@ -383,6 +383,29 @@ describe('ReportService', () => {
       expect(csv).toContain('"John, Doe"');
       expect(csv).toContain('"Contains ""quotes"""');
     });
+
+    it('prefixes cells that begin with = + - @ with a single quote', () => {
+      // @ts-ignore - accessing private method for test
+      const csv = service.formatAsCSV([
+        { a: '=1+1', b: '+5', c: '-3', d: '@x', e: 'plain', f: 'a=b' }
+      ]);
+
+      expect(csv).toBe("a,b,c,d,e,f\n'=1+1,'+5,'-3,'@x,plain,a=b");
+    });
+
+    it('prefixes cells that begin with a tab or carriage return', () => {
+      // @ts-ignore - accessing private method for test
+      const csv = service.formatAsCSV([{ a: '\tx', b: '\ry' }]);
+
+      expect(csv).toBe("a,b\n'\tx,'\ry");
+    });
+
+    it('quotes a prefixed cell that also contains a comma', () => {
+      // @ts-ignore - accessing private method for test
+      const csv = service.formatAsCSV([{ a: '=SUM(A1,B1)' }]);
+
+      expect(csv).toBe('a\n"\'=SUM(A1,B1)"');
+    });
   });
 
   describe('getStats', () => {

@@ -33,4 +33,35 @@ describe('findTemplatePromises (ADR-002 no-promise rule)', () => {
     expect(findTemplatePromises('').hasPromise).toBe(false);
     expect(findTemplatePromises(undefined as unknown as string).hasPromise).toBe(false);
   });
+
+  it('treats typographic apostrophes like straight ones', () => {
+    expect(findTemplatePromises('We’ll take care of it right away.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We‘ll take care of it right away.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We’ll update you soon.').hasPromise).toBe(true);
+  });
+
+  it('rejects update and call-back promises', () => {
+    expect(findTemplatePromises('We will update you shortly.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We will update you soon.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We will update you today.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We will update you later.').hasPromise).toBe(true);
+    expect(findTemplatePromises("I'll call you back.").hasPromise).toBe(true);
+    expect(findTemplatePromises('Someone will call you back.').hasPromise).toBe(true);
+  });
+
+  it('rejects look-into promises with a time commitment', () => {
+    expect(findTemplatePromises('I will look into it today.').hasPromise).toBe(true);
+    expect(findTemplatePromises('We will look into this now.').hasPromise).toBe(true);
+    expect(findTemplatePromises('I will look into that right away.').hasPromise).toBe(true);
+  });
+
+  it('completes quickly on a 5000-character input', () => {
+    const input = 'our team will fix this and '.repeat(200).slice(0, 5000);
+    const started = Date.now();
+
+    const result = findTemplatePromises(input);
+
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(result.hasPromise).toBe(false);
+  });
 });
