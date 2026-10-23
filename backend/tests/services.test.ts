@@ -49,6 +49,7 @@ jest.mock('../src/services/refreshTokenService', () => ({
       user_id: 'user_id',
       token: 'refresh_token'
     }),
+    shortenSession: jest.fn().mockResolvedValue(undefined),
     revokeSession: jest.fn().mockResolvedValue(undefined),
     revokeAllSessions: jest.fn().mockResolvedValue(undefined)
   }
