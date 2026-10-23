@@ -12,6 +12,9 @@ const qb: any = {
   where: jest.fn().mockReturnThis(),
   andWhere: jest.fn().mockReturnThis(),
   orderBy: jest.fn().mockReturnThis(),
+  addOrderBy: jest.fn().mockReturnThis(),
+  take: jest.fn().mockReturnThis(),
+  skip: jest.fn().mockReturnThis(),
   getOne: jest.fn(),
   getMany: jest.fn(),
 };
@@ -357,6 +360,36 @@ describe('EscalationService', () => {
         userId: 'u1',
       });
       expect(rows).toEqual([{ id: 1 }]);
+    });
+
+    it('applies a default limit of 100 and no offset', async () => {
+      qb.getMany.mockResolvedValue([]);
+      await escalationService.getAll('u1');
+      expect(qb.take).toHaveBeenCalledWith(100);
+      expect(qb.skip).toHaveBeenCalledWith(0);
+    });
+
+    it('passes the requested limit and offset through', async () => {
+      qb.getMany.mockResolvedValue([]);
+      await escalationService.getAll('u1', { limit: '25', offset: '50' });
+      expect(qb.take).toHaveBeenCalledWith(25);
+      expect(qb.skip).toHaveBeenCalledWith(50);
+    });
+
+    it('caps the limit at 500', async () => {
+      qb.getMany.mockResolvedValue([]);
+      await escalationService.getAll('u1', { limit: '5000' });
+      expect(qb.take).toHaveBeenCalledWith(500);
+    });
+
+    it.each([['0'], ['-1'], ['abc'], ['2.5']])('rejects a limit of %s', async (limit) => {
+      await expect(escalationService.getAll('u1', { limit })).rejects.toThrow(ValidationError);
+    });
+
+    it('rejects a negative offset', async () => {
+      await expect(escalationService.getAll('u1', { offset: '-3' })).rejects.toThrow(
+        ValidationError
+      );
     });
   });
 });

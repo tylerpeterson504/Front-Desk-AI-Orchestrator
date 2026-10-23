@@ -7,12 +7,14 @@ import logger from '../lib/logger';
 
 const router = express.Router();
 
-// List escalations (created by or assigned to the caller). Optional ?status=
+// List escalations (created by or assigned to the caller). Optional ?status=, ?limit=, ?offset=
 router.get('/', requestId, requireAuth, async (req, res, next) => {
   try {
     const userId = req.auth!.userId;
     const status = typeof req.query.status === 'string' ? req.query.status : undefined;
-    const escalations = await escalationService.getAll(userId, { status });
+    const limit = typeof req.query.limit === 'string' ? req.query.limit : undefined;
+    const offset = typeof req.query.offset === 'string' ? req.query.offset : undefined;
+    const escalations = await escalationService.getAll(userId, { status, limit, offset });
     res.json(escalations);
   } catch (err) {
     next(err);
