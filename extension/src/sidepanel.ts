@@ -1,11 +1,12 @@
 // Front Desk AI Side Panel Logic
 
+import { getApiBaseUrl, getPropertyConfig, loadApiBaseUrl } from './config';
+
 // API base URL comes from the shared extension config (single source of truth),
 // which owns the chrome.storage.local `apiBaseUrl` override. init() awaits
 // loadApiBaseUrl() before the first request, so this initial value only matters
 // if something calls out before then.
-let API_BASE =
-  (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
+let API_BASE = getApiBaseUrl() + '/api';
 
 export {};
 
@@ -171,9 +172,7 @@ function setDot(id: string, active: boolean): void {
 
 // ━━━━━━ Init ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function init(): Promise<void> {
-  if (typeof loadApiBaseUrl === 'function') {
-    API_BASE = (await loadApiBaseUrl()) + '/api';
-  }
+  API_BASE = (await loadApiBaseUrl()) + '/api';
   const stored = await safeStorageGet(['token', 'refreshToken']);
   refreshToken = (stored.refreshToken as string) || null;
   if (stored.token) {
@@ -194,6 +193,24 @@ async function showMainPanel(): Promise<void> {
   show('main-panel');
   await Promise.all([loadTemplates(), loadShiftNotes()]);
 }
+
+// The popup removes the session from storage when the backend changes. Drop the
+// in-memory session to match, and pick up a changed backend URL.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.token && !changes.token.newValue) {
+    authToken = null;
+    refreshToken = null;
+    showAuthPrompt();
+  } else if (changes.refreshToken && !changes.refreshToken.newValue) {
+    refreshToken = null;
+  }
+  if (changes.apiBaseUrl) {
+    void loadApiBaseUrl().then((base) => {
+      API_BASE = base + '/api';
+    });
+  }
+});
 
 // ━━━━━━ Auth ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 document.getElementById('btn-login')?.addEventListener('click', async () => {
@@ -235,7 +252,7 @@ document.getElementById('btn-logout')?.addEventListener('click', async () => {
 // The side panel's own location is the extension page, so the property is read
 // from the active tab's URL.
 function propertyForUrl(url: string | undefined): { id: number; name: string } | null {
-  if (!url || typeof getPropertyConfig !== 'function') return null;
+  if (!url) return null;
   try {
     return getPropertyConfig(new URL(url).hostname);
   } catch {
