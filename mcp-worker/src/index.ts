@@ -12,12 +12,6 @@ import type { BackendCtx } from './backend';
 
 export interface Env {
   BACKEND_URL: string;
-  /**
-   * When set to "true", enables local Unity process fallback for development.
-   * This requires the Unity executable to be available in PATH.
-   * @default false
-   */
-  ENABLE_LOCAL_UNITY?: string;
 }
 
 /**
@@ -109,6 +103,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** True for an https URL, or an http URL to a loopback host for local development. */
+function isAllowedBackendUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export default {
   /** Route requests to service info, health, or an MCP transport; return 404 otherwise. */
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -118,10 +123,13 @@ export default {
     if (!env.BACKEND_URL) {
       return withCors(jsonResponse({ error: 'configuration error: BACKEND_URL is required' }, 500));
     }
-    
-    // Disable local Unity process in production or when not explicitly enabled
-    if (env.ENABLE_LOCAL_UNITY === 'true' && process.env.NODE_ENV !== 'production') {
-      console.log('Local Unity process fallback is enabled but not implemented in this version');
+    if (!isAllowedBackendUrl(env.BACKEND_URL)) {
+      return withCors(
+        jsonResponse(
+          { error: 'configuration error: BACKEND_URL must be https, or http on localhost' },
+          500
+        )
+      );
     }
 
     if (url.pathname === '/') {

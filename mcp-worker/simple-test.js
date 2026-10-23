@@ -6,7 +6,6 @@ const testNoLocalUnity = async () => {
     // Import the worker
     const worker = await import('./src/index.ts');
     
-    // Test environment without ENABLE_LOCAL_UNITY
     const env = {
       BACKEND_URL: 'https://test-backend.com',
       NODE_ENV: 'production'
