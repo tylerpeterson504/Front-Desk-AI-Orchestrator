@@ -4,6 +4,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js', 'json'],
   setupFiles: ['<rootDir>/tests/setup.ts'],
   moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@config/(.*)$': '<rootDir>/src/config/$1',
     '^@routes/(.*)$': '<rootDir>/src/routes/$1',
