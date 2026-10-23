@@ -1,10 +1,18 @@
+import bcrypt from 'bcrypt';
 import jsonwebtoken from 'jsonwebtoken';
 import { User } from '../entities/User';
-import { userService } from './userService';
+import { userService, getBcryptRounds } from './userService';
 import { refreshTokenService } from './refreshTokenService';
 import { config } from '../config';
 import { AppError, AuthenticationError, NotFoundError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
+
+let placeholderPasswordHash: Promise<string> | undefined;
+
+function getPlaceholderPasswordHash(): Promise<string> {
+  placeholderPasswordHash ??= bcrypt.hash('placeholder-password', getBcryptRounds());
+  return placeholderPasswordHash;
+}
 
 export interface AuthTokens {
   token: string;
@@ -91,6 +99,7 @@ data.name
 
     const user = await userService.findByEmail(data.email);
     if (!user) {
+      await bcrypt.compare(data.password, await getPlaceholderPasswordHash());
       throw new AuthenticationError('Invalid email or password');
     }
 

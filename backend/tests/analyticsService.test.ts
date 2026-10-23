@@ -18,10 +18,10 @@ jest.mock('../src/config/database', () => ({
 
 // Imported dynamically: the service captures repositories as class fields at
 // module load, so the mock repos above must be initialized first.
-let analyticsService: (typeof import('../src/services/analyticsService'))['analyticsService'];
+let analyticsService: (typeof import('../src/services/analyticsService.js'))['analyticsService'];
 
 beforeAll(async () => {
-  ({ analyticsService } = await import('../src/services/analyticsService'));
+  ({ analyticsService } = await import('../src/services/analyticsService.js'));
 });
 
 beforeEach(() => {

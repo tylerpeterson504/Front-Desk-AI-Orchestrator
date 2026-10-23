@@ -81,7 +81,6 @@ async function runMigrations(): Promise<boolean> {
 
 /**
  * Rollback the last executed migration
- * Note: TypeORM doesn't have built-in rollback, so we implement it manually
  */
 async function rollbackMigration(): Promise<boolean> {
   try {
@@ -103,14 +102,8 @@ async function rollbackMigration(): Promise<boolean> {
     const lastMigration = migrations[0];
     logger.info(`Rolling back migration: ${lastMigration.name} (${lastMigration.id})`);
 
-    // Get the migration class
-    const migrationClasses = await dataSource.migrations; // This is not standard, need different approach
-    // For now, we'll use a simpler approach - reverse the migration by running down()
-    // But TypeORM requires the migration class, so we need to import it dynamically
-
-    // Alternative: Use raw SQL to delete from migration table and potentially revert changes
-    // This is a simplified rollback that just marks the migration as not executed
-    await migrationsRepo.delete({ id: lastMigration.id });
+    // Runs the migration's down() and deletes its history row in one transaction
+    await dataSource.undoLastMigration();
 
     logger.info(`Successfully rolled back migration: ${lastMigration.name}`);
     return true;
