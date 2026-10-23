@@ -1,3 +1,4 @@
+import { Brackets } from 'typeorm';
 import { getRepository } from '../config/database';
 import { Template } from '../entities/Template';
 import { User } from '../entities/User';
@@ -260,9 +261,24 @@ export class TemplateService {
       sort_order = 'ASC'
     } = options;
 
+    // Own templates, plus approved active global templates when include_shared is set
     const queryBuilder = this.templateRepository
       .createQueryBuilder('template')
-      .where('template.user_id = :userId', { userId });
+      .where(
+        new Brackets((visible) => {
+          visible.where('template.user_id = :userId', { userId });
+          if (include_shared) {
+            visible.orWhere(
+              new Brackets((shared) => {
+                shared
+                  .where('template.is_global = true')
+                  .andWhere("template.status = 'approved'")
+                  .andWhere('template.is_active = true');
+              })
+            );
+          }
+        })
+      );
 
     // Filter by active status
     if (is_active !== undefined) {
@@ -282,9 +298,6 @@ export class TemplateService {
     // Filter by property
     if (property_id) {
       queryBuilder.andWhere('(template.property_id = :property_id OR template.is_global = true)', { property_id });
-    } else if (include_shared) {
-      // Include templates from other properties if user has access
-      queryBuilder.orWhere('template.is_global = true');
     }
 
     // Search in name and content
