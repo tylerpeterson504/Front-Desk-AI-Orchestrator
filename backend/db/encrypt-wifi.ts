@@ -1,5 +1,5 @@
 // One-shot backfill: encrypt any properties.wifi_password rows still stored in
-// plaintext. Idempotent - rows already carrying the `v1:` prefix are skipped.
+// plaintext. Idempotent - rows already in the encrypted format are skipped.
 //
 // Usage:
 //   WIFI_ENCRYPTION_KEY=... npm run encrypt-wifi
@@ -9,7 +9,7 @@
 
 import 'dotenv';
 import path from 'path';
-import { DataSource } from 'typeorm';
+import { DataSource, Not } from 'typeorm';
 import { getDatabaseConfig } from '../src/config/index';
 import { Property } from '../src/entities';
 import { encryptSecret, isEncrypted, isEncryptionConfigured } from '../src/lib/secretBox';
@@ -50,7 +50,7 @@ async function run() {
     
     // Find all properties with wifi_password
     const properties = await propertyRepo.find({
-      where: { wifi_password: { not: '' } }
+      where: { wifi_password: Not('') }
     });
     
     console.log(`Found ${properties.length} properties with wifi_password`);

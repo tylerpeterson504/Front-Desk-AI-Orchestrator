@@ -6,6 +6,13 @@ import path from 'path';
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '../../../.env.local') });
 
+const PLACEHOLDER_JWT_SECRETS = new Set(['your_jwt_secret_change_in_production']);
+const PLACEHOLDER_JWT_SECRET_PATTERN = /change[_-]?(this|me|in)[_-]?(production)?/i;
+
+export function isPlaceholderJwtSecret(secret: string): boolean {
+  return PLACEHOLDER_JWT_SECRETS.has(secret) || PLACEHOLDER_JWT_SECRET_PATTERN.test(secret);
+}
+
 // Define schema
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -16,7 +23,10 @@ const envSchema = z.object({
   DB_USER: z.string().optional(),
   DB_PASSWORD: z.string().optional(),
   DB_NAME: z.string().optional(),
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT_SECRET must be at least 32 characters')
+    .refine((secret) => !isPlaceholderJwtSecret(secret), 'JWT_SECRET must be a generated value'),
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
