@@ -1,5 +1,7 @@
 // Popup event handlers
 
+import { DEFAULT_API_BASE_URL, getApiBaseUrl, normalizeApiBaseUrl } from './config';
+
 const openButton = document.getElementById('open-sidepanel');
 
 if (openButton) {
@@ -40,7 +42,7 @@ async function loadCurrentUrl(): Promise<void> {
     const stored = await chrome.storage.local.get(['apiBaseUrl']);
     urlInput.value = stored?.apiBaseUrl || '';
     if (!stored?.apiBaseUrl) {
-      setStatus(`Using default: ${typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : ''}`);
+      setStatus(`Using default: ${getApiBaseUrl()}`);
     }
   } catch (error) {
     setStatus('Could not read saved settings', 'error');
@@ -57,13 +59,27 @@ function requestOrigin(origin: string): Promise<boolean> {
   });
 }
 
+// Tokens are issued by one backend and mean nothing to another, so a change of
+// backend ends the session. Re-saving the backend already in effect keeps it.
+async function storeBackendUrl(next: string | null): Promise<void> {
+  const stored = await chrome.storage.local.get(['apiBaseUrl']);
+  const before = normalizeApiBaseUrl(stored?.apiBaseUrl) ?? DEFAULT_API_BASE_URL;
+  if (before !== (next ?? DEFAULT_API_BASE_URL)) {
+    await chrome.storage.local.remove(['token', 'refreshToken']);
+  }
+  if (next === null) {
+    await chrome.storage.local.remove('apiBaseUrl');
+  } else {
+    await chrome.storage.local.set({ apiBaseUrl: next });
+  }
+}
+
 if (saveButton && urlInput) {
   saveButton.addEventListener('click', async () => {
-    const normalized =
-      typeof normalizeApiBaseUrl === 'function' ? normalizeApiBaseUrl(urlInput.value) : null;
+    const normalized = normalizeApiBaseUrl(urlInput.value);
 
     if (!urlInput.value.trim()) {
-      await chrome.storage.local.remove('apiBaseUrl');
+      await storeBackendUrl(null);
       setStatus('Cleared. Using the default backend URL.', 'ok');
       return;
     }
@@ -83,7 +99,7 @@ if (saveButton && urlInput) {
     }
 
     try {
-      await chrome.storage.local.set({ apiBaseUrl: normalized });
+      await storeBackendUrl(normalized);
       urlInput.value = normalized;
       setStatus('Saved. The side panel will use this backend.', 'ok');
     } catch (error) {

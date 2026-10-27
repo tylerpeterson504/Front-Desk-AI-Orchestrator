@@ -2,7 +2,7 @@ import { getRepository } from '../config/database';
 import { Property } from '../entities/Property';
 import { PropertyGroup } from '../entities/PropertyGroup';
 import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
-import { encryptSecret, decryptSecret } from '../lib/secretBox';
+import { encryptSecret, decryptSecret, isEncrypted } from '../lib/secretBox';
 import { createRequestLogger } from '../lib/logger';
 
 export interface CreatePropertyDto {
@@ -521,11 +521,11 @@ export class PropertyService {
     }
 
     // Encrypt Wi-Fi password if provided
-    let encryptedWifiPassword: string | undefined;
+    let encryptedWifiPassword: string | null | undefined;
     if (propertyData.wifi_password) {
       encryptedWifiPassword = encryptSecret(propertyData.wifi_password);
     } else if (data.wifi_password === '') {
-      encryptedWifiPassword = undefined;
+      encryptedWifiPassword = null;
     }
 
     property.name = propertyData.name;
@@ -584,7 +584,10 @@ export class PropertyService {
 
     let password: string | null = null;
     if (property.wifi_password) {
-      password = decryptSecret(property.wifi_password);
+      // Rows written before encryption was enabled may still hold plaintext.
+      password = isEncrypted(property.wifi_password)
+        ? decryptSecret(property.wifi_password)
+        : property.wifi_password;
     }
 
     log.info('WiFi password retrieved', { property_id: id, user_id: userId });

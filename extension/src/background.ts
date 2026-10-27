@@ -8,11 +8,11 @@ import type { MessageType } from './types';
  * Handle an incoming runtime message, forwarding guest info/chat context
  * updates to the side panel and logging content-script errors.
  */
-function handleMessage(message: MessageType): void {
+function handleMessage(message: MessageType, tabId?: number): void {
   // Forward guest info and chat context updates from content scripts to any open side panel
   if (message.type === 'GUEST_INFO_UPDATED' || message.type === 'CHAT_CONTEXT_UPDATED') {
-    // Broadcast to all open side panels
-    chrome.runtime.sendMessage(message).catch(() => {
+    // Broadcast to all open side panels, tagged with the tab the update came from
+    chrome.runtime.sendMessage({ ...message, tabId }).catch(() => {
       // Side panel not open — ignore
     });
   }
@@ -26,7 +26,7 @@ function handleMessage(message: MessageType): void {
 
 // Set up message listener with error handling
 try {
-  chrome.runtime.onMessage.addListener((message: unknown) => {
+  chrome.runtime.onMessage.addListener((message: unknown, sender: chrome.runtime.MessageSender) => {
     try {
       // Validate message has a type
       if (!message || typeof message !== 'object' || !('type' in message)) {
@@ -35,7 +35,7 @@ try {
       }
       
       const typedMessage = message as MessageType;
-      handleMessage(typedMessage);
+      handleMessage(typedMessage, sender.tab?.id);
     } catch (error) {
       console.error('Error handling message:', error, message);
     }
