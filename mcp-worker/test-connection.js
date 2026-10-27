@@ -4,12 +4,11 @@ const testMcpConnection = async () => {
     // Test with production configuration
     const env = {
       BACKEND_URL: 'https://your-backend-url.onrender.com',
-      BACKEND_TOKEN: 'test-token',
       NODE_ENV: 'production'
     };
     
     // Mock the fetch function
-    global.fetch = jest.fn((url) => {
+    global.fetch = (url) => {
       if (url.includes('/health')) {
         return Promise.resolve({
           ok: true,
@@ -20,7 +19,7 @@ const testMcpConnection = async () => {
         ok: true,
         json: () => Promise.resolve({})
       });
-    });
+    };
     
     // Import the worker
     const worker = await import('./src/index.ts');

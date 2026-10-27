@@ -42,8 +42,10 @@ export function performanceMonitor() {
       // Calculate response time in milliseconds
       const responseTime = Math.min(durationMs, MAX_RESPONSE_TIME);
       
-      // Add response time header
-      res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
+      // Streamed responses (such as static files) have already sent headers by the time end runs.
+      if (!res.headersSent) {
+        res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
+      }
       
       // Log slow requests
       if (responseTime >= VERY_SLOW_REQUEST_THRESHOLD) {

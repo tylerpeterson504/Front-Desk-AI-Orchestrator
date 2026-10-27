@@ -1,0 +1,25 @@
+# Test fixture: placeholder JWT_SECRET value used by backend tests
+bd7907534bb9300b2a5329c28b11c5a9f0461fd6:backend/tests/routes.test.ts:generic-api-key:3
+97e2f5b5a778ba2b1fd0898ee5387f7d52500c9b:backend/tests/routes.test.ts:generic-api-key:38
+357d1e3ccdde9d32c6605048539c11259716532d:backend/tests/services.test.ts:generic-api-key:24
+7ad20161f3cd015cd99eb768c5a4a79a610c5bd9:backend/tests/services.test.ts:generic-api-key:24
+418e163281d25cd1e45389658d4fe0f23d353cf6:backend/tests/services.test.ts:generic-api-key:32
+6c3e18a035e0ac3dcccca2fd096a1eb91088a33c:backend/tests/routes.test.ts:generic-api-key:36
+ce58224d06fd2339e270a2d1890ecf0d07b2b2fa:backend/tests/services.test.ts:generic-api-key:28
+# Placeholder bearer token (YOUR_*_TOKEN) in documentation examples
+9a41fba1b90d0557884f8cb28dbac936052f5aa8:docs/IMPLEMENTATION_COMPLETE.md:curl-auth-header:220
+9a41fba1b90d0557884f8cb28dbac936052f5aa8:docs/TEST_PLAN.md:curl-auth-header:307
+9a41fba1b90d0557884f8cb28dbac936052f5aa8:docs/ENVIRONMENT_SETUP.md:curl-auth-header:189
+eb784e3d5dbe0ca57e3aad7c520255e2c68adcf9:ENVIRONMENT_SETUP.md:curl-auth-header:187
+eb784e3d5dbe0ca57e3aad7c520255e2c68adcf9:TEST_PLAN.md:curl-auth-header:304
+eb784e3d5dbe0ca57e3aad7c520255e2c68adcf9:IMPLEMENTATION_COMPLETE.md:curl-auth-header:217
+bc690643269852d2c58b0086bc2bd8b07b7d8157:RUN_PROJECT.md:curl-auth-header:294
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:curl-auth-header:125
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:curl-auth-header:129
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:curl-auth-header:379
+# Truncated example token in documentation (value ends with an ellipsis)
+bc690643269852d2c58b0086bc2bd8b07b7d8157:RUN_PROJECT.md:generic-api-key:278
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:generic-api-key:61
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:generic-api-key:62
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:generic-api-key:244
+3317917fdc5e98e6769991145ae745970019a01d:JWT_TOKEN_GUIDE.md:generic-api-key:245
