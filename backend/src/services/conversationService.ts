@@ -107,12 +107,12 @@ export class ConversationService {
   }
 
   /**
-   * Get a conversation by ID
+   * Get a conversation by ID; returns null unless userId owns it
    */
-  async getConversation(conversationId: string): Promise<Conversation | null> {
+  async getConversation(conversationId: string, userId: string): Promise<Conversation | null> {
     const conversation = conversations.get(conversationId);
     
-    if (!conversation) {
+    if (!conversation || conversation.userId !== userId) {
       return null;
     }
 
@@ -158,9 +158,10 @@ export class ConversationService {
    */
   async addMessage(
     conversationId: string,
+    userId: string,
     message: Omit<ConversationMessage, 'id' | 'timestamp' | 'metadata'> & { metadata?: ConversationMessage['metadata'] }
   ): Promise<ConversationMessage> {
-    const conversation = await this.getConversation(conversationId);
+    const conversation = await this.getConversation(conversationId, userId);
     
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
@@ -201,9 +202,10 @@ export class ConversationService {
    */
   async getConversationContext(
     conversationId: string,
+    userId: string,
     maxMessages?: number
   ): Promise<Array<{ role: 'user' | 'assistant' | 'system'; content: string }>> {
-    const conversation = await this.getConversation(conversationId);
+    const conversation = await this.getConversation(conversationId, userId);
     
     if (!conversation) {
       return [];
@@ -264,14 +266,15 @@ export class ConversationService {
         conversation_hash: this.hashConversationId(conversation.id),
         user_id: conversation.userId,
         property_id: conversation.propertyId,
-        first_seen_at: new Date(),
-        replied_at: message.role === 'assistant' ? new Date() : null,
+        first_seen_at: conversation.createdAt,
+        // Drafts are not replies: replied_at stays unset
+        replied_at: null,
         response_text: message.content,
         metadata: {
           role: message.role,
           conversation_message_count: conversation.messages.length,
           template_ids: templateIds || [],
-          ...conversation.metadata
+          tone: conversation.metadata?.tone
         }
       });
 

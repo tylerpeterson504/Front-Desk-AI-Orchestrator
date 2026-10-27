@@ -30,7 +30,7 @@ export interface LoginDto {
 const MIN_PASSWORD_LENGTH = 12;
 const DEFAULT_ROLE = 'agent';
 
-function getBcryptRounds(): number {
+export function getBcryptRounds(): number {
   const parsed = parseInt(config.BCRYPT_ROUNDS || '', 10);
   if (!Number.isInteger(parsed) || parsed < 10 || parsed > 15) return 12;
   return parsed;
@@ -67,13 +67,17 @@ export class UserService {
 
     const normalizedEmail = data.email.trim().toLowerCase();
 
+    const hashedPassword = await bcrypt.hash(data.password, getBcryptRounds());
+
     // Check if email already exists
     const existingUser = await this.userRepository.findOne({ where: { email: normalizedEmail } });
     if (existingUser) {
-      throw new ConflictError('Email already in use');
+      throw new AppError(
+        400,
+        'REGISTRATION_FAILED',
+        'Unable to create account with these details'
+      );
     }
-
-    const hashedPassword = await bcrypt.hash(data.password, getBcryptRounds());
 
     const user = this.userRepository.create({
       email: normalizedEmail,
