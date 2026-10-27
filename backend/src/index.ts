@@ -17,7 +17,6 @@ import {
   sanitizeInput,
   createCopilotRateLimiter,
 } from './middleware/security';
-import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
 import {
@@ -72,7 +71,6 @@ app.use('/api', (req, res, next) => {
 app.use(requestId);
 app.use(performanceMonitor());
 app.use(monitoringMiddleware);
-app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
