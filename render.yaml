@@ -17,7 +17,7 @@ services:
     preDeployCommand: npm run migrate
     startCommand: npm start
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
         value: production
@@ -42,6 +42,7 @@ services:
     rootDir: dashboard
     buildCommand: npm install --legacy-peer-deps --no-audit --no-fund --ignore-scripts && npm run build
     staticPublishPath: ./dist
+    autoDeployTrigger: checksPass
     pullRequestPreviewsEnabled: false
     envVars:
       - key: VITE_API_URL

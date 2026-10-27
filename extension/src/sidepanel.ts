@@ -1,11 +1,12 @@
 // Front Desk AI Side Panel Logic
 
+import { getApiBaseUrl, getPropertyConfig, loadApiBaseUrl } from './config';
+
 // API base URL comes from the shared extension config (single source of truth),
 // which owns the chrome.storage.local `apiBaseUrl` override. init() awaits
 // loadApiBaseUrl() before the first request, so this initial value only matters
 // if something calls out before then.
-let API_BASE =
-  (typeof getApiBaseUrl === 'function' ? getApiBaseUrl() : 'http://localhost:3001') + '/api';
+let API_BASE = getApiBaseUrl() + '/api';
 
 export {};
 
@@ -18,6 +19,14 @@ let selectedTemplates: Template[] = [];
 let currentTone: 'professional' | 'friendly' = 'professional';
 let guestInfo: GuestInfo | null = null;
 let chatContext: ChatContext | null = null;
+// Page context is kept per tab; only the active tab's entries are shown and used for drafts.
+let activeTabId: number | null = null;
+const guestInfoByTab = new Map<number, GuestInfo | null>();
+const chatContextByTab = new Map<number, ChatContext | null>();
+// Backend property id for the active tab's host. The server only accepts ids owned by the caller.
+let activePropertyId: number | null = null;
+// Tab the current draft belongs to. A draft can only be sent to that tab.
+let draftTabId: number | null = null;
 
 // Response-time analytics (issue #327): remember when a conversation first
 // appeared in the panel; when the agent injects a reply, report the pair.
@@ -163,9 +172,7 @@ function setDot(id: string, active: boolean): void {
 
 // ━━━━━━ Init ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function init(): Promise<void> {
-  if (typeof loadApiBaseUrl === 'function') {
-    API_BASE = (await loadApiBaseUrl()) + '/api';
-  }
+  API_BASE = (await loadApiBaseUrl()) + '/api';
   const stored = await safeStorageGet(['token', 'refreshToken']);
   refreshToken = (stored.refreshToken as string) || null;
   if (stored.token) {
@@ -185,9 +192,25 @@ async function showMainPanel(): Promise<void> {
   hide('auth-prompt');
   show('main-panel');
   await Promise.all([loadTemplates(), loadShiftNotes()]);
-  detectProperty();
-  requestPageData();
 }
+
+// The popup removes the session from storage when the backend changes. Drop the
+// in-memory session to match, and pick up a changed backend URL.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.token && !changes.token.newValue) {
+    authToken = null;
+    refreshToken = null;
+    showAuthPrompt();
+  } else if (changes.refreshToken && !changes.refreshToken.newValue) {
+    refreshToken = null;
+  }
+  if (changes.apiBaseUrl) {
+    void loadApiBaseUrl().then((base) => {
+      API_BASE = base + '/api';
+    });
+  }
+});
 
 // ━━━━━━ Auth ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 document.getElementById('btn-login')?.addEventListener('click', async () => {
@@ -221,43 +244,91 @@ document.getElementById('btn-logout')?.addEventListener('click', async () => {
     // Nothing useful to show: we are logging out either way.
   } finally {
     await clearSession();
+    clearPanelState();
     showAuthPrompt();
   }
 });
 
+function clearPanelState(): void {
+  guestInfoByTab.clear();
+  chatContextByTab.clear();
+  applyGuestInfo(null);
+  applyChatContext(null);
+  selectedTemplates = [];
+  renderTemplates(allTemplates);
+  renderSelected();
+  activePropertyId = null;
+  setDot('dot-property', false);
+  setText('label-property', 'No property');
+  setText('response-box', 'Response will appear here…');
+  document.getElementById('response-box')?.classList.add('empty');
+  hide('btn-copy');
+  hide('btn-inject');
+}
+
 // ━━━━━━ Property detection ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function detectProperty(): void {
-  const config = typeof getPropertyConfig === 'function' ? getPropertyConfig() : null;
-  if (config) {
-    setDot('dot-property', true);
-    setText('label-property', config.name);
-  } else {
-    setDot('dot-property', false);
-    setText('label-property', 'No property');
+// The side panel's own location is the extension page, so the property is read
+// from the active tab's URL.
+function propertyForUrl(url: string | undefined): { id: number; name: string } | null {
+  if (!url) return null;
+  try {
+    return getPropertyConfig(new URL(url).hostname);
+  } catch {
+    return null;
   }
 }
 
-// ━━━━━━ Page data (guest info / chat context) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function requestPageData(): void {
-  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-    if (!tab) return;
-    chrome.tabs.sendMessage(tab.id as number, { type: 'GET_GUEST_INFO' }, (res) => {
-      if (chrome.runtime.lastError) return;
-      if (res?.data) updateGuestInfo(res.data);
-    });
-    chrome.tabs.sendMessage(tab.id as number, { type: 'GET_CHAT_CONTEXT' }, (res) => {
-      if (chrome.runtime.lastError) return;
-      if (res?.data) updateChatContext(res.data);
-    });
+function detectProperty(tabId: number): void {
+  activePropertyId = null;
+  chrome.tabs.get(tabId, (tab) => {
+    if (chrome.runtime.lastError || tabId !== activeTabId) return;
+    const config = propertyForUrl(tab?.url);
+    activePropertyId = config?.id ?? null;
+    setDot('dot-property', Boolean(config));
+    setText('label-property', config ? config.name : 'No property');
   });
 }
 
-chrome.runtime.onMessage.addListener((message: { type: string; data?: unknown }) => {
-  if (message.type === 'GUEST_INFO_UPDATED') updateGuestInfo(message.data as GuestInfo);
-  if (message.type === 'CHAT_CONTEXT_UPDATED') updateChatContext(message.data as ChatContext);
+// ━━━━━━ Page data (guest info / chat context) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function activateCurrentTab(): void {
+  chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    if (tab?.id !== undefined) activateTab(tab.id);
+  });
+}
+
+function activateTab(tabId: number): void {
+  activeTabId = tabId;
+  applyGuestInfo(guestInfoByTab.get(tabId) ?? null);
+  applyChatContext(chatContextByTab.get(tabId) ?? null);
+  detectProperty(tabId);
+  requestPageData(tabId);
+}
+
+function requestPageData(tabId: number): void {
+  chrome.tabs.sendMessage(tabId, { type: 'GET_GUEST_INFO' }, (res) => {
+    if (chrome.runtime.lastError) return;
+    if (res?.data) updateGuestInfo(res.data, tabId);
+  });
+  chrome.tabs.sendMessage(tabId, { type: 'GET_CHAT_CONTEXT' }, (res) => {
+    if (chrome.runtime.lastError) return;
+    if (res?.data) updateChatContext(res.data, tabId);
+  });
+}
+
+chrome.tabs.onActivated.addListener(() => activateCurrentTab());
+
+chrome.runtime.onMessage.addListener((message: { type: string; data?: unknown; tabId?: number }) => {
+  if (message.tabId === undefined) return;
+  if (message.type === 'GUEST_INFO_UPDATED') updateGuestInfo(message.data as GuestInfo, message.tabId);
+  if (message.type === 'CHAT_CONTEXT_UPDATED') updateChatContext(message.data as ChatContext, message.tabId);
 });
 
-function updateGuestInfo(data: GuestInfo | null): void {
+function updateGuestInfo(data: GuestInfo | null, tabId: number): void {
+  guestInfoByTab.set(tabId, data);
+  if (tabId === activeTabId) applyGuestInfo(data);
+}
+
+function applyGuestInfo(data: GuestInfo | null): void {
   guestInfo = data;
   const hasData = data?.guestName || data?.roomNumber;
   setDot('dot-guest', Boolean(hasData));
@@ -274,7 +345,12 @@ function updateGuestInfo(data: GuestInfo | null): void {
   setText('guest-info-block', parts.length ? parts.join('\n') : 'No guest data found on this page');
 }
 
-function updateChatContext(data: ChatContext | null): void {
+function updateChatContext(data: ChatContext | null, tabId: number): void {
+  chatContextByTab.set(tabId, data);
+  if (tabId === activeTabId) applyChatContext(data);
+}
+
+function applyChatContext(data: ChatContext | null): void {
   chatContext = data;
   noteConversationSeen(data);
   const block = document.getElementById('chat-context-block');
@@ -324,7 +400,7 @@ function noteReplySent(): void {
 
   // The server requires a property the caller owns; without one there is
   // nothing useful to report.
-  const propertyId = resolvePropertyId();
+  const propertyId = activePropertyId;
   if (!propertyId) return;
 
   // Fire-and-forget: analytics must never block or break the panel.
@@ -453,28 +529,18 @@ document.querySelectorAll('.tone-btn').forEach((btn) => {
 });
 
 // ━━━━━━ Generate response ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function localFallbackDraft(): string {
+function localFallbackDraft(guest: GuestInfo | null): string {
   // Template stitching fallback (also used when the server has no AI key).
   const combined = selectedTemplates.map((t) => t.content).join('\n\n');
   const toneNote =
     currentTone === 'friendly'
       ? combined.replace(/\bsincerely\b/gi, 'warmly').replace(/\bkindly\b/gi, 'warmly')
       : combined;
-  return guestInfo?.guestName ? `Dear ${guestInfo.guestName},\n\n${toneNote}` : toneNote;
+  return guest?.guestName ? `Dear ${guest.guestName},\n\n${toneNote}` : toneNote;
 }
 
-// Resolve the backend property id for the tab's host. config.js maps hosts to
-// property configs; the server only accepts ids owned by the caller.
-function resolvePropertyId(): number | null {
-  try {
-    const config = typeof getPropertyConfig === 'function' ? getPropertyConfig() : null;
-    return config?.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function showDraft(text: string): void {
+function showDraft(text: string, tabId: number | null): void {
+  draftTabId = tabId;
   const box = document.getElementById('response-box');
   if (box) {
     box.textContent = text;
@@ -499,23 +565,26 @@ document.getElementById('btn-generate')?.addEventListener('click', async () => {
   setText('response-box', 'Drafting…');
   document.getElementById('response-box')?.classList.remove('empty');
 
+  // The draft belongs to the tab that was active when it was requested.
+  const tabId = activeTabId;
+  const guest = guestInfo;
   try {
     const data = await apiRequest('POST', '/copilot/draft', {
-      property_id: resolvePropertyId() || undefined,
+      property_id: activePropertyId || undefined,
       tone: currentTone,
       template_ids: selectedTemplates.map((t) => t.id),
-      guest_info: guestInfo || undefined,
+      guest_info: guest || undefined,
       chat_context: chatContext || undefined,
     });
     if (data && typeof data === 'object' && 'draft' in data && String(data.draft).trim()) {
-      showDraft(String(data.draft));
+      showDraft(String(data.draft), tabId);
     } else {
       // Server responded but produced no draft (LLM unconfigured) — local path.
-      showDraft(localFallbackDraft());
+      showDraft(localFallbackDraft(guest), tabId);
     }
   } catch {
     // Server AI unavailable (no key / offline): use the local template path.
-    showDraft(localFallbackDraft());
+    showDraft(localFallbackDraft(guest), tabId);
   } finally {
     if (btn) (btn as HTMLButtonElement).disabled = false;
   }
@@ -539,8 +608,12 @@ document.getElementById('btn-copy')?.addEventListener('click', () => {
 document.getElementById('btn-inject')?.addEventListener('click', () => {
   const text = document.getElementById('response-box')?.textContent || '';
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-    if (!tab) return;
-    chrome.tabs.sendMessage(tab.id as number, { type: 'INJECT_MESSAGE', text }, (res) => {
+    const target = draftTabId;
+    if (target === null || tab?.id !== target) {
+      alert('Switch back to the chat this draft was written for to inject it.');
+      return;
+    }
+    chrome.tabs.sendMessage(target, { type: 'INJECT_MESSAGE', text }, (res) => {
       if (res?.success) {
         noteReplySent();
         const btn = document.getElementById('btn-inject');
@@ -557,3 +630,4 @@ document.getElementById('btn-inject')?.addEventListener('click', () => {
 
 // ━━━━━━ Start ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 init();
+activateCurrentTab();

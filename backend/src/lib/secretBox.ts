@@ -56,3 +56,14 @@ export function decryptSecret(encrypted: string): string {
 
   return decrypted;
 }
+
+export function isEncryptionConfigured(): boolean {
+  return Boolean(config.WIFI_ENCRYPTION_KEY);
+}
+
+// Legacy rows hold plaintext, so detection is structural: canonical base64
+// that decodes to at least an IV and an auth tag.
+export function isEncrypted(value: string): boolean {
+  const decoded = Buffer.from(value, 'base64');
+  return decoded.length >= IV_LENGTH + AUTH_TAG_LENGTH && decoded.toString('base64') === value;
+}

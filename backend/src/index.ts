@@ -64,6 +64,10 @@ app.use(tracingMiddleware);
 app.use(structuredLoggingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use(requestId);
 app.use(performanceMonitor());
 app.use(monitoringMiddleware);
