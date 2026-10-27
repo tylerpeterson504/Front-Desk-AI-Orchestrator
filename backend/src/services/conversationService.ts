@@ -83,6 +83,29 @@ export class ConversationService {
   private readonly MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
   /**
+   * Maximum number of conversations kept in memory
+   */
+  private readonly MAX_CONVERSATIONS = 5000;
+
+  /**
+   * How often expired conversations are swept
+   */
+  private readonly SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+  private sweepTimer: NodeJS.Timeout | null = null;
+
+  /**
+   * Start the periodic sweep of expired conversations. Call once at server startup.
+   */
+  init(): void {
+    if (this.sweepTimer) return;
+    this.sweepTimer = setInterval(() => {
+      void this.cleanupExpired();
+    }, this.SWEEP_INTERVAL_MS);
+    this.sweepTimer.unref();
+  }
+
+  /**
    * Create a new conversation
    */
   async createConversation(
@@ -100,6 +123,10 @@ export class ConversationService {
       metadata
     };
 
+    if (conversations.size >= this.MAX_CONVERSATIONS) {
+      const oldestId = conversations.keys().next().value;
+      if (oldestId !== undefined) conversations.delete(oldestId);
+    }
     conversations.set(conversation.id, conversation);
     logger.info('Conversation created', { conversationId: conversation.id, userId });
 

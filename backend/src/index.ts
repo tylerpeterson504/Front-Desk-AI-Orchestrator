@@ -17,7 +17,6 @@ import {
   sanitizeInput,
   createCopilotRateLimiter,
 } from './middleware/security';
-import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
 import {
@@ -25,9 +24,11 @@ import {
   tracingMiddleware,
   structuredLoggingMiddleware,
   prometheusMetricsHandler,
+  requireMetricsToken,
 } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
 import { refreshTokenService } from './services/refreshTokenService';
+import { conversationService } from './services/conversationService';
 
 // Load environment variables
 dotenv.config();
@@ -70,7 +71,6 @@ app.use('/api', (req, res, next) => {
 app.use(requestId);
 app.use(performanceMonitor());
 app.use(monitoringMiddleware);
-app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
@@ -131,7 +131,6 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -176,7 +175,8 @@ import githubRouter from './routes/github';
 import analyticsRouter from './routes/analytics';
 import escalationsRouter from './routes/escalations';
 
-app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
+app.post(['/api/auth/login', '/api/auth/register'], authLimiter);
+app.use('/api/auth', refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
@@ -191,7 +191,7 @@ app.use('/api/escalations', apiLimiter, escalationsRouter);
 app.use('/health', healthRouter);
 
 // Prometheus metrics endpoint
-app.get('/metrics', prometheusMetricsHandler);
+app.get('/metrics', requireMetricsToken, prometheusMetricsHandler);
 
 // Setup Swagger API documentation
 setupSwagger(app);
@@ -223,6 +223,7 @@ const isMainModule = require.main === module;
 if (isMainModule) {
   initializeDatabase()
     .then(() => {
+      conversationService.init();
       app.listen(PORT, () => {
         logger.info('backend started', {
           port: PORT,

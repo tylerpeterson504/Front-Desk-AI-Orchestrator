@@ -23,7 +23,7 @@ const manualConfig = connectionString ? {} : {
 const seedDataSource = new DataSource({
   type: 'postgres',
   ...(connectionString ? { url: connectionString } : manualConfig),
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false,
   entities: [User, Property, Template, ShiftNote],
   migrations: [],
   synchronize: false,

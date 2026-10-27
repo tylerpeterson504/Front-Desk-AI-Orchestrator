@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { EyeIcon, EyeOffIcon, PlusIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { propertyAPI, Property } from '../services/api';
+import { toUserMessage } from '../lib/errorMessages';
 import { usePropertiesStore } from '../stores/propertiesStore';
 
 interface FormData {
@@ -44,6 +45,7 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
   const [revealed, setRevealed] = React.useState<Record<number, boolean>>({});
   const [revealing, setRevealing] = React.useState<number | null>(null);
   const [wifiPasswords, setWifiPasswords] = React.useState<Record<number, string>>({});
+  const [wifiErrors, setWifiErrors] = React.useState<Record<number, string>>({});
 
   const {
     register,
@@ -62,16 +64,13 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
       return;
     }
     setRevealing(prop.id);
+    setWifiErrors((prev) => ({ ...prev, [prop.id]: '' }));
     try {
       const data = await propertyAPI.getWifi(prop.id);
       setWifiPasswords((prev) => ({ ...prev, [prop.id]: data.password }));
       setRevealed((prev) => ({ ...prev, [prop.id]: true }));
-    } catch {
-      setWifiPasswords((prev) => ({
-        ...prev,
-        [prop.id]: prop.wifi_password || '',
-      }));
-      setRevealed((prev) => ({ ...prev, [prop.id]: true }));
+    } catch (err) {
+      setWifiErrors((prev) => ({ ...prev, [prop.id]: toUserMessage(err) }));
     } finally {
       setRevealing(null);
     }
@@ -269,6 +268,9 @@ export function PropertiesPage({ embedded = false }: PropertiesPageProps = {}) {
                           </>
                         )}
                       </button>
+                      {wifiErrors[prop.id] && (
+                        <p className="mt-1 text-xs text-red-600">{wifiErrors[prop.id]}</p>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {prop.checkout_time || '-'}

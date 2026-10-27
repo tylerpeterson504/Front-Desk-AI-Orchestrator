@@ -18,7 +18,7 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.88.0",
+    "react-hook-form": "^7.91.0",
     "zod": "^3.25.76",
     "zustand": "^4.5.7"
   },
@@ -38,6 +38,10 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.3.3",
     "vite": "^5.4.10",
-    "vitest": "^1.6.0"
+    "vitest": "^3.2.7"
+  },
+  "overrides": {
+    "shell-quote": "^1.8.4",
+    "tinypool": "^2.2.0"
   }
 }

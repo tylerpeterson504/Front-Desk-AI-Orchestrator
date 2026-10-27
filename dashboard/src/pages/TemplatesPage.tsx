@@ -3,6 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Alert } from '../components/Alert';
 import { templateAPI } from '../services/api';
+import { toUserMessage } from '../lib/errorMessages';
 import { Plus, Edit2, Trash2, Search } from '../components/icons';
 import { Template } from '../types';
 
@@ -34,9 +35,8 @@ export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }
       const response = await templateAPI.getAll();
       setTemplates(response);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load templates');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }
       resetForm();
       await loadTemplates();
     } catch (err: unknown) {
-      setError((err as { message?: string }).message || 'Failed to save template');
+      setError(toUserMessage(err));
     }
   };
 
