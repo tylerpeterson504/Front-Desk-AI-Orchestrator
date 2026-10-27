@@ -25,6 +25,7 @@ import {
   tracingMiddleware,
   structuredLoggingMiddleware,
   prometheusMetricsHandler,
+  requireMetricsToken,
 } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
 import { refreshTokenService } from './services/refreshTokenService';
@@ -191,7 +192,7 @@ app.use('/api/escalations', apiLimiter, escalationsRouter);
 app.use('/health', healthRouter);
 
 // Prometheus metrics endpoint
-app.get('/metrics', prometheusMetricsHandler);
+app.get('/metrics', requireMetricsToken, prometheusMetricsHandler);
 
 // Setup Swagger API documentation
 setupSwagger(app);

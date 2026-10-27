@@ -74,6 +74,7 @@ export const envSchema = z.object({
   CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
   CSRF_HEADER_NAME: z.string().default('x-csrf-token').optional(),
   LOG_IP_ADDRESS: z.enum(['true', 'false']).default('true').optional(),
+  METRICS_TOKEN: z.string().optional(),
   // Performance settings
   COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30),
   COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),

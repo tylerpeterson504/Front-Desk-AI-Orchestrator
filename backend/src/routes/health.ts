@@ -34,13 +34,8 @@ router.get('/detailed', async (req, res, next) => {
     
     // Database connectivity check
     let dbStatus = 'unavailable';
-    let dbResponseTime = 0;
-    let migrationStatus = 'unknown';
-    let currentVersion = 'unknown';
-    
+
     try {
-      const dbStart = Date.now();
-      
       // Try to get a connection and run a simple query
       const query = 'SELECT 1';
       // Using raw query to avoid entity dependencies
@@ -51,27 +46,9 @@ router.get('/detailed', async (req, res, next) => {
       await getRepository('User').query(query);
       
       dbStatus = 'ok';
-      dbResponseTime = Date.now() - dbStart;
-      
-      // Get migration version
-      try {
-        const migrations = await getRepository(Migration).find({
-          order: { id: 'DESC' },
-          take: 1
-        });
-        if (migrations.length > 0) {
-          currentVersion = migrations[0].name;
-          migrationStatus = 'up_to_date';
-        }
-      } catch (migrationError) {
-        // Migration table might not exist or be inaccessible
-        logger.debug('Could not check migration version', { error: migrationError });
-        migrationStatus = 'check_failed';
-      }
     } catch (dbError) {
       logger.warn('Database health check failed', { error: dbError });
       dbStatus = 'error';
-      dbResponseTime = 0;
     }
     
     const totalResponseTime = Date.now() - startTime;
@@ -83,12 +60,7 @@ router.get('/detailed', async (req, res, next) => {
       version: '1.0.0',
       checks: {
         database: {
-          status: dbStatus,
-          responseTimeMs: dbResponseTime,
-          migration: {
-            status: migrationStatus,
-            currentVersion
-          }
+          status: dbStatus
         }
       },
       responseTimeMs: totalResponseTime,
@@ -115,17 +87,12 @@ router.get('/detailed', async (req, res, next) => {
  */
 router.get('/database', async (req, res, next) => {
   try {
-    const startTime = Date.now();
-    
     // Try a simple query
     await getRepository('User').query('SELECT 1');
-    
-    const responseTime = Date.now() - startTime;
-    
+
     res.json({
       status: 'ok',
       database: 'connected',
-      responseTimeMs: responseTime,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -144,18 +111,10 @@ router.get('/database', async (req, res, next) => {
  */
 router.get('/migrations', async (req, res, next) => {
   try {
-    const migrations = await getRepository(Migration).find({
-      order: { id: 'DESC' }
-    });
-    
+    await getRepository(Migration).count();
+
     res.json({
       status: 'ok',
-      currentVersion: migrations.length > 0 ? migrations[0].name : 'none',
-      totalMigrations: migrations.length,
-      migrations: migrations.map(m => ({
-        name: m.name,
-        executedAt: m.timestamp
-      })),
       timestamp: new Date().toISOString()
     });
   } catch (err) {
