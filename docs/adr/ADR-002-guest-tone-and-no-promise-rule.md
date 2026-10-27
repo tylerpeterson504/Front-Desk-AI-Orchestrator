@@ -25,12 +25,14 @@ Front desk agents send guest messages from templates. The product rules:
    done"). Acceptable alternatives state the action taken without a
    commitment: "I have shared this with our maintenance team", "I have
    logged your request".
-3. This is a content rule enforced at template creation and review time.
-   It is not enforced in code in this pass; a validation pass over the
-   template service is a follow-up.
+3. This rule is enforced in code. `templateService` rejects template content
+   that matches `findTemplatePromises` (`backend/src/lib/templatePromises.ts`)
+   on create and on update. The copilot system prompt also states the rule to
+   the model. Shipped escalation resolution templates do not pass through the
+   template service, so their wording is kept compliant by hand.
 
 ## Consequences
 
 - Template authors need a checklist when adding or editing templates.
-- Automated linting of template content (a service-level check for
-  promise phrases) is a candidate follow-up task.
+- The phrase list in `templatePromises.ts` is a heuristic. New promise
+  wording needs a new pattern and a test.

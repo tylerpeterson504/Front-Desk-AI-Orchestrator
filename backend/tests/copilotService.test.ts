@@ -3,6 +3,9 @@ import { Property } from '../src/entities/Property';
 import { Template } from '../src/entities/Template';
 import { AuthorizationError } from '../src/lib/errors';
 import { createMockRepository, createMockProperty, createMockTemplate } from './utils';
+import { conversationService } from '../src/services/conversationService';
+import { llmProviderFactory, LLMMessage } from '../src/services/llm/providerFactory';
+import { LLMClient } from '../src/services/llm/types';
 
 // Mock database BEFORE importing CopilotService
 jest.mock('../src/config/database', () => ({
@@ -168,7 +171,24 @@ describe('CopilotService', () => {
         tone: 'friendly'
       });
       expect(result).toContain('UNTRUSTED_DATA reservation');
-      expect(result).toContain('guestName: John Doe');
+      expect(result).toContain('guestName: John');
+      expect(result).not.toContain('Doe');
+    });
+
+    it('should include at most six recent chat messages', () => {
+      const chatContext = {
+        messages: Array.from({ length: 10 }, (_, i) => ({ sender: 'Guest', text: `chat-${i + 1}` }))
+      };
+      const result = (service as any).buildPrompt({
+        property: null,
+        guestInfo: null,
+        chatContext,
+        templates: [],
+        tone: 'professional'
+      });
+      expect(result).toContain('Guest: chat-5');
+      expect(result).toContain('Guest: chat-10');
+      expect(result).not.toContain('Guest: chat-4');
     });
 
     it('should include templates', () => {
@@ -214,6 +234,137 @@ describe('CopilotService', () => {
       expect(result.draft).toBeDefined();
       expect(result.meta.property?.name).toBe('Grand Hotel');
       expect(result.meta.tone).toBe('professional');
+    });
+  });
+
+  describe('conversation reuse', () => {
+    let hasConfigured: jest.SpyInstance;
+    let getClient: jest.SpyInstance;
+    let complete: jest.Mock;
+
+    const sentMessages = (): LLMMessage[] => complete.mock.calls[0][0] as LLMMessage[];
+
+    beforeEach(() => {
+      complete = jest.fn().mockResolvedValue({ text: 'Reply', provider: 'mistral', model: 'mistral-small-latest' });
+      hasConfigured = jest.spyOn(llmProviderFactory, 'hasAnyConfigured').mockReturnValue(true);
+      getClient = jest.spyOn(llmProviderFactory, 'getClientWithFallback').mockReturnValue(
+        { provider: 'mistral', complete } as unknown as LLMClient
+      );
+    });
+
+    afterEach(() => {
+      hasConfigured.mockRestore();
+      getClient.mockRestore();
+    });
+
+    it('reuses the caller\'s own conversation', async () => {
+      const own = await conversationService.createConversation('user-1');
+      await conversationService.addMessage(own.id, 'user-1', { role: 'user', content: 'Earlier guest question' });
+
+      const result = await service.draft({ conversation_id: own.id }, 'user-1');
+
+      expect(result.meta.conversation_id).toBe(own.id);
+      expect(sentMessages().map((m) => m.content)).toContain('Earlier guest question');
+    });
+
+    it('ignores a conversation owned by another user', async () => {
+      const foreign = await conversationService.createConversation('user-2');
+      await conversationService.addMessage(foreign.id, 'user-2', { role: 'user', content: 'Other guest message' });
+
+      const result = await service.draft({ conversation_id: foreign.id }, 'user-1');
+
+      expect(result.meta.conversation_id).toBeDefined();
+      expect(result.meta.conversation_id).not.toBe(foreign.id);
+      expect(sentMessages().map((m) => m.content)).not.toContain('Other guest message');
+      const stored = await conversationService.getConversation(foreign.id, 'user-2');
+      expect(stored?.messages.map((m) => m.content)).toEqual(['Other guest message']);
+    });
+
+    it('creates a new conversation for an unknown id', async () => {
+      const result = await service.draft({ conversation_id: 'unknown-conversation' }, 'user-1');
+
+      const createdId = result.meta.conversation_id ?? '';
+      expect(createdId).not.toBe('');
+      expect(createdId).not.toBe('unknown-conversation');
+      expect(await conversationService.getConversation(createdId, 'user-1')).not.toBeNull();
+    });
+  });
+
+  describe('model input', () => {
+    let hasConfigured: jest.SpyInstance;
+    let getClient: jest.SpyInstance;
+    let complete: jest.Mock;
+
+    const sentContent = (): string[] =>
+      (complete.mock.calls[0][0] as LLMMessage[]).map((m) => m.content);
+
+    beforeEach(() => {
+      complete = jest.fn().mockResolvedValue({ text: 'Reply', provider: 'mistral', model: 'mistral-small-latest' });
+      hasConfigured = jest.spyOn(llmProviderFactory, 'hasAnyConfigured').mockReturnValue(true);
+      getClient = jest.spyOn(llmProviderFactory, 'getClientWithFallback').mockReturnValue(
+        { provider: 'mistral', complete } as unknown as LLMClient
+      );
+    });
+
+    afterEach(() => {
+      hasConfigured.mockRestore();
+      getClient.mockRestore();
+    });
+
+    it('sends the first name and stay details but not the full name or confirmation number', async () => {
+      await service.draft({
+        guest_info: {
+          guestName: 'John Doe',
+          roomNumber: '101',
+          checkIn: '2026-10-20',
+          checkOut: '2026-10-22',
+          confirmationNumber: 'ABC123'
+        }
+      }, 'user-1');
+
+      const prompt = sentContent().join('\n');
+      expect(prompt).toContain('guestName: John');
+      expect(prompt).toContain('roomNumber: 101');
+      expect(prompt).toContain('checkOut: 2026-10-22');
+      expect(prompt).not.toContain('Doe');
+      expect(prompt).not.toContain('ABC123');
+    });
+
+    it('caps conversation history sent to the model at six messages', async () => {
+      const conversation = await conversationService.createConversation('user-1');
+      for (let i = 1; i <= 10; i++) {
+        await conversationService.addMessage(conversation.id, 'user-1', { role: 'user', content: `msg-${i}` });
+      }
+
+      await service.draft({ conversation_id: conversation.id }, 'user-1');
+
+      const sent = sentContent();
+      expect(sent).toHaveLength(8);
+      expect(sent.slice(1, 7)).toEqual(['msg-5', 'msg-6', 'msg-7', 'msg-8', 'msg-9', 'msg-10']);
+    });
+  });
+
+  describe('provider failure', () => {
+    let hasConfigured: jest.SpyInstance;
+    let getClient: jest.SpyInstance;
+
+    beforeEach(() => {
+      hasConfigured = jest.spyOn(llmProviderFactory, 'hasAnyConfigured').mockReturnValue(true);
+      getClient = jest.spyOn(llmProviderFactory, 'getClientWithFallback').mockReturnValue(
+        { provider: 'mistral', complete: jest.fn().mockRejectedValue(new Error('upstream down')) } as unknown as LLMClient
+      );
+    });
+
+    afterEach(() => {
+      hasConfigured.mockRestore();
+      getClient.mockRestore();
+    });
+
+    it('responds 503 with LLM_UNAVAILABLE when every provider fails', async () => {
+      await expect(service.draft({}, 'user-1')).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'LLM_UNAVAILABLE'
+      });
     });
   });
 
