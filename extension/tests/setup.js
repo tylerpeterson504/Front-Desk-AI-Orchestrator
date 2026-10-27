@@ -45,7 +45,11 @@ global.chrome = {
   },
   tabs: {
     query: jest.fn(),
-    sendMessage: jest.fn()
+    sendMessage: jest.fn(),
+    get: jest.fn(),
+    onActivated: {
+      addListener: jest.fn()
+    }
   },
   windows: {
     getCurrent: jest.fn()

@@ -89,11 +89,8 @@ export function sanitizeInput(req: Request, _res: Response, next: NextFunction):
       
       // Limit array lengths
       else if (Array.isArray(req.body[key])) {
-        const arr = req.body[key] as unknown[];
-        if (arr.length > MAX_ARRAY_LENGTH) {
-          req.body[key] = arr.slice(0, MAX_ARRAY_LENGTH);
-        }
-        
+        const arr = (req.body[key] as unknown[]).slice(0, MAX_ARRAY_LENGTH);
+
         // Sanitize array elements
         req.body[key] = arr.map(item => {
           if (typeof item === 'string') {

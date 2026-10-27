@@ -12,28 +12,15 @@ import type { BackendCtx } from './backend';
 
 export interface Env {
   BACKEND_URL: string;
-  BACKEND_TOKEN?: string;
-  ALLOW_FALLBACK_TOKEN?: string;
-  /**
-   * When set to "true", enables local Unity process fallback for development.
-   * This requires the Unity executable to be available in PATH.
-   * @default false
-   */
-  ENABLE_LOCAL_UNITY?: string;
 }
 
 /**
- * Resolve a token from the Bearer header only. Query-parameter tokens are
- * rejected: URLs leak into proxy, load-balancer, and CDN access logs.
- * The shared BACKEND_TOKEN is only used when ALLOW_FALLBACK_TOKEN="true" is
- * explicitly configured, so an unauthenticated caller cannot act as the
- * service account by default.
+ * Resolve a token from the Bearer header only.
  * Return null when none is present; a Bearer header with an empty value returns an empty string.
  */
-function resolveToken(request: Request, env: Env): string | null {
+function resolveToken(request: Request): string | null {
   const header = request.headers.get('Authorization');
   if (header && header.toLowerCase().startsWith('bearer ')) return header.slice(7).trim();
-  if (env.BACKEND_TOKEN && env.ALLOW_FALLBACK_TOKEN === 'true') return env.BACKEND_TOKEN;
   return null;
 }
 
@@ -116,6 +103,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** True for an https URL, or an http URL to a loopback host for local development. */
+function isAllowedBackendUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export default {
   /** Route requests to service info, health, or an MCP transport; return 404 otherwise. */
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -125,10 +123,13 @@ export default {
     if (!env.BACKEND_URL) {
       return withCors(jsonResponse({ error: 'configuration error: BACKEND_URL is required' }, 500));
     }
-    
-    // Disable local Unity process in production or when not explicitly enabled
-    if (env.ENABLE_LOCAL_UNITY === 'true' && process.env.NODE_ENV !== 'production') {
-      console.log('Local Unity process fallback is enabled but not implemented in this version');
+    if (!isAllowedBackendUrl(env.BACKEND_URL)) {
+      return withCors(
+        jsonResponse(
+          { error: 'configuration error: BACKEND_URL must be https, or http on localhost' },
+          500
+        )
+      );
     }
 
     if (url.pathname === '/') {
@@ -145,7 +146,7 @@ export default {
     }
 
     if (url.pathname === '/ws' || url.pathname === '/ws/') {
-      const wsToken = resolveToken(request, env);
+      const wsToken = resolveToken(request);
       if (!wsToken) {
         return withCors(jsonResponse({ error: 'unauthorized: a caller token is required' }, 401));
       }
@@ -154,7 +155,7 @@ export default {
 
     if (url.pathname === '/mcp' || url.pathname === '/mcp/') {
       if (request.method === 'OPTIONS') return withCors(new Response(null, { status: 204 }));
-      const bctx: BackendCtx = { baseUrl: env.BACKEND_URL, token: resolveToken(request, env) };
+      const bctx: BackendCtx = { baseUrl: env.BACKEND_URL, token: resolveToken(request) };
       if (!bctx.token) {
         return withCors(jsonResponse({ error: 'unauthorized: a caller token is required' }, 401));
       }
