@@ -4,7 +4,7 @@ import { User } from '../src/entities/User';
 import { Property } from '../src/entities/Property';
 import { userService } from '../src/services/userService';
 import { authService, generateToken, accessTokenTtlSeconds, verifyToken } from '../src/services/authService';
-import { NotFoundError, ConflictError, AuthenticationError, AppError } from '../src/lib/errors';
+import { NotFoundError, AuthenticationError, AppError } from '../src/lib/errors';
 import { createMockRepository, createMockUser, createMockProperty } from './utils';
 
 // Mock bcrypt
@@ -49,6 +49,7 @@ jest.mock('../src/services/refreshTokenService', () => ({
       user_id: 'user_id',
       token: 'refresh_token'
     }),
+    shortenSession: jest.fn().mockResolvedValue(undefined),
     revokeSession: jest.fn().mockResolvedValue(undefined),
     revokeAllSessions: jest.fn().mockResolvedValue(undefined)
   }
@@ -90,7 +91,7 @@ describe('Service Layer', () => {
         ).rejects.toThrow(AppError);
       });
 
-      it('should throw ConflictError for duplicate email', async () => {
+      it('rejects a duplicate email with the generic registration failure', async () => {
         const mockRepo = createMockRepository<User>();
         mockRepo.findOne.mockResolvedValue({ id: '1', email: 'test@example.com' });
         (getRepository as jest.Mock).mockReturnValue(mockRepo);
@@ -101,7 +102,28 @@ describe('Service Layer', () => {
             password: 'password12345678',
             name: 'Test User'
           })
-        ).rejects.toThrow(ConflictError);
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          code: 'REGISTRATION_FAILED',
+          message: 'Unable to create account with these details'
+        });
+      });
+
+      it('hashes the password before rejecting a duplicate email', async () => {
+        const mockRepo = createMockRepository<User>();
+        mockRepo.findOne.mockResolvedValue({ id: '1', email: 'test@example.com' });
+        (getRepository as jest.Mock).mockReturnValue(mockRepo);
+
+        await expect(
+          userService.createUser({
+            email: 'test@example.com',
+            password: 'password12345678',
+            name: 'Test User'
+          })
+        ).rejects.toThrow('Unable to create account with these details');
+
+        expect(bcrypt.hash).toHaveBeenCalledTimes(1);
+        expect(mockRepo.save).not.toHaveBeenCalled();
       });
 
       it('should throw ValidationError for short password', async () => {
@@ -327,6 +349,71 @@ describe('Service Layer', () => {
             password: 'wrong_password'
           })
         ).rejects.toThrow(AuthenticationError);
+      });
+
+      describe('placeholder password hash', () => {
+        function loadIsolatedAuthService() {
+          let loaded!: {
+            service: typeof authService;
+            bcryptMock: { hash: jest.Mock; compare: jest.Mock };
+          };
+          jest.isolateModules(() => {
+            loaded = {
+              service: jest.requireActual<typeof import('../src/services/authService')>(
+                '../src/services/authService'
+              ).authService,
+              bcryptMock: jest.requireMock<{ hash: jest.Mock; compare: jest.Mock }>('bcrypt')
+            };
+          });
+          return loaded;
+        }
+
+        it('does not hash the placeholder password when the module is imported', () => {
+          const { bcryptMock } = loadIsolatedAuthService();
+
+          expect(bcryptMock.hash).not.toHaveBeenCalled();
+        });
+
+        it('hashes the placeholder once and reuses it for later unknown-email logins', async () => {
+          const { service, bcryptMock } = loadIsolatedAuthService();
+          const emptyRepo = createMockRepository<User>();
+          emptyRepo.findOne.mockResolvedValue(null);
+          (getRepository as jest.Mock).mockReturnValue(emptyRepo);
+          bcryptMock.hash.mockResolvedValue('placeholder_hash');
+
+          await expect(
+            service.login({ email: 'nonexistent@example.com', password: 'password12345678' })
+          ).rejects.toThrow('Invalid email or password');
+          await expect(
+            service.login({ email: 'nonexistent@example.com', password: 'password12345678' })
+          ).rejects.toThrow('Invalid email or password');
+
+          expect(bcryptMock.hash).toHaveBeenCalledTimes(1);
+          expect(bcryptMock.compare).toHaveBeenCalledTimes(2);
+          expect(bcryptMock.compare).toHaveBeenCalledWith('password12345678', 'placeholder_hash');
+        });
+      });
+
+      it('returns the same error message for an unknown email and a wrong password', async () => {
+        const mockRepo = createMockRepository<User>();
+        (getRepository as jest.Mock).mockReturnValue(mockRepo);
+
+        mockRepo.findOne.mockResolvedValue(null);
+        await expect(
+          authService.login({
+            email: 'nonexistent@example.com',
+            password: 'password12345678'
+          })
+        ).rejects.toThrow('Invalid email or password');
+
+        (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+        mockRepo.findOne.mockResolvedValue({ id: '1', email: 'test@example.com', password_hash: 'hashed_password' });
+        await expect(
+          authService.login({
+            email: 'test@example.com',
+            password: 'wrong_password'
+          })
+        ).rejects.toThrow('Invalid email or password');
       });
     });
 

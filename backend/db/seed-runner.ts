@@ -6,6 +6,7 @@ import { DataSource } from 'typeorm';
 import bcrypt from 'bcrypt';
 import { getDatabaseConfig } from '../src/config/index';
 import { User, Property, Template, ShiftNote } from '../src/entities';
+import { assertSeedingAllowed, requireSeedPasswords } from './seed-requirements';
 
 const dbConfig = getDatabaseConfig();
 
@@ -42,7 +43,7 @@ async function usersExist(): Promise<boolean> {
 /**
  * Create admin user
  */
-async function createAdminUser() {
+async function createAdminUser(password: string) {
   const userRepo = seedDataSource.getRepository(User);
   
   const existing = await userRepo.findOne({ where: { email: 'admin@hotel.com' } });
@@ -51,7 +52,7 @@ async function createAdminUser() {
     return existing;
   }
   
-  const hashedPassword = await bcrypt.hash('admin123', 12);
+  const hashedPassword = await bcrypt.hash(password, 12);
   
   const adminUser = userRepo.create({
     email: 'admin@hotel.com',
@@ -69,7 +70,7 @@ async function createAdminUser() {
 /**
  * Create sample agent user
  */
-async function createAgentUser(adminUser: User) {
+async function createAgentUser(adminUser: User, password: string) {
   const userRepo = seedDataSource.getRepository(User);
   
   const existing = await userRepo.findOne({ where: { email: 'agent@hotel.com' } });
@@ -78,7 +79,7 @@ async function createAgentUser(adminUser: User) {
     return existing;
   }
   
-  const hashedPassword = await bcrypt.hash('agent123', 12);
+  const hashedPassword = await bcrypt.hash(password, 12);
   
   const agentUser = userRepo.create({
     email: 'agent@hotel.com',
@@ -221,6 +222,8 @@ async function createSampleShiftNotes(agentUser: User, property: Property) {
  * Run all seeds
  */
 async function runSeeds() {
+  assertSeedingAllowed(process.env);
+
   try {
     console.log('Starting database seeding...');
     
@@ -236,11 +239,13 @@ async function runSeeds() {
       return;
     }
     
+    const passwords = requireSeedPasswords(process.env);
+
     console.log('Creating admin user...');
-    const adminUser = await createAdminUser();
+    const adminUser = await createAdminUser(passwords.adminPassword);
     
     console.log('Creating agent user...');
-    const agentUser = await createAgentUser(adminUser);
+    const agentUser = await createAgentUser(adminUser, passwords.agentPassword);
     
     console.log('Creating sample property...');
     const property = await createSampleProperty(adminUser);
