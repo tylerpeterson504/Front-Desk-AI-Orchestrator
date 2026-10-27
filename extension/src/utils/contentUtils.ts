@@ -361,51 +361,6 @@ export function injectText(text: string): boolean {
 }
 
 /**
- * Inject text into a specific selector
- */
-export function injectTextToSelector(selector: string, text: string): boolean {
-  try {
-    const element = document.querySelector(selector);
-    if (!element) return false;
-
-    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-      const input = element as HTMLInputElement | HTMLTextAreaElement;
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const value = input.value || '';
-
-      input.value = value.substring(0, start) + text + value.substring(end);
-      input.selectionStart = start + text.length;
-      input.selectionEnd = start + text.length;
-
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-
-      return true;
-    }
-
-    // For contenteditable elements
-    if ((element as HTMLElement).isContentEditable) {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(text));
-        return true;
-      }
-
-      element.textContent += text;
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Failed to inject text to selector:', error);
-    return false;
-  }
-}
-
-/**
  * Log error to both console and background
  */
 export function logError(error: Error, context: string = 'Content Script'): void {
