@@ -34,9 +34,8 @@ export const TemplatesPage: React.FC<TemplatesPageProps> = ({ embedded = false }
       const response = await templateAPI.getAll();
       setTemplates(response);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load templates');
-      console.error(err);
     } finally {
       setLoading(false);
     }

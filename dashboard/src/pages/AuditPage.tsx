@@ -37,9 +37,8 @@ export const AuditPage: React.FC<AuditPageProps> = ({ embedded = false }) => {
       const response = await auditAPI.getAll();
       setLogs(response);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load audit logs');
-      console.error(err);
     } finally {
       setLoading(false);
     }
