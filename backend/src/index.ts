@@ -29,6 +29,7 @@ import {
 } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
 import { refreshTokenService } from './services/refreshTokenService';
+import { conversationService } from './services/conversationService';
 
 // Load environment variables
 dotenv.config();
@@ -224,6 +225,7 @@ const isMainModule = require.main === module;
 if (isMainModule) {
   initializeDatabase()
     .then(() => {
+      conversationService.init();
       app.listen(PORT, () => {
         logger.info('backend started', {
           port: PORT,
