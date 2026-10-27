@@ -1,7 +1,9 @@
+import { Brackets } from 'typeorm';
 import { getRepository } from '../config/database';
+import { Property } from '../entities/Property';
 import { Template } from '../entities/Template';
 import { User } from '../entities/User';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors';
+import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../lib/errors';
 import { createRequestLogger } from '../lib/logger';
 import { findTemplatePromises } from '../lib/templatePromises';
 
@@ -20,6 +22,9 @@ export interface UpdateTemplateDto extends CreateTemplateDto {
   is_active?: boolean;
 }
 
+const SORTABLE_TEMPLATE_COLUMNS = ['name', 'category', 'usage_count', 'created_at', 'updated_at'] as const;
+export type SortableTemplateColumn = (typeof SORTABLE_TEMPLATE_COLUMNS)[number];
+
 export interface TemplateSearchOptions {
   category?: string;
   search?: string;
@@ -28,8 +33,8 @@ export interface TemplateSearchOptions {
   is_active?: boolean;
   status?: string;
   include_shared?: boolean;
-  sort_by?: 'name' | 'usage_count' | 'created_at' | 'updated_at';
-  sort_order?: 'ASC' | 'DESC';
+  sort_by?: SortableTemplateColumn;
+  sort_order?: 'ASC' | 'DESC' | 'asc' | 'desc';
 }
 
 export interface TemplateVersion {
@@ -51,8 +56,21 @@ const MAX_TAG_LENGTH = 100;
 const MAX_CATEGORY_LENGTH = 100;
 const MAX_NAME_LENGTH = 255;
 
+function resolveTemplateSort(
+  sortBy: unknown,
+  sortOrder: unknown
+): { column: SortableTemplateColumn; direction: 'ASC' | 'DESC' } {
+  const column = SORTABLE_TEMPLATE_COLUMNS.find((allowed) => allowed === sortBy);
+  if (!column) {
+    return { column: 'name', direction: 'ASC' };
+  }
+  const direction = typeof sortOrder === 'string' && sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  return { column, direction };
+}
+
 export class TemplateService {
   private templateRepository = getRepository<Template>(Template);
+  private propertyRepository = getRepository<Property>(Property);
 
   private readTemplateBody(body: CreateTemplateDto | UpdateTemplateDto): CreateTemplateDto & { is_active?: boolean } {
     const typedBody = (body || {}) as unknown as Record<string, unknown>;
@@ -147,7 +165,7 @@ export class TemplateService {
     return template;
   }
 
-  async create(data: CreateTemplateDto, userId: string): Promise<Template> {
+  async create(data: CreateTemplateDto, userId: string, isAdmin = false): Promise<Template> {
     const templateData = this.readTemplateBody(data);
 
     const template = this.templateRepository.create({
@@ -158,8 +176,8 @@ export class TemplateService {
       description: templateData.description,
       user_id: userId,
       property_id: templateData.property_id,
-      is_global: templateData.is_global,
-      status: templateData.status || 'approved',
+      is_global: isAdmin ? templateData.is_global : false,
+      status: isAdmin && templateData.status ? templateData.status : 'approved',
       is_active: true,
       version: 1,
       created_by: userId
@@ -170,8 +188,8 @@ export class TemplateService {
     return template;
   }
 
-  async update(id: number, data: UpdateTemplateDto, userId: string): Promise<Template> {
-    const template = await this.getById(id, userId);
+  async update(id: number, data: UpdateTemplateDto, userId: string, isAdmin = false): Promise<Template> {
+    const template = await this.getManageableTemplate(id, userId, isAdmin);
 
     const templateData = this.readTemplateBody(data);
 
@@ -184,11 +202,15 @@ export class TemplateService {
     if (templateData.property_id !== undefined) {
       template.property_id = templateData.property_id;
     }
-    if (templateData.is_global !== undefined) {
-      template.is_global = templateData.is_global;
-    }
-    if (templateData.status !== undefined) {
-      template.status = templateData.status;
+    if (isAdmin) {
+      if (templateData.is_global !== undefined) {
+        template.is_global = templateData.is_global;
+      }
+      if (templateData.status !== undefined) {
+        template.status = templateData.status;
+      }
+    } else {
+      template.is_global = false;
     }
     
     // Increment version if content changed
@@ -206,9 +228,23 @@ export class TemplateService {
     return template;
   }
 
-  async delete(id: number, userId: string): Promise<void> {
-    const template = await this.getById(id, userId);
+  async delete(id: number, userId: string, isAdmin = false): Promise<void> {
+    const template = await this.getManageableTemplate(id, userId, isAdmin);
     await this.templateRepository.remove(template);
+  }
+
+  private async getManageableTemplate(id: number, userId: string, isAdmin: boolean): Promise<Template> {
+    const template = await this.templateRepository.findOne({ where: { id } });
+
+    if (!template) {
+      throw new NotFoundError('Template', id);
+    }
+
+    if (!isAdmin && template.user_id !== userId) {
+      throw new AuthorizationError('Only the template owner or an admin can modify this template');
+    }
+
+    return template;
   }
 
   /**
@@ -227,9 +263,24 @@ export class TemplateService {
       sort_order = 'ASC'
     } = options;
 
+    // Own templates, plus approved active global templates when include_shared is set
     const queryBuilder = this.templateRepository
       .createQueryBuilder('template')
-      .where('template.user_id = :userId', { userId });
+      .where(
+        new Brackets((visible) => {
+          visible.where('template.user_id = :userId', { userId });
+          if (include_shared) {
+            visible.orWhere(
+              new Brackets((shared) => {
+                shared
+                  .where('template.is_global = true')
+                  .andWhere("template.status = 'approved'")
+                  .andWhere('template.is_active = true');
+              })
+            );
+          }
+        })
+      );
 
     // Filter by active status
     if (is_active !== undefined) {
@@ -249,9 +300,6 @@ export class TemplateService {
     // Filter by property
     if (property_id) {
       queryBuilder.andWhere('(template.property_id = :property_id OR template.is_global = true)', { property_id });
-    } else if (include_shared) {
-      // Include templates from other properties if user has access
-      queryBuilder.orWhere('template.is_global = true');
     }
 
     // Search in name and content
@@ -268,11 +316,8 @@ export class TemplateService {
     }
 
     // Sort
-    if (sort_by && sort_order) {
-      queryBuilder.orderBy(`template.${sort_by}`, sort_order);
-    } else {
-      queryBuilder.orderBy('template.name', 'ASC');
-    }
+    const sort = resolveTemplateSort(sort_by, sort_order);
+    queryBuilder.orderBy(`template.${sort.column}`, sort.direction);
 
     return queryBuilder.getMany();
   }
@@ -342,7 +387,14 @@ export class TemplateService {
    */
   async shareWithProperty(templateId: number, targetPropertyId: number, userId: string): Promise<Template> {
     const template = await this.getById(templateId, userId);
-    
+
+    const property = await this.propertyRepository.findOne({
+      where: { id: targetPropertyId, user_id: userId },
+    });
+    if (!property) {
+      throw new AuthorizationError('Target property not found or access denied');
+    }
+
     // Create a copy of the template for the target property
     const sharedTemplate = this.templateRepository.create({
       name: `${template.name} (Shared)`,
@@ -381,7 +433,11 @@ export class TemplateService {
   /**
    * Approve or reject a template
    */
-  async approveTemplate(templateId: number, action: 'approve' | 'reject' | 'archive', approverId: string, comments?: string): Promise<Template> {
+  async approveTemplate(templateId: number, action: 'approve' | 'reject' | 'archive', approverId: string, isAdmin = false, comments?: string): Promise<Template> {
+    if (!isAdmin) {
+      throw new AuthorizationError('Only admins can approve, reject, or archive templates');
+    }
+
     const template = await this.templateRepository.findOne({ where: { id: templateId } });
     
     if (!template) {
@@ -417,12 +473,24 @@ export class TemplateService {
   /**
    * Increment template usage count
    */
-  async incrementUsageCount(templateId: number): Promise<void> {
+  async incrementUsageCount(templateId: number, userId: string): Promise<void> {
     await this.templateRepository
       .createQueryBuilder()
       .update(Template)
       .set({ usage_count: () => 'usage_count + 1' })
       .where('id = :templateId', { templateId })
+      .andWhere(
+        new Brackets((visible) => {
+          visible.where('user_id = :userId', { userId }).orWhere(
+            new Brackets((shared) => {
+              shared
+                .where('is_global = true')
+                .andWhere("status = 'approved'")
+                .andWhere('is_active = true');
+            })
+          );
+        })
+      )
       .execute();
   }
 }

@@ -27,6 +27,7 @@ import {
   prometheusMetricsHandler,
 } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
+import { refreshTokenService } from './services/refreshTokenService';
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +63,10 @@ app.use(tracingMiddleware);
 app.use(structuredLoggingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use(requestId);
 app.use(performanceMonitor());
 app.use(monitoringMiddleware);
@@ -208,6 +213,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = config.PORT || 3001;
+const REFRESH_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // Start server only if this file is run directly. Importing this module
 // (e.g. in tests) must NOT connect to the database; only connect when the
@@ -224,6 +230,12 @@ if (isMainModule) {
           registration_mode: getMode(),
         });
       });
+
+      setInterval(() => {
+        refreshTokenService.cleanupExpired().catch((err) => {
+          logger.warn('Refresh token cleanup failed', { error: err });
+        });
+      }, REFRESH_CLEANUP_INTERVAL_MS).unref();
     })
     .catch((err) => {
       logger.error('Failed to initialize database', { error: err });
