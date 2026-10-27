@@ -5,6 +5,18 @@ import { useAuthStore } from '../src/stores/authStore';
 
 const originalAdapter = api.defaults.adapter;
 
+function unauthorized(config: any) {
+  return new AxiosError('Unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
+    config,
+    data: {},
+    status: 401,
+    statusText: 'Unauthorized',
+    headers: {},
+  });
+}
+
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 afterEach(() => {
   api.defaults.adapter = originalAdapter;
   vi.restoreAllMocks();
@@ -65,6 +77,7 @@ describe('dashboard auth API', () => {
       {
         headers: { 'X-Refresh-Token-Transport': 'cookie' },
         withCredentials: true,
+        timeout: 15000,
       }
     );
     expect(useAuthStore.getState().token).toBe('new-access');
@@ -96,6 +109,42 @@ describe('dashboard auth API', () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 
+  it('shares one refresh request across concurrent unauthorized responses', async () => {
+    useAuthStore
+      .getState()
+      .setCredentials(
+        { id: '1', email: 'agent@example.com', name: 'Agent', role: 'agent' },
+        'old-access'
+      );
+    let resolveRefresh: (value: unknown) => void = () => {};
+    const refresh = vi
+      .spyOn(axios, 'post')
+      .mockReturnValue(new Promise((resolve) => (resolveRefresh = resolve)));
+    api.defaults.adapter = async (config) => {
+      if (config.headers.get('Authorization') === 'Bearer old-access') {
+        throw new AxiosError('Unauthorized', 'ERR_BAD_RESPONSE', config, undefined, {
+          config,
+          data: {},
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: {},
+        });
+      }
+      return { config, data: { ok: true }, status: 200, statusText: 'OK', headers: {} };
+    };
+
+    const requests = Promise.all([api.get('/properties'), api.get('/templates')]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(refresh).toHaveBeenCalledOnce();
+    resolveRefresh({ data: { token: 'new-access' } });
+
+    const [first, second] = await requests;
+    expect(first.data).toEqual({ ok: true });
+    expect(second.data).toEqual({ ok: true });
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(useAuthStore.getState().token).toBe('new-access');
+  });
+
   it('does not repeatedly refresh a request that still returns 401 after retry', async () => {
     useAuthStore
       .getState()
@@ -118,5 +167,61 @@ describe('dashboard auth API', () => {
     await expect(api.get('/properties')).rejects.toMatchObject({ response: { status: 401 } });
     expect(attempts).toBe(2);
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it('discards a refresh that completes after logout', async () => {
+    useAuthStore
+      .getState()
+      .setCredentials(
+        { id: '1', email: 'agent@example.com', name: 'Agent', role: 'agent' },
+        'old-access'
+      );
+    let resolveRefresh: (value: unknown) => void = () => {};
+    vi.spyOn(axios, 'post').mockReturnValue(new Promise((resolve) => (resolveRefresh = resolve)));
+    api.defaults.adapter = async (config) => {
+      if (config.headers.get('Authorization') !== 'Bearer late-access') throw unauthorized(config);
+      return { config, data: { ok: true }, status: 200, statusText: 'OK', headers: {} };
+    };
+
+    const request = api.get('/properties');
+    await tick();
+    useAuthStore.getState().clearCredentials();
+    resolveRefresh({ data: { token: 'late-access' } });
+
+    await expect(request).rejects.toMatchObject({ response: { status: 401 } });
+    expect(useAuthStore.getState().token).toBeNull();
+  });
+
+  it('keeps the next session when a refresh from an ended session is discarded', async () => {
+    let resolveEndedRefresh: (value: unknown) => void = () => {};
+    const refresh = vi
+      .spyOn(axios, 'post')
+      .mockReturnValueOnce(new Promise((resolve) => (resolveEndedRefresh = resolve)))
+      .mockResolvedValueOnce({ data: { token: 'b-refreshed' } });
+    api.defaults.adapter = async (config) => {
+      const authorization = config.headers.get('Authorization');
+      if (authorization === 'Bearer old-access' || authorization === 'Bearer b-access') {
+        throw unauthorized(config);
+      }
+      return { config, data: { ok: true }, status: 200, statusText: 'OK', headers: {} };
+    };
+    useAuthStore
+      .getState()
+      .setCredentials({ id: '1', email: 'a@example.com', name: 'A', role: 'agent' }, 'old-access');
+    const endedSession = api.get('/properties');
+    await tick();
+
+    useAuthStore.getState().clearCredentials();
+    useAuthStore
+      .getState()
+      .setCredentials({ id: '2', email: 'b@example.com', name: 'B', role: 'agent' }, 'b-access');
+    const nextSession = await api.get('/templates');
+    resolveEndedRefresh({ data: { token: 'late-access' } });
+
+    await expect(endedSession).rejects.toMatchObject({ response: { status: 401 } });
+    expect(nextSession.data).toEqual({ ok: true });
+    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(useAuthStore.getState().token).toBe('b-refreshed');
+    expect(useAuthStore.getState().user?.id).toBe('2');
   });
 });

@@ -6,16 +6,51 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Keep track of the module's registered runtime listener.
+// Keep track of the module's registered runtime and tab-activation listeners.
 let runtimeListener: any = null;
+let activatedListener: any = null;
 
 async function loadSidepanel() {
   await import('../src/sidepanel.ts');
   runtimeListener = chrome.runtime.onMessage.addListener.mock.calls[0]?.[0] || null;
+  activatedListener = chrome.tabs.onActivated.addListener.mock.calls[0]?.[0] || null;
 }
 
 function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Make `tab` the active tab of the current window, then fire tabs.onActivated.
+function activateTab(tab: { id: number; url: string }) {
+  chrome.tabs.query.mockImplementation((_q: any, cb: any) => cb([tab]));
+  chrome.tabs.get.mockImplementation((_id: any, cb: any) => cb(tab));
+  activatedListener();
+}
+
+// Load the panel on tab 1 with one template selected and a generated draft.
+async function loadPanelWithDraft(draft: string) {
+  global.fetch = vi.fn().mockImplementation((url: any) => {
+    if (String(url).includes('/copilot/draft')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft }) });
+    }
+    if (String(url).includes('/templates')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout is at 11:00 AM.', tags: [] }]
+      });
+    }
+    return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+  });
+  chrome.storage.local.get.mockResolvedValue({ token: 't' });
+  await loadSidepanel();
+  await flush();
+  await flush();
+  (document.querySelector('#template-list .template-item') as HTMLElement).click();
+  document.getElementById('btn-generate')!.click();
+  await flush();
+  await flush();
+  await flush();
 }
 
 // Build a DOM matching sidepanel.html's structure (ids the script depends on).
@@ -57,12 +92,13 @@ beforeEach(() => {
   setupDom();
   chrome.storage.local.get.mockResolvedValue({});
   chrome.tabs.query.mockImplementation((_q: any, cb: any) => cb([{ id: 1, url: 'https://app.akia.io/chat' }]));
+  chrome.tabs.get.mockImplementation((tabId: any, cb: any) => cb({ id: tabId, url: 'https://app.akia.io/chat' }));
   chrome.tabs.sendMessage.mockImplementation((_id: any, _msg: any, cb: any) => {
     if (cb) cb({});
   });
   global.fetch = vi.fn();
   (global as any).navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
-  (global as any).getPropertyConfig = undefined;
+  vi.doUnmock('../src/config');
   global.alert = vi.fn();
 });
 
@@ -255,7 +291,7 @@ describe('access token refresh', () => {
 describe('guest info and chat context', () => {
   it('updateGuestInfo renders guest fields and lights the dot', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane', roomNumber: '204' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane', roomNumber: '204' } });
     expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
     expect(document.getElementById('dot-guest')!.classList.contains('active')).toBe(true);
     expect(document.getElementById('guest-info-block')!.textContent).toContain('Jane');
@@ -264,7 +300,7 @@ describe('guest info and chat context', () => {
 
   it('empty guest data keeps the dot off', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: {} });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: {} });
     expect(document.getElementById('dot-guest')!.classList.contains('active')).toBe(false);
     expect(document.getElementById('guest-info-block')!.textContent).toContain('No guest data');
   });
@@ -273,6 +309,7 @@ describe('guest info and chat context', () => {
     await loadSidepanel();
     runtimeListener({
       type: 'CHAT_CONTEXT_UPDATED',
+      tabId: 1,
       data: {
         activeGuest: 'Jane Doe',
         messages: [
@@ -291,14 +328,17 @@ describe('guest info and chat context', () => {
 
   it('empty chat shows the no-chat placeholder', async () => {
     await loadSidepanel();
-    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', data: { messages: [] } });
+    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', tabId: 1, data: { messages: [] } });
     expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
   });
 });
 
 describe('property detection', () => {
   it('labels the detected property', async () => {
-    (global as any).getPropertyConfig = () => ({ name: 'St.Pierre Hotel' });
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ name: 'St.Pierre Hotel' })
+    }));
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
     await loadSidepanel();
@@ -310,7 +350,6 @@ describe('property detection', () => {
   });
 
   it('falls back to "No property"', async () => {
-    (global as any).getPropertyConfig = () => null;
     global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
     chrome.storage.local.get.mockResolvedValue({ token: 't' });
     await loadSidepanel();
@@ -457,7 +496,7 @@ describe('response generation', () => {
 
   it('prefixes the guest name when known', async () => {
     await loadAndSelect();
-    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane Doe' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane Doe' } });
     document.getElementById('btn-generate')!.click();
     await flush();
     await flush();
@@ -495,14 +534,8 @@ describe('copy and inject', () => {
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('Hello world');
   });
 
-  it('inject sends INJECT_MESSAGE to the active tab', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
-    chrome.storage.local.get.mockResolvedValue({ token: 't' });
-    await loadSidepanel();
-    await flush();
-    await flush();
-    document.getElementById('response-box')!.textContent = 'Reply text';
-    document.getElementById('btn-inject')!.classList.remove('hidden');
+  it('inject sends INJECT_MESSAGE to the tab the draft was generated for', async () => {
+    await loadPanelWithDraft('Reply text');
     document.getElementById('btn-inject')!.click();
     await flush();
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
@@ -510,5 +543,343 @@ describe('copy and inject', () => {
       { type: 'INJECT_MESSAGE', text: 'Reply text' },
       expect.any(Function)
     );
+  });
+});
+
+describe('per-tab page context', () => {
+  it("shows only the active tab's guest and chat context", async () => {
+    await loadSidepanel();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 2, data: { guestName: 'Background Guest' } });
+    runtimeListener({ type: 'CHAT_CONTEXT_UPDATED', tabId: 2, data: { activeGuest: 'Background Chat', messages: [] } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane' } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Background Guest');
+    expect(document.getElementById('guest-info-block')!.textContent).toContain('Background Guest');
+    expect(document.getElementById('chat-context-block')!.textContent).toContain('Background Chat');
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Jane');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+  });
+
+  it('ignores context broadcasts that carry no tab id', async () => {
+    await loadSidepanel();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Nobody' } });
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+  });
+
+  it('requests page data from the newly active tab and stores each answer under its tab', async () => {
+    chrome.tabs.sendMessage.mockImplementation((tabId: any, msg: any, cb: any) => {
+      if (msg.type === 'GET_GUEST_INFO') cb({ data: { guestName: `Guest ${tabId}` } });
+      else cb({});
+    });
+    await loadSidepanel();
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 1');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(2, { type: 'GET_GUEST_INFO' }, expect.any(Function));
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(2, { type: 'GET_CHAT_CONTEXT' }, expect.any(Function));
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 2');
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    expect(document.getElementById('label-guest')!.textContent).toBe('Guest 1');
+  });
+
+  it("detects the property from the active tab's URL, not the panel page", async () => {
+    const lookup = vi.fn((hostname?: string) =>
+      hostname === 'app.us1.stayntouch.com' ? { id: 1, name: 'St.Pierre Hotel' } : null
+    );
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: lookup
+    }));
+    chrome.tabs.get.mockImplementation((_id: any, cb: any) =>
+      cb({ id: 1, url: 'https://app.us1.stayntouch.com/inbox' })
+    );
+    await loadSidepanel();
+    expect(lookup).toHaveBeenCalledWith('app.us1.stayntouch.com');
+    expect(document.getElementById('label-property')!.textContent).toBe('St.Pierre Hotel');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(true);
+
+    activateTab({ id: 2, url: 'https://example.com/' });
+    expect(document.getElementById('label-property')!.textContent).toBe('No property');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(false);
+  });
+
+  it("generates drafts from the active tab's guest only", async () => {
+    const drafted: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: any, opts: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        drafted.push(JSON.parse(opts.body));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'ok' }) });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Hi', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    chrome.storage.local.get.mockResolvedValue({ token: 't' });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane' } });
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 2, data: { guestName: 'Other' } });
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+
+    expect(drafted).toHaveLength(1);
+    expect(drafted[0].guest_info).toEqual({ guestName: 'Other' });
+  });
+});
+
+describe('inject targeting', () => {
+  it('refuses to inject while another tab is active and injects again once the draft tab is back', async () => {
+    await loadPanelWithDraft('Reply text');
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    const injected = (chrome.tabs.sendMessage as any).mock.calls.filter(
+      ([, msg]: any[]) => msg?.type === 'INJECT_MESSAGE'
+    );
+    expect(injected).toHaveLength(0);
+    expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Switch back'));
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      { type: 'INJECT_MESSAGE', text: 'Reply text' },
+      expect.any(Function)
+    );
+  });
+
+  it('keeps a draft bound to the tab it was requested from when the user switches mid-request', async () => {
+    let resolveDraft: (value: unknown) => void = () => {};
+    global.fetch = vi.fn().mockImplementation((url: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        return new Promise((resolve) => {
+          resolveDraft = resolve;
+        });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Hi', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    chrome.storage.local.get.mockResolvedValue({ token: 't' });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+
+    activateTab({ id: 2, url: 'https://app.akia.io/other' });
+    resolveDraft({ ok: true, status: 200, json: async () => ({ draft: 'Late reply' }) });
+    await flush();
+    await flush();
+    await flush();
+    expect(document.getElementById('response-box')!.textContent).toBe('Late reply');
+
+    chrome.tabs.sendMessage.mockClear();
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(
+      (chrome.tabs.sendMessage as any).mock.calls.filter(([, msg]: any[]) => msg?.type === 'INJECT_MESSAGE')
+    ).toHaveLength(0);
+
+    activateTab({ id: 1, url: 'https://app.akia.io/chat' });
+    document.getElementById('btn-inject')!.click();
+    await flush();
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      { type: 'INJECT_MESSAGE', text: 'Late reply' },
+      expect.any(Function)
+    );
+  });
+});
+
+describe('backend URL and session changes', () => {
+  // config.ts registers its own storage listener too, so deliver to all of them.
+  function emitStorageChange(changes: Record<string, { oldValue?: unknown; newValue?: unknown }>) {
+    for (const [listener] of chrome.storage.onChanged.addListener.mock.calls) {
+      listener(changes, 'local');
+    }
+  }
+
+  it('a session removed from storage returns the panel to the login prompt', async () => {
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    expect(document.getElementById('main-panel')!.classList.contains('hidden')).toBe(false);
+
+    emitStorageChange({ token: { oldValue: 'tok' }, refreshToken: { oldValue: 'refresh-1' } });
+    expect(document.getElementById('auth-prompt')!.classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('main-panel')!.classList.contains('hidden')).toBe(true);
+
+    // The next request goes out without the old session token.
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ token: 'jwt-new' }) });
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    const [, options] = (global.fetch as any).mock.calls[0];
+    expect(options.headers.Authorization).toBeUndefined();
+  });
+
+  it('later requests use a backend URL changed in storage', async () => {
+    chrome.storage.local.get.mockResolvedValue({});
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    await loadSidepanel();
+    await flush();
+
+    chrome.storage.local.get.mockResolvedValue({ apiBaseUrl: 'https://api.example.com' });
+    emitStorageChange({ apiBaseUrl: { newValue: 'https://api.example.com' } });
+    await flush();
+    await flush();
+
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    const loginCall = (global.fetch as any).mock.calls.find(([url]: any[]) =>
+      String(url).endsWith('/auth/login')
+    );
+    expect(loginCall[0]).toBe('https://api.example.com/api/auth/login');
+  });
+});
+
+describe('logout clears the panel', () => {
+  it('removes guest, chat, selected templates, property, and the draft from the screen', async () => {
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ name: 'St.Pierre Hotel' })
+    }));
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    global.fetch = vi.fn().mockImplementation((url: any) => {
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout at 11', tags: [] }]
+        });
+      }
+      if (String(url).includes('/copilot/draft')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'Drafted reply' }) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    runtimeListener({ type: 'GUEST_INFO_UPDATED', tabId: 1, data: { guestName: 'Jane', roomNumber: '204' } });
+    runtimeListener({
+      type: 'CHAT_CONTEXT_UPDATED',
+      tabId: 1,
+      data: { activeGuest: 'Jane Doe', messages: [{ sender: 'Jane', text: 'hello' }] }
+    });
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    await flush();
+    expect(document.getElementById('response-box')!.textContent).toBe('Drafted reply');
+    expect(document.getElementById('label-property')!.textContent).toBe('St.Pierre Hotel');
+
+    document.getElementById('btn-logout')!.click();
+    await flush();
+    await flush();
+
+    expect(document.getElementById('label-guest')!.textContent).toBe('No guest');
+    expect(document.getElementById('guest-info-block')!.textContent).toBe('No guest data found on this page');
+    expect(document.getElementById('chat-context-block')!.textContent).toBe('No active chat');
+    expect(document.querySelectorAll('#selected-list .selected-item')).toHaveLength(0);
+    expect(document.querySelectorAll('#template-list .template-item.selected')).toHaveLength(0);
+    expect(document.getElementById('section-selected')!.style.display).toBe('none');
+    expect(document.getElementById('response-box')!.textContent).toBe('Response will appear here…');
+    expect(document.getElementById('response-box')!.classList.contains('empty')).toBe(true);
+    expect(document.getElementById('btn-copy')!.classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('btn-inject')!.classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('label-property')!.textContent).toBe('No property');
+    expect(document.getElementById('dot-property')!.classList.contains('active')).toBe(false);
+    expect(chrome.storage.local.remove).toHaveBeenCalledWith(['token', 'refreshToken']);
+  });
+
+  it('does not send the previous property id after logging out', async () => {
+    vi.doMock('../src/config', async (importOriginal: () => Promise<object>) => ({
+      ...(await importOriginal()),
+      getPropertyConfig: () => ({ id: 7, name: 'St.Pierre Hotel' })
+    }));
+    chrome.storage.local.get.mockResolvedValue({ token: 'tok', refreshToken: 'refresh-1' });
+    const drafted: any[] = [];
+    global.fetch = vi.fn().mockImplementation((url: any, opts: any) => {
+      if (String(url).includes('/copilot/draft')) {
+        drafted.push(JSON.parse(opts.body));
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ draft: 'Drafted reply' }) });
+      }
+      if (String(url).includes('/auth/login')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ token: 'jwt-new', refresh_token: 'refresh-2' })
+        });
+      }
+      if (String(url).includes('/templates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => [{ id: 1, name: 'Checkout', content: 'Checkout at 11', tags: [] }]
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+    });
+    await loadSidepanel();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    expect(drafted[0].property_id).toBe(7);
+
+    document.getElementById('btn-logout')!.click();
+    await flush();
+    await flush();
+
+    (document.getElementById('auth-email') as HTMLInputElement).value = 'agent@example.com';
+    (document.getElementById('auth-password') as HTMLInputElement).value = 'pw';
+    document.getElementById('btn-login')!.click();
+    await flush();
+    await flush();
+    (document.querySelector('#template-list .template-item') as HTMLElement).click();
+    document.getElementById('btn-generate')!.click();
+    await flush();
+    await flush();
+    expect(drafted).toHaveLength(2);
+    expect(drafted[1].property_id).toBeUndefined();
   });
 });

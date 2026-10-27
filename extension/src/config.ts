@@ -95,10 +95,8 @@ const PROPERTIES: Record<string, PropertyConfig> = {
   },
 };
 
-// Get property config from current URL
-function getPropertyConfig(): PropertyConfig | null {
-  const hostname = window.location.hostname;
-
+// Get property config for a hostname (defaults to the current page's)
+function getPropertyConfig(hostname: string = window.location.hostname): PropertyConfig | null {
   for (const config of Object.values(PROPERTIES)) {
     if (hostname.includes(config.urlPattern)) {
       return config;

@@ -8,6 +8,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // Bumped on every credential clear, so a refresh started under an older value is discarded.
+  sessionCounter: number;
   setCredentials: (user: User, token: string) => void;
   clearCredentials: () => void;
   setLoading: (isLoading: boolean) => void;
@@ -22,6 +24,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      sessionCounter: 0,
 
       setCredentials: (user, token) =>
         set({
@@ -32,25 +35,26 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       clearCredentials: () =>
-        set({
+        set((state) => ({
           user: null,
           token: null,
           isAuthenticated: false,
-        }),
+          sessionCounter: state.sessionCounter + 1,
+        })),
 
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
     }),
     {
       name: 'auth-storage',
-      version: 1,
+      // v2 keeps the access token in memory; older entries keep only user and isAuthenticated.
+      version: 2,
       migrate: (persistedState) => {
         const state = persistedState as AuthState;
-        return { user: state.user, token: state.token, isAuthenticated: state.isAuthenticated };
+        return { user: state.user, isAuthenticated: state.isAuthenticated };
       },
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
     }
@@ -60,9 +64,6 @@ export const useAuthStore = create<AuthState>()(
 // Token storage for backward compatibility with existing code
 export const tokenStore = {
   get: () => useAuthStore.getState().token,
-  set: (token: string) => {
-    const user = useAuthStore.getState().user;
-    if (user) useAuthStore.getState().setCredentials(user, token);
-  },
+  set: (token: string) => useAuthStore.setState({ token }),
   clear: () => useAuthStore.getState().clearCredentials(),
 };

@@ -130,7 +130,6 @@ describe('content-stayntouch.js extraction', () => {
       checkIn: '2026-08-28',
       checkOut: '2026-08-30',
       reservationStatus: 'Checked-in',
-      confirmationNumber: 'CN-9911',
     });
   });
 
@@ -158,6 +157,48 @@ describe('content-stayntouch.js extraction', () => {
     expect(response.captured).toBe(true);
     expect(response.value.data.guestName).toBe('Bob');
     expect(response.value.data.roomNumber).toBe('101');
+    expect(Object.keys(response.value.data).sort()).toEqual([
+      'checkIn',
+      'checkOut',
+      'guestName',
+      'reservationStatus',
+      'roomNumber',
+    ]);
+  });
+
+  it('matches exact selectors only, not elements whose names merely contain a field keyword', async () => {
+    document.body.innerHTML = `
+      <div id="guest-name-on-card">Card Holder</div>
+      <div class="status-badge">Overdue</div>
+      <div id="check-in-reminder">Reminder</div>
+      <input name="roomNotes" value="leave door open" />
+    `;
+    const sent: any[] = [];
+    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+    await loadScript();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('reads a labelled value through the label target id, even when the id is not a valid selector', async () => {
+    document.body.innerHTML = `
+      <label for="room.number">Room Number</label>
+      <input id="room.number" value="204" />
+    `;
+    const sent: any[] = [];
+    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+    await loadScript();
+    expect(sent[0].data.roomNumber).toBe('204');
+  });
+
+  it('label fallbacks match the whole label text', async () => {
+    document.body.innerHTML = `
+      <label for="login-user">Username</label>
+      <input id="login-user" value="jdoe" />
+    `;
+    const sent: any[] = [];
+    chrome.runtime.sendMessage.mockImplementation((msg) => sent.push(msg));
+    await loadScript();
+    expect(sent).toHaveLength(0);
   });
 });
 
@@ -284,6 +325,23 @@ describe('background.js relay', () => {
     const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
     listener({ type: 'OTHER' }, {}, vi.fn());
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('tags forwarded updates with the id of the tab that sent them', async () => {
+    await loadScript();
+    const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
+    listener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane' } }, { tab: { id: 7 } }, vi.fn());
+    listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, { tab: { id: 9 } }, vi.fn());
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'GUEST_INFO_UPDATED',
+      data: { guestName: 'Jane' },
+      tabId: 7,
+    });
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'CHAT_CONTEXT_UPDATED',
+      data: {},
+      tabId: 9,
+    });
   });
 });
 

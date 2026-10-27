@@ -83,6 +83,29 @@ export class ConversationService {
   private readonly MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
   /**
+   * Maximum number of conversations kept in memory
+   */
+  private readonly MAX_CONVERSATIONS = 5000;
+
+  /**
+   * How often expired conversations are swept
+   */
+  private readonly SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+  private sweepTimer: NodeJS.Timeout | null = null;
+
+  /**
+   * Start the periodic sweep of expired conversations. Call once at server startup.
+   */
+  init(): void {
+    if (this.sweepTimer) return;
+    this.sweepTimer = setInterval(() => {
+      void this.cleanupExpired();
+    }, this.SWEEP_INTERVAL_MS);
+    this.sweepTimer.unref();
+  }
+
+  /**
    * Create a new conversation
    */
   async createConversation(
@@ -100,6 +123,10 @@ export class ConversationService {
       metadata
     };
 
+    if (conversations.size >= this.MAX_CONVERSATIONS) {
+      const oldestId = conversations.keys().next().value;
+      if (oldestId !== undefined) conversations.delete(oldestId);
+    }
     conversations.set(conversation.id, conversation);
     logger.info('Conversation created', { conversationId: conversation.id, userId });
 
@@ -107,12 +134,12 @@ export class ConversationService {
   }
 
   /**
-   * Get a conversation by ID
+   * Get a conversation by ID; returns null unless userId owns it
    */
-  async getConversation(conversationId: string): Promise<Conversation | null> {
+  async getConversation(conversationId: string, userId: string): Promise<Conversation | null> {
     const conversation = conversations.get(conversationId);
     
-    if (!conversation) {
+    if (!conversation || conversation.userId !== userId) {
       return null;
     }
 
@@ -158,9 +185,10 @@ export class ConversationService {
    */
   async addMessage(
     conversationId: string,
+    userId: string,
     message: Omit<ConversationMessage, 'id' | 'timestamp' | 'metadata'> & { metadata?: ConversationMessage['metadata'] }
   ): Promise<ConversationMessage> {
-    const conversation = await this.getConversation(conversationId);
+    const conversation = await this.getConversation(conversationId, userId);
     
     if (!conversation) {
       throw new Error(`Conversation ${conversationId} not found`);
@@ -201,9 +229,10 @@ export class ConversationService {
    */
   async getConversationContext(
     conversationId: string,
+    userId: string,
     maxMessages?: number
   ): Promise<Array<{ role: 'user' | 'assistant' | 'system'; content: string }>> {
-    const conversation = await this.getConversation(conversationId);
+    const conversation = await this.getConversation(conversationId, userId);
     
     if (!conversation) {
       return [];
@@ -264,14 +293,15 @@ export class ConversationService {
         conversation_hash: this.hashConversationId(conversation.id),
         user_id: conversation.userId,
         property_id: conversation.propertyId,
-        first_seen_at: new Date(),
-        replied_at: message.role === 'assistant' ? new Date() : null,
+        first_seen_at: conversation.createdAt,
+        // Drafts are not replies: replied_at stays unset
+        replied_at: null,
         response_text: message.content,
         metadata: {
           role: message.role,
           conversation_message_count: conversation.messages.length,
           template_ids: templateIds || [],
-          ...conversation.metadata
+          tone: conversation.metadata?.tone
         }
       });
 
