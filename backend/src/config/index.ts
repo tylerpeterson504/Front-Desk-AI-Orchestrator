@@ -6,8 +6,15 @@ import path from 'path';
 dotenv.config();
 dotenv.config({ path: path.join(__dirname, '../../../.env.local') });
 
+const PLACEHOLDER_JWT_SECRETS = new Set(['your_jwt_secret_change_in_production']);
+const PLACEHOLDER_JWT_SECRET_PATTERN = /change[_-]?(this|me|in)[_-]?(production)?/i;
+
+export function isPlaceholderJwtSecret(secret: string): boolean {
+  return PLACEHOLDER_JWT_SECRETS.has(secret) || PLACEHOLDER_JWT_SECRET_PATTERN.test(secret);
+}
+
 // Define schema
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().optional(),
@@ -16,7 +23,10 @@ const envSchema = z.object({
   DB_USER: z.string().optional(),
   DB_PASSWORD: z.string().optional(),
   DB_NAME: z.string().optional(),
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT_SECRET must be at least 32 characters')
+    .refine((secret) => !isPlaceholderJwtSecret(secret), 'JWT_SECRET must be a generated value'),
   JWT_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
   CORS_ORIGIN: z.string().optional(),
@@ -39,8 +49,8 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.string().optional(),
   // Email settings
   SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().default(587).optional(),
-  SMTP_SECURE: z.enum(['true', 'false']).default('false').optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false'),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM_EMAIL: z.string().optional(),
@@ -58,18 +68,18 @@ const envSchema = z.object({
   WEBHOOK_URLS: z.string().optional(),
   // i18n settings
   SUPPORTED_LANGUAGES: z.string().optional(),
-  DEFAULT_LANGUAGE: z.string().default('en').optional(),
+  DEFAULT_LANGUAGE: z.string().default('en'),
   // Security settings
   CSRF_ENABLED: z.enum(['true', 'false']).default('true').optional(),
   CSRF_COOKIE_NAME: z.string().default('_csrf').optional(),
   CSRF_HEADER_NAME: z.string().default('x-csrf-token').optional(),
   LOG_IP_ADDRESS: z.enum(['true', 'false']).default('true').optional(),
   // Performance settings
-  COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30).optional(),
-  COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000).optional(),
+  COPILOT_RATE_LIMIT_MAX: z.coerce.number().default(30),
+  COPILOT_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   // Database caching settings
-  CACHE_TTL_SECONDS: z.coerce.number().default(60).optional(),
-  CACHE_MAX_SIZE: z.coerce.number().default(1000).optional(),
+  CACHE_TTL_SECONDS: z.coerce.number().default(60),
+  CACHE_MAX_SIZE: z.coerce.number().default(1000),
 });
 
 // Parse and validate
