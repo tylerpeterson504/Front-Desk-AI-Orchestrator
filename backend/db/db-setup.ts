@@ -4,6 +4,7 @@
 //   - DATABASE_URL must be set in the environment (Neon pooled connection
 //     string) or in backend/.env.
 //   - RUN_SEEDS=true seeds demo data (skipped automatically if users exist).
+//     Seeding also needs SEED_ADMIN_PASSWORD and SEED_AGENT_PASSWORD set.
 //
 // Usage:
 //   npm run db-setup --prefix backend

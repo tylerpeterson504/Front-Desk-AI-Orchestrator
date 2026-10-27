@@ -3,9 +3,11 @@
  * Provides request tracing, structured logging, and Prometheus metrics
  */
 
+import crypto from 'crypto';
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../lib/logger';
 import { config } from '../config';
+import { notFound } from './errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -37,12 +39,21 @@ const globalMetrics: RequestMetrics = {
   bytesReceived: 0
 };
 
+const MAX_ROUTE_KEYS = 200;
+const UNMATCHED_ROUTE_KEY = 'unmatched';
+const OVERFLOW_ROUTE_KEY = 'other';
+
 /**
- * Get or create metrics for a route
+ * Get or create metrics for a route.
+ * One slot is held back for the overflow key so the map never exceeds MAX_ROUTE_KEYS.
  */
 function getRouteMetrics(routeKey: string): RequestMetrics {
-  if (!routeMetrics.has(routeKey)) {
-    routeMetrics.set(routeKey, {
+  let key = routeKey;
+  if (!routeMetrics.has(key) && routeMetrics.size >= MAX_ROUTE_KEYS - 1) {
+    key = OVERFLOW_ROUTE_KEY;
+  }
+  if (!routeMetrics.has(key)) {
+    routeMetrics.set(key, {
       requestCount: 0,
       requestErrors: 0,
       requestDurationSum: 0,
@@ -51,15 +62,17 @@ function getRouteMetrics(routeKey: string): RequestMetrics {
       bytesReceived: 0
     });
   }
-  return routeMetrics.get(routeKey)!;
+  return routeMetrics.get(key)!;
 }
 
 /**
- * Get route key from request
+ * Get route key from the matched route pattern. Requests no route handled share one key.
  */
 function getRouteKey(req: Request): string {
-  // Group by HTTP method and path (without query parameters)
-  return `${req.method}:${req.path}`;
+  if (!req.route) {
+    return UNMATCHED_ROUTE_KEY;
+  }
+  return `${req.method}:${req.baseUrl}${req.route.path}`;
 }
 
 /**
@@ -68,13 +81,12 @@ function getRouteKey(req: Request): string {
  */
 export function monitoringMiddleware(req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
-  const routeKey = getRouteKey(req);
-  const routeMetrics = getRouteMetrics(routeKey);
 
-  // Track request start
-  req.on('end', () => {
+  // Route matching runs after this middleware, so the route key is read once the response is finished.
+  res.on('finish', () => {
     const duration = Date.now() - start;
     const statusCode = res.statusCode;
+    const routeMetrics = getRouteMetrics(getRouteKey(req));
 
     // Update global metrics
     globalMetrics.requestCount++;
@@ -213,6 +225,32 @@ ${Array.from(routeMetrics.entries()).map(([routeKey, routeMetric]) =>
 
   res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
   res.send(prometheusOutput);
+}
+
+/**
+ * Guards the metrics endpoint. Open outside production. In production it requires
+ * the METRICS_TOKEN bearer and responds 404 when no token is configured.
+ */
+export function requireMetricsToken(req: Request, res: Response, next: NextFunction): void {
+  if (config.NODE_ENV !== 'production') {
+    next();
+    return;
+  }
+
+  if (!config.METRICS_TOKEN) {
+    notFound(req, res);
+    return;
+  }
+
+  const expected = Buffer.from(`Bearer ${config.METRICS_TOKEN}`);
+  const provided = Buffer.from(req.headers.authorization ?? '');
+  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+    res.set('WWW-Authenticate', 'Bearer');
+    res.status(401).json({ error: 'Unauthorized', requestId: req.requestId });
+    return;
+  }
+
+  next();
 }
 
 /**

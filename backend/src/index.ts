@@ -17,7 +17,6 @@ import {
   sanitizeInput,
   createCopilotRateLimiter,
 } from './middleware/security';
-import csrfProtection from './middleware/csrf';
 import compressionMiddleware from './middleware/compression';
 import { requestIpLogger } from './middleware/requestIpLogger';
 import {
@@ -25,8 +24,11 @@ import {
   tracingMiddleware,
   structuredLoggingMiddleware,
   prometheusMetricsHandler,
+  requireMetricsToken,
 } from './middleware/monitoring';
 import { setupSwagger } from './config/swagger';
+import { refreshTokenService } from './services/refreshTokenService';
+import { conversationService } from './services/conversationService';
 
 // Load environment variables
 dotenv.config();
@@ -62,10 +64,13 @@ app.use(tracingMiddleware);
 app.use(structuredLoggingMiddleware);
 app.use(helmet());
 app.use(additionalSecurityHeaders);
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use(requestId);
 app.use(performanceMonitor());
 app.use(monitoringMiddleware);
-app.use(csrfProtection);
 
 // CORS configuration
 const corsOrigins = config.CORS_ORIGIN
@@ -126,7 +131,6 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/auth/refresh' || req.path === '/api/auth/logout',
 });
 
 // Refresh still needs a ceiling -- one client refreshes ~4 times an hour, so this
@@ -171,7 +175,8 @@ import githubRouter from './routes/github';
 import analyticsRouter from './routes/analytics';
 import escalationsRouter from './routes/escalations';
 
-app.use('/api/auth', authLimiter, refreshLimiter, authRouter);
+app.post(['/api/auth/login', '/api/auth/register'], authLimiter);
+app.use('/api/auth', refreshLimiter, authRouter);
 app.use('/api/properties', apiLimiter, propertiesRouter);
 app.use('/api/templates', apiLimiter, templatesRouter);
 app.use('/api/shift-notes', apiLimiter, shiftNotesRouter);
@@ -186,7 +191,7 @@ app.use('/api/escalations', apiLimiter, escalationsRouter);
 app.use('/health', healthRouter);
 
 // Prometheus metrics endpoint
-app.get('/metrics', prometheusMetricsHandler);
+app.get('/metrics', requireMetricsToken, prometheusMetricsHandler);
 
 // Setup Swagger API documentation
 setupSwagger(app);
@@ -208,6 +213,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = config.PORT || 3001;
+const REFRESH_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // Start server only if this file is run directly. Importing this module
 // (e.g. in tests) must NOT connect to the database; only connect when the
@@ -217,6 +223,7 @@ const isMainModule = require.main === module;
 if (isMainModule) {
   initializeDatabase()
     .then(() => {
+      conversationService.init();
       app.listen(PORT, () => {
         logger.info('backend started', {
           port: PORT,
@@ -224,6 +231,12 @@ if (isMainModule) {
           registration_mode: getMode(),
         });
       });
+
+      setInterval(() => {
+        refreshTokenService.cleanupExpired().catch((err) => {
+          logger.warn('Refresh token cleanup failed', { error: err });
+        });
+      }, REFRESH_CLEANUP_INTERVAL_MS).unref();
     })
     .catch((err) => {
       logger.error('Failed to initialize database', { error: err });
