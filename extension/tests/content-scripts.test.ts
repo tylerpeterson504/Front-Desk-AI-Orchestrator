@@ -326,6 +326,23 @@ describe('background.js relay', () => {
     listener({ type: 'OTHER' }, {}, vi.fn());
     expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
   });
+
+  it('tags forwarded updates with the id of the tab that sent them', async () => {
+    await loadScript();
+    const listener = chrome.runtime.onMessage.addListener.mock.calls[0][0];
+    listener({ type: 'GUEST_INFO_UPDATED', data: { guestName: 'Jane' } }, { tab: { id: 7 } }, vi.fn());
+    listener({ type: 'CHAT_CONTEXT_UPDATED', data: {} }, { tab: { id: 9 } }, vi.fn());
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'GUEST_INFO_UPDATED',
+      data: { guestName: 'Jane' },
+      tabId: 7,
+    });
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'CHAT_CONTEXT_UPDATED',
+      data: {},
+      tabId: 9,
+    });
+  });
 });
 
 describe('exception-safe broadcast path (safeSend)', () => {
