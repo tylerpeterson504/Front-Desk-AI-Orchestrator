@@ -48,7 +48,8 @@ Edit `.env` with your actual values:
 NODE_ENV=development
 PORT=3001
 DATABASE_URL=postgresql://user:password@localhost:5432/frontdesk_ai
-JWT_SECRET=your_very_strong_jwt_secret_here
+# Generate: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+JWT_SECRET=
 MISTRAL_API_KEY=your_mistral_api_key_here
 WIFI_ENCRYPTION_KEY=your_32_byte_base64_encryption_key_here
 

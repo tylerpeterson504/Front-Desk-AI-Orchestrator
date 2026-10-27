@@ -79,6 +79,9 @@ export interface ResolutionTemplate {
 const MAX_REASON_LENGTH = 2000;
 const MAX_NAME_LENGTH = 255;
 const MAX_ROOM_LENGTH = 50;
+const MAX_NOTES_LENGTH = 2000;
+const DEFAULT_LIST_LIMIT = 100;
+const MAX_LIST_LIMIT = 500;
 
 function clean(value: unknown, maxLength: number): string | null {
   if (value == null) return null;
@@ -87,16 +90,26 @@ function clean(value: unknown, maxLength: number): string | null {
   return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
 
+const ALLOWED_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
+  open: ['in_progress', 'resolved'],
+  in_progress: ['open', 'resolved'],
+  resolved: ['open'],
+};
+
 export class EscalationService {
   private escalationRepository = getRepository<Escalation>(Escalation);
   private propertyRepository = getRepository<Property>(Property);
 
   // An agent sees escalations they created and escalations assigned to them.
-  async getAll(userId: string, options?: { status?: string }): Promise<Escalation[]> {
+  async getAll(
+    userId: string,
+    options?: { status?: string; limit?: string; offset?: string }
+  ): Promise<Escalation[]> {
     const qb = this.escalationRepository
       .createQueryBuilder('e')
       .where('(e.created_by = :userId OR e.assigned_to = :userId)', { userId })
-      .orderBy('e.created_at', 'DESC');
+      .orderBy('e.created_at', 'DESC')
+      .addOrderBy('e.id', 'DESC');
 
     const status = options?.status;
     if (status) {
@@ -105,6 +118,17 @@ export class EscalationService {
       }
       qb.andWhere('e.status = :status', { status });
     }
+
+    const limit = options?.limit === undefined ? DEFAULT_LIST_LIMIT : Number(options.limit);
+    const offset = options?.offset === undefined ? 0 : Number(options.offset);
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new ValidationError('limit must be a positive integer');
+    }
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new ValidationError('offset must be a non-negative integer');
+    }
+    qb.take(Math.min(limit, MAX_LIST_LIMIT)).skip(offset);
+
     return qb.getMany();
   }
 
@@ -199,14 +223,54 @@ export class EscalationService {
           throw new ValidationError("Assignee cannot access this escalation's property");
         }
       }
+      if (patch.assigned_to !== escalation.assigned_to) {
+        if (escalation.status === 'resolved') {
+          throw new ValidationError('Resolved escalations cannot be reassigned');
+        }
+        patch.assigned_by = patch.assigned_to ? userId : null;
+        patch.assigned_at = patch.assigned_to ? new Date() : null;
+      }
     }
 
     if (dto.status !== undefined) {
       if (!(ESCALATION_STATUSES as readonly string[]).includes(dto.status)) {
         throw new ValidationError('Invalid status');
       }
-      patch.status = dto.status;
-      patch.resolved_at = dto.status === 'resolved' ? new Date() : null;
+      if (dto.status !== escalation.status) {
+        const allowed = ALLOWED_STATUS_TRANSITIONS[escalation.status] ?? [];
+        if (!allowed.includes(dto.status)) {
+          throw new ValidationError(
+            `Cannot change status from ${escalation.status} to ${dto.status}`
+          );
+        }
+        const resolving = dto.status === 'resolved';
+        patch.status = dto.status;
+        patch.resolved_at = resolving ? new Date() : null;
+        patch.resolved_by = resolving ? userId : null;
+      }
+    }
+
+    if (dto.category !== undefined) {
+      const category = dto.category ? String(dto.category) : null;
+      if (category && !(ESCALATION_CATEGORIES as readonly string[]).includes(category)) {
+        throw new ValidationError('Invalid category');
+      }
+      patch.category = category;
+    }
+
+    if (dto.resolution_notes !== undefined) {
+      patch.resolution_notes = clean(dto.resolution_notes, MAX_NOTES_LENGTH);
+    }
+
+    if (dto.sla_minutes !== undefined) {
+      const minutes = dto.sla_minutes as unknown;
+      if (minutes === null || minutes === 0) {
+        patch.sla_minutes = null;
+      } else if (typeof minutes === 'number' && Number.isFinite(minutes) && minutes > 0) {
+        patch.sla_minutes = minutes;
+      } else {
+        throw new ValidationError('sla_minutes must be a positive number');
+      }
     }
     // Keep status consistent with assignment state after all patch fields are in.
     const effectiveAssignee =
@@ -567,7 +631,7 @@ export class EscalationService {
         name: 'Guest Complaint Apology',
         category: 'guest_complaint',
         content:
-          'Dear {guest_name}, we sincerely apologize for the {issue} you experienced. We have taken immediate action to address this and will follow up with you directly. As a token of our apology, we would like to offer you {compensation}. Thank you for bringing this to our attention.',
+          'Dear {guest_name}, we sincerely apologize for the {issue} you experienced. We have shared this with the appropriate team and logged your concern. {compensation} is under consideration. Thank you for bringing this to our attention.',
         variables: ['guest_name', 'issue', 'compensation'],
       },
       {
@@ -575,8 +639,8 @@ export class EscalationService {
         name: 'Maintenance Request Resolution',
         category: 'maintenance',
         content:
-          'Thank you for reporting the maintenance issue in {room_number}. Our maintenance team has been notified and will address the {issue} within {timeframe}. We apologize for any inconvenience this may have caused. If the issue is urgent, please contact the front desk immediately.',
-        variables: ['room_number', 'issue', 'timeframe'],
+          'Thank you for reporting the maintenance issue in {room_number}. Our maintenance team has been notified of the {issue}. We apologize for any inconvenience this may have caused. If the issue is urgent, please contact the front desk immediately.',
+        variables: ['room_number', 'issue'],
       },
       {
         id: 'billing_dispute',
