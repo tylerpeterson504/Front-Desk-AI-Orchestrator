@@ -5,11 +5,9 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "emitDecoratorMetadata": true,
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "lib": [
-      "ES2022"
-    ],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
     "outDir": "dist",
     "rootDir": ".",
     "strict": true,
@@ -36,37 +34,15 @@
     "allowJs": true,
     "checkJs": false,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@config/*": [
-        "./src/config/*"
-      ],
-      "@routes/*": [
-        "./src/routes/*"
-      ],
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@lib/*": [
-        "./src/lib/*"
-      ],
-      "@middleware/*": [
-        "./src/middleware/*"
-      ],
-      "@entities/*": [
-        "./src/entities/*"
-      ]
+      "@/*": ["./src/*"],
+      "@config/*": ["./src/config/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@services/*": ["./src/services/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@entities/*": ["./src/entities/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "db/migrate.ts",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+  "include": ["src/**/*", "db/migrate.ts", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "build"]
 }
