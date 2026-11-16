@@ -15,7 +15,7 @@
     "webextension-polyfill": "^0.10.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.254",
+    "@types/chrome": "^0.3.6",
     "@types/webextension-polyfill": "^0.10.0",
     "eslint": "^8.57.1",
     "jsdom": "^26.1.0",
